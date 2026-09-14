@@ -1,0 +1,27 @@
+{
+  "title": "AfriScout Opportunity Discovery Output",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "title": { "type": "string" },
+    "organization": { "type": ["string", "null"] },
+    "country": { "type": ["string", "null"] },
+    "location": { "type": ["string", "null"] },
+    "category": { "type": ["string", "null"] },
+    "publishedAt": { "type": ["string", "null"] },
+    "deadline": { "type": ["string", "null"] },
+    "description": { "type": ["string", "null"] },
+    "sourceUrl": { "type": "string" },
+    "sourceName": { "type": ["string", "null"] },
+    "sourceId": { "type": "string" },
+    "adapter": { "type": "string" },
+    "referenceNumber": { "type": ["string", "null"] },
+    "valueMin": { "type": ["number", "null"] },
+    "valueMax": { "type": ["number", "null"] },
+    "currency": { "type": ["string", "null"] },
+    "eligibility": { "type": ["string", "null"] },
+    "requirements": { "type": ["string", "null"] },
+    "documents": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["title", "sourceUrl", "sourceId", "adapter"]
+}

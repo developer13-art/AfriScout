@@ -1,0 +1,21 @@
+module.exports = {
+  semi: true,
+  singleQuote: false,
+  trailingComma: "all",
+  printWidth: 100,
+  tabWidth: 2,
+  useTabs: false,
+  bracketSpacing: true,
+  arrowParens: "always",
+  endOfLine: "lf",
+  overrides: [
+    {
+      files: "*.md",
+      options: { proseWrap: "preserve" },
+    },
+    {
+      files: ["*.yml", "*.yaml"],
+      options: { singleQuote: false },
+    },
+  ],
+};

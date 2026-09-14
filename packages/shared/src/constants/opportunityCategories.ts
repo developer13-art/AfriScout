@@ -1,0 +1,41 @@
+export const OPPORTUNITY_CATEGORIES = [
+  "PROCUREMENT",
+  "CONTRACTS",
+  "GRANTS",
+  "FUNDING",
+  "EMPLOYMENT",
+  "INTERNSHIPS",
+  "SCHOLARSHIPS",
+  "FELLOWSHIPS",
+  "ACCELERATORS",
+  "INCUBATORS",
+  "COMPETITIONS",
+  "TRAINING",
+  "RESEARCH",
+  "PARTNERSHIPS",
+  "INVESTMENT",
+  "DEVELOPMENT",
+  "OTHER",
+] as const;
+
+export type OpportunityCategoryKey = (typeof OPPORTUNITY_CATEGORIES)[number];
+
+export const OPPORTUNITY_CATEGORY_LABELS: Record<OpportunityCategoryKey, string> = {
+  PROCUREMENT: "Procurement",
+  CONTRACTS: "Contracts",
+  GRANTS: "Grants",
+  FUNDING: "Funding",
+  EMPLOYMENT: "Jobs",
+  INTERNSHIPS: "Internships",
+  SCHOLARSHIPS: "Scholarships",
+  FELLOWSHIPS: "Fellowships",
+  ACCELERATORS: "Accelerators",
+  INCUBATORS: "Incubators",
+  COMPETITIONS: "Competitions",
+  TRAINING: "Training",
+  RESEARCH: "Research",
+  PARTNERSHIPS: "Partnerships",
+  INVESTMENT: "Investment",
+  DEVELOPMENT: "Development",
+  OTHER: "Other",
+};

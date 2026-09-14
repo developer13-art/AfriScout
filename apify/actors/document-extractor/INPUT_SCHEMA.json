@@ -1,0 +1,11 @@
+{
+  "title": "AfriScout Document Extractor Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "documentUrl": { "type": "string", "title": "Document URL", "editor": "textfield" },
+    "mimeType": { "type": "string", "title": "MIME type", "editor": "textfield" },
+    "language": { "type": "string", "title": "Language", "editor": "textfield" }
+  },
+  "required": ["documentUrl"]
+}

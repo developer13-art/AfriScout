@@ -1,0 +1,16 @@
+export enum AuditAction {
+  USER_REGISTERED = "user.registered",
+  USER_LOGGED_IN = "user.logged_in",
+  USER_ROLE_CHANGED = "user.role_changed",
+  USER_STATUS_CHANGED = "user.status_changed",
+  SOURCE_CREATED = "source.created",
+  SOURCE_UPDATED = "source.updated",
+  SOURCE_ACTIVATED = "source.activated",
+  SOURCE_DEACTIVATED = "source.deactivated",
+  SOURCE_RUN_TRIGGERED = "source.run_triggered",
+  OPPORTUNITY_VERIFIED = "opportunity.verified",
+  OPPORTUNITY_MERGED = "opportunity.merged",
+  API_KEY_CREATED = "api_key.created",
+  API_KEY_REVOKED = "api_key.revoked",
+  SETTING_UPDATED = "setting.updated",
+}

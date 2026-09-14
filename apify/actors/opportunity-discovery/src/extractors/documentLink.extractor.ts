@@ -1,0 +1,1 @@
+export { DetailExtractor as DocumentLinkExtractor } from "./detail.extractor";

@@ -1,0 +1,12 @@
+{
+  "title": "AfriScout Opportunity Monitor Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "opportunityId": { "type": "string", "title": "Opportunity ID" },
+    "sourceUrl": { "type": "string", "title": "Source URL" },
+    "adapter": { "type": "string", "title": "Adapter key" },
+    "previousSnapshot": { "type": "object", "title": "Previous snapshot", "editor": "json" }
+  },
+  "required": ["opportunityId", "sourceUrl", "adapter"]
+}

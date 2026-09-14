@@ -1,0 +1,16 @@
+{
+  "title": "AfriScout Opportunity Discovery Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "sourceId": { "type": "string", "title": "Source ID", "editor": "textfield" },
+    "sourceUrl": { "type": "string", "title": "Source URL", "editor": "textfield" },
+    "sourceType": { "type": "string", "title": "Source type", "editor": "textfield" },
+    "country": { "type": "string", "title": "Country code", "editor": "textfield" },
+    "category": { "type": "string", "title": "Category hint", "editor": "textfield" },
+    "adapter": { "type": "string", "title": "Adapter key", "editor": "textfield" },
+    "maxItems": { "type": "integer", "title": "Max items", "default": 200 },
+    "requestTimeoutSeconds": { "type": "integer", "title": "Request timeout", "default": 600 }
+  },
+  "required": ["sourceId", "sourceUrl", "sourceType", "adapter"]
+}
