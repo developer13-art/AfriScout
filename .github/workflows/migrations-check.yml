@@ -1,0 +1,105 @@
+name: Migrations Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "apps/api/src/database/prisma/**"
+      - "apps/api/prisma/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/migrations-check.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: migrations-check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20.11.0"
+
+jobs:
+  drift:
+    name: Detect schema drift and pending migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: afriscout_migrations
+          POSTGRES_PASSWORD: afriscout_migrations
+          POSTGRES_DB: afriscout_migrations
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U afriscout_migrations -d afriscout_migrations"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://afriscout_migrations:afriscout_migrations@localhost:5434/afriscout_migrations?schema=public
+      DATABASE_SSL: "false"
+      JWT_ACCESS_SECRET: ci_access_secret_min_64_chars_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      JWT_REFRESH_SECRET: ci_refresh_secret_min_64_chars_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      SUPER_ADMIN_EMAIL: ci@test.local
+      SUPER_ADMIN_PASSWORD: CiTestPassword123!
+      SUPER_ADMIN_FULL_NAME: CI Admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply migrations to a clean database
+        run: npm run db:migrate:deploy
+
+      - name: Verify no schema drift between Prisma schema and migrations
+        run: |
+          set -e
+          npx prisma migrate diff \
+            --from-schema-datasource apps/api/src/database/prisma/schema.prisma \
+            --to-schema-datamodel apps/api/src/database/prisma/schema.prisma \
+            --exit-code || {
+              echo "Schema drift detected. A change exists in schema.prisma that is not covered by a migration."
+              exit 1
+            }
+
+      - name: Verify migrations directory is not empty
+        run: |
+          set -e
+          if [ ! -d "apps/api/src/database/prisma/migrations" ] || [ -z "$(ls -A apps/api/src/database/prisma/migrations 2>/dev/null | grep -v migration_lock.toml || true)" ]; then
+            echo "No migrations found. Run: npm run db:migrate -- --name <migration_name>"
+            exit 1
+          fi
+
+      - name: Verify seed runs cleanly against a migrated database
+        env:
+          NODE_ENV: test
+          LOG_LEVEL: error
+          REDIS_URL: redis://localhost:6380
+          REDIS_PREFIX: afriscout_migrations
+          APIFY_WEBHOOK_SECRET: ci_apify_webhook_secret_min_32_chars_cccccccccc
+          OUTBOUND_WEBHOOK_SECRET: ci_outbound_webhook_secret_min_32_chars_dddddddddd
+          AI_ENABLED: "false"
+          SMTP_ENABLED: "false"
+          WEB_PUSH_ENABLED: "false"
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_PATH: ./.storage-migrations
+        run: npm run db:seed

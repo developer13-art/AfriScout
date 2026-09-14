@@ -1,0 +1,130 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual deploy"
+        required: false
+        default: "Manual deployment"
+
+concurrency:
+  group: deploy-render-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify before deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build API
+        run: npm run build:api
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          JWT_ACCESS_SECRET: deploy_access_secret_min_64_chars_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          JWT_REFRESH_SECRET: deploy_refresh_secret_min_64_chars_bbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          SUPER_ADMIN_EMAIL: deploy@test.local
+          SUPER_ADMIN_PASSWORD: DeployTestPassword123!
+          SUPER_ADMIN_FULL_NAME: Deploy Check
+          APIFY_WEBHOOK_SECRET: deploy_apify_webhook_secret_min_32_chars_cccccccc
+          OUTBOUND_WEBHOOK_SECRET: deploy_outbound_webhook_secret_min_32_chars_dddddddd
+
+      - name: Build Web
+        run: npm run build:web
+        env:
+          VITE_API_URL: https://api.afriscout.example/api/v1
+          VITE_PUBLIC_APP_URL: https://afriscout.example
+          VITE_ENABLE_DEVTOOLS: "false"
+
+  deploy-api:
+    name: Deploy API to Render
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    steps:
+      - name: Trigger Render deploy hook for API
+        env:
+          RENDER_API_DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+        run: |
+          set -e
+          if [ -z "$RENDER_API_DEPLOY_HOOK" ]; then
+            echo "RENDER_API_DEPLOY_HOOK is not configured. Skipping API deploy."
+            exit 0
+          fi
+          curl -fsSL -X POST "$RENDER_API_DEPLOY_HOOK"
+
+  deploy-worker:
+    name: Deploy Worker to Render
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    steps:
+      - name: Trigger Render deploy hook for worker
+        env:
+          RENDER_WORKER_DEPLOY_HOOK: ${{ secrets.RENDER_WORKER_DEPLOY_HOOK }}
+        run: |
+          set -e
+          if [ -z "$RENDER_WORKER_DEPLOY_HOOK" ]; then
+            echo "RENDER_WORKER_DEPLOY_HOOK is not configured. Skipping worker deploy."
+            exit 0
+          fi
+          curl -fsSL -X POST "$RENDER_WORKER_DEPLOY_HOOK"
+
+  deploy-web:
+    name: Deploy Web to Render
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    steps:
+      - name: Trigger Render deploy hook for web
+        env:
+          RENDER_WEB_DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+        run: |
+          set -e
+          if [ -z "$RENDER_WEB_DEPLOY_HOOK" ]; then
+            echo "RENDER_WEB_DEPLOY_HOOK is not configured. Skipping web deploy."
+            exit 0
+          fi
+          curl -fsSL -X POST "$RENDER_WEB_DEPLOY_HOOK"
+
+  notify:
+    name: Report deployment status
+    runs-on: ubuntu-latest
+    needs: [deploy-api, deploy-worker, deploy-web]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Summarize
+        run: |
+          echo "API deploy: ${{ needs.deploy-api.result }}"
+          echo "Worker deploy: ${{ needs.deploy-worker.result }}"
+          echo "Web deploy: ${{ needs.deploy-web.result }}"

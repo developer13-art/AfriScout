@@ -42,10 +42,10 @@ afri-scout/
     shared/  Shared enums, types, validators, Apify IO schemas
     config/  Shared ESLint, TypeScript, Prettier, Tailwind presets
   apify/
-    actors/  Independent Apify Actor packages
-    schedules/  Schedule notes
-  docs/      Architecture, database, API, product, operations, design
-  scripts/   Setup, seed, migrations, connectivity checks
+    actors/    Independent Apify Actor packages
+    schedules/ Schedule notes
+  docs/        Architecture, database, API, product, operations, design
+  scripts/     Setup, seed, migrations, connectivity checks
 ```
 
 ---
@@ -330,11 +330,11 @@ by `docker-compose.test.yml`.
 
 `render.yaml` at the repository root defines:
 
-- afriscout-api     (web service)
-- afriscout-worker  (background worker)
-- afriscout-web     (static site)
+- afriscout-api      (web service)
+- afriscout-worker   (background worker)
+- afriscout-web      (static site)
 - afriscout-postgres (managed Postgres)
-- afriscout-redis   (managed Redis)
+- afriscout-redis    (managed Redis)
 
 To deploy:
 

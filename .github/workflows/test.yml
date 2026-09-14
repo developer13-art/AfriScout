@@ -1,0 +1,127 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20.11.0"
+
+jobs:
+  test:
+    name: Unit, integration, and end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: afriscout_test
+          POSTGRES_PASSWORD: afriscout_test
+          POSTGRES_DB: afriscout_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U afriscout_test -d afriscout_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      API_PORT: 4001
+      API_HOST: 127.0.0.1
+      LOG_LEVEL: error
+      TZ: UTC
+      DATABASE_URL: postgresql://afriscout_test:afriscout_test@localhost:5433/afriscout_test?schema=public
+      DATABASE_SSL: "false"
+      REDIS_URL: redis://localhost:6380
+      REDIS_PREFIX: afriscout_test
+      JWT_ACCESS_SECRET: test_access_secret_min_64_chars_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      JWT_REFRESH_SECRET: test_refresh_secret_min_64_chars_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 30d
+      JWT_ISSUER: afriscout
+      JWT_AUDIENCE: afriscout-web
+      SUPER_ADMIN_EMAIL: admin@test.local
+      SUPER_ADMIN_PASSWORD: TestPassword123!
+      SUPER_ADMIN_FULL_NAME: Test Administrator
+      CORS_ORIGINS: http://localhost:5173
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 10000
+      RATE_LIMIT_API_KEY_MAX: 10000
+      APIFY_TOKEN: ""
+      APIFY_BASE_URL: https://api.apify.com/v2
+      APIFY_WEBHOOK_SECRET: test_apify_webhook_secret_min_32_chars_cccccccccc
+      AI_ENABLED: "false"
+      AI_PROVIDER_PRIMARY: mock
+      AI_PROVIDER_FALLBACK_1: mock
+      AI_PROVIDER_FALLBACK_2: mock
+      AI_PROVIDER_FALLBACK_3: mock
+      SMTP_ENABLED: "false"
+      WEB_PUSH_ENABLED: "false"
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_PATH: ./.storage-test
+      OUTBOUND_WEBHOOK_SECRET: test_outbound_webhook_secret_min_32_chars_dddddddddd
+      OUTBOUND_WEBHOOK_MAX_ATTEMPTS: "1"
+      WORKER_CONCURRENCY: "1"
+      QUEUE_PREFIX: afriscout_test
+      JOB_ATTEMPTS_DEFAULT: "1"
+      SCHEDULER_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply migrations to test database
+        run: npm run db:migrate:deploy
+
+      - name: Seed reference data
+        run: npm run db:seed
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            apps/api/coverage
+            apps/web/coverage
+          if-no-files-found: ignore
+          retention-days: 7
