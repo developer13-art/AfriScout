@@ -1,0 +1,84 @@
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  MOCK
+}
+
+enum AiTaskType {
+  CLASSIFICATION
+  SUMMARY
+  ELIGIBILITY
+  REQUIREMENTS
+  DOCUMENT
+  RISK
+  RECOMMENDATIONS
+  ANALYST
+  SEARCH_INTENT
+  OTHER
+}
+
+enum AiStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  FALLBACK_USED
+}
+
+model AiAnalysis {
+  id                  String     @id @default(uuid()) @db.Uuid
+  opportunityId       String?    @map("opportunity_id") @db.Uuid
+  opportunityVersion  Int?       @map("opportunity_version")
+  taskType            AiTaskType @map("task_type")
+  provider            AiProvider
+  model               String
+  promptVersion       String     @map("prompt_version")
+  inputHash           String     @map("input_hash")
+  output              Json
+  outputText          String?    @map("output_text")
+  confidence          Decimal?   @db.Decimal(4, 3)
+  tokensInput         Int?       @map("tokens_input")
+  tokensOutput        Int?       @map("tokens_output")
+  costUsd             Decimal?   @map("cost_usd") @db.Decimal(10, 6)
+  latencyMs           Int?       @map("latency_ms")
+  status              AiStatus   @default(SUCCEEDED)
+  errorMessage        String?    @map("error_message")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  opportunity         Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([taskType])
+  @@index([provider])
+  @@index([createdAt(sort: Desc)])
+  @@map("ai_analyses")
+}
+
+model AiPrompt {
+  id         String     @id @default(uuid()) @db.Uuid
+  taskType   AiTaskType @map("task_type")
+  version    String
+  template   String
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@unique([taskType, version])
+  @@map("ai_prompts")
+}
+
+model AiUsageDaily {
+  id           String     @id @default(uuid()) @db.Uuid
+  day          DateTime   @db.Date
+  provider     AiProvider
+  taskType     AiTaskType @map("task_type")
+  requests     Int        @default(0)
+  tokensInput  BigInt     @default(0) @map("tokens_input")
+  tokensOutput BigInt     @default(0) @map("tokens_output")
+  costUsd      Decimal    @default(0) @map("cost_usd") @db.Decimal(12, 6)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@unique([day, provider, taskType])
+  @@map("ai_usage_daily")
+}

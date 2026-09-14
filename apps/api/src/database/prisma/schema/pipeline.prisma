@@ -1,0 +1,135 @@
+enum PipelineStage {
+  DISCOVERED
+  REVIEWING
+  QUALIFIED
+  PREPARING
+  SUBMITTED
+  UNDER_REVIEW
+  WON
+  LOST
+  WITHDRAWN
+  DISQUALIFIED
+  EXPIRED
+}
+
+enum OutcomeType {
+  WON
+  LOST
+  WITHDRAWN
+  DISQUALIFIED
+  EXPIRED
+  PENDING
+}
+
+enum PipelineEventType {
+  CREATED
+  STAGE_CHANGED
+  NOTE_ADDED
+  CHECKLIST_UPDATED
+  SUBMISSION_RECORDED
+  OUTCOME_RECORDED
+}
+
+model Pipeline {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @default("Default")
+  isDefault   Boolean  @default(true) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PipelineItem[]
+
+  @@index([userId])
+  @@map("pipelines")
+}
+
+model PipelineItem {
+  id                   String        @id @default(uuid()) @db.Uuid
+  pipelineId           String        @map("pipeline_id") @db.Uuid
+  opportunityId        String        @map("opportunity_id") @db.Uuid
+  stage                PipelineStage @default(REVIEWING)
+  ownerUserId          String?       @map("owner_user_id") @db.Uuid
+  notes                String?
+  submissionDate       DateTime?     @map("submission_date")
+  submissionReference  String?       @map("submission_reference")
+  outcomeType          OutcomeType?  @map("outcome_type")
+  outcomeValue         Decimal?      @map("outcome_value") @db.Decimal(20, 2)
+  outcomeCurrency      String?       @map("outcome_currency") @db.Char(3)
+  outcomeDate          DateTime?     @map("outcome_date")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  pipeline             Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  opportunity          Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  ownerUser            User?         @relation("PipelineItemOwner", fields: [ownerUserId], references: [id])
+  events               PipelineEvent[]
+  checklist            Checklist?
+  notesList            PipelineNote[]
+
+  @@unique([pipelineId, opportunityId])
+  @@index([pipelineId, stage])
+  @@map("pipeline_items")
+}
+
+model PipelineEvent {
+  id              String            @id @default(uuid()) @db.Uuid
+  pipelineItemId  String            @map("pipeline_item_id") @db.Uuid
+  type            PipelineEventType
+  fromStage       PipelineStage?    @map("from_stage")
+  toStage         PipelineStage?    @map("to_stage")
+  actorUserId     String?           @map("actor_user_id") @db.Uuid
+  data            Json?
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  pipelineItem    PipelineItem      @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+  actorUser       User?             @relation("PipelineEventActor", fields: [actorUserId], references: [id])
+
+  @@index([pipelineItemId, createdAt(sort: Desc)])
+  @@map("pipeline_events")
+}
+
+model Checklist {
+  id              String   @id @default(uuid()) @db.Uuid
+  pipelineItemId  String   @unique @map("pipeline_item_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pipelineItem    PipelineItem @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+  items           ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id            String    @id @default(uuid()) @db.Uuid
+  checklistId   String    @map("checklist_id") @db.Uuid
+  label         String
+  description   String?
+  isRequired    Boolean   @default(true) @map("is_required")
+  completed     Boolean   @default(false)
+  completedAt   DateTime? @map("completed_at")
+  orderIndex    Int       @default(0) @map("order_index")
+  source        RequirementSource
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  checklist     Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId, orderIndex])
+  @@map("checklist_items")
+}
+
+model PipelineNote {
+  id              String   @id @default(uuid()) @db.Uuid
+  pipelineItemId  String   @map("pipeline_item_id") @db.Uuid
+  authorUserId    String?  @map("author_user_id") @db.Uuid
+  body            String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pipelineItem    PipelineItem @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+
+  @@index([pipelineItemId, createdAt(sort: Desc)])
+  @@map("pipeline_notes")
+}

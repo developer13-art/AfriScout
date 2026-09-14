@@ -1,0 +1,46 @@
+enum MatchBand {
+  VERY_STRONG
+  STRONG
+  MODERATE
+  WEAK
+  POOR
+}
+
+model Match {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  dnaProfileId    String    @map("dna_profile_id") @db.Uuid
+  opportunityId   String    @map("opportunity_id") @db.Uuid
+  score           Int
+  band            MatchBand
+  breakdown       Json
+  reasons         Json
+  concerns        Json
+  weightsVersion  String    @map("weights_version")
+  computedAt      DateTime  @default(now()) @map("computed_at")
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dnaProfile      DnaProfile @relation(fields: [dnaProfileId], references: [id])
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId, dnaProfileId])
+  @@index([userId, score(sort: Desc)])
+  @@index([opportunityId])
+  @@index([band])
+  @@map("matches")
+}
+
+model MatchWeights {
+  id         String   @id @default(uuid()) @db.Uuid
+  userType   String   @map("user_type")
+  version    String
+  weights    Json
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userType, version])
+  @@map("match_weights")
+}

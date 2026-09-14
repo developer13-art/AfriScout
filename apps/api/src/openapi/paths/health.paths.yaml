@@ -1,0 +1,10 @@
+  get:
+  tags: [Health]
+  summary: Service health
+  description: Returns health of the API and its dependencies.
+  security: []
+  responses:
+    "200":
+      description: OK
+    "503":
+      description: Degraded

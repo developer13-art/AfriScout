@@ -1,0 +1,52 @@
+enum OrganizationType {
+  GOVERNMENT
+  PRIVATE
+  NGO
+  FOUNDATION
+  UNIVERSITY
+  DEVELOPMENT
+  ACCELERATOR
+  INCUBATOR
+  OTHER
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Organization {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String           @unique
+  type         OrganizationType?
+  countryCode  String?          @map("country_code") @db.Char(2)
+  website      String?
+  description  String?
+  verified     Boolean          @default(false)
+  verifiedAt   DateTime?        @map("verified_at")
+  logoUrl      String?          @map("logo_url")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  members      OrganizationMember[]
+  opportunities Opportunity[]
+
+  @@index([countryCode])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  role           OrganizationRole
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}

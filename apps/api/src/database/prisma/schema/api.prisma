@@ -1,0 +1,70 @@
+model ApiKey {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  name             String
+  prefix           String
+  keyHash          String    @unique @map("key_hash")
+  scopes           String[]  @default([])
+  rateLimitPerMin  Int       @default(60) @map("rate_limit_per_min")
+  lastUsedAt       DateTime? @map("last_used_at")
+  expiresAt        DateTime? @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prefix])
+  @@map("api_keys")
+}
+
+model ApiKeyUsageDaily {
+  id         String   @id @default(uuid()) @db.Uuid
+  apiKeyId   String   @map("api_key_id") @db.Uuid
+  day        DateTime @db.Date
+  requests   Int      @default(0)
+  errors     Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([apiKeyId, day])
+  @@map("api_key_usage_daily")
+}
+
+model WebhookEndpoint {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  url         String
+  secretHash  String    @map("secret_hash")
+  events      String[]  @default([])
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([userId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id              String    @id @default(uuid()) @db.Uuid
+  endpointId      String    @map("endpoint_id") @db.Uuid
+  event           String
+  payload         Json
+  status          DeliveryStatus @default(PENDING)
+  attempts        Int       @default(0)
+  responseStatus  Int?      @map("response_status")
+  responseBody    String?   @map("response_body")
+  lastAttemptAt   DateTime? @map("last_attempt_at")
+  nextAttemptAt   DateTime? @map("next_attempt_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  endpoint        WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt(sort: Desc)])
+  @@index([status, nextAttemptAt])
+  @@map("webhook_deliveries")
+}

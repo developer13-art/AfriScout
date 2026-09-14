@@ -1,0 +1,192 @@
+enum SourceType {
+  GOVERNMENT
+  PROCUREMENT_PORTAL
+  UNIVERSITY
+  NGO
+  FOUNDATION
+  ACCELERATOR
+  GRANT_PORTAL
+  JOB_BOARD
+  SCHOLARSHIP_PORTAL
+  DEVELOPMENT_ORG
+  PRIVATE_COMPANY
+  OTHER
+}
+
+enum SourceHealth {
+  UNKNOWN
+  HEALTHY
+  WARNING
+  FAILED
+  INACTIVE
+}
+
+enum CrawlFrequency {
+  EVERY_6_HOURS
+  EVERY_12_HOURS
+  DAILY
+  WEEKLY
+  MANUAL
+}
+
+enum SuggestionStatus {
+  SUGGESTED
+  REVIEWED
+  VERIFIED
+  ACTIVATED
+  REJECTED
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  ABORTED
+  TIMED_OUT
+}
+
+enum RunTrigger {
+  SCHEDULE
+  MANUAL_ADMIN
+  WEBHOOK
+  RETRY
+}
+
+enum RawStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  SKIPPED
+}
+
+model Source {
+  id                  String   @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String   @unique
+  countryCode         String?  @map("country_code") @db.Char(2)
+  region              String?
+  language            String?
+  currency            String?  @db.Char(3)
+  category            String?
+  sourceType          SourceType @map("source_type")
+  url                 String
+  adapter             String
+  active              Boolean  @default(false)
+  crawlFrequency      CrawlFrequency @default(DAILY) @map("crawl_frequency")
+  attributionRequired Boolean  @default(true) @map("attribution_required")
+  termsUrl            String?  @map("terms_url")
+  notes               String?
+  health              SourceHealth @default(UNKNOWN)
+  lastSuccessAt       DateTime? @map("last_success_at")
+  lastFailureAt       DateTime? @map("last_failure_at")
+  lastRunAt           DateTime? @map("last_run_at")
+  consecutiveFailures Int      @default(0) @map("consecutive_failures")
+  successCount        Int      @default(0) @map("success_count")
+  failureCount        Int      @default(0) @map("failure_count")
+  itemsTotal          Int      @default(0) @map("items_total")
+  createdBy           String?  @map("created_by") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  createdByUser       User?    @relation("SourceCreatedBy", fields: [createdBy], references: [id])
+  runs                SourceRun[]
+  rawOpportunities    RawOpportunity[]
+  opportunitySources  OpportunitySource[]
+  opportunityDocuments OpportunityDocument[]
+  notifications       Notification[]
+
+  @@index([active])
+  @@index([countryCode])
+  @@index([category])
+  @@index([health])
+  @@map("sources")
+}
+
+model SourceAdapter {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  label       String
+  version     String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("source_adapters")
+}
+
+model SourceRun {
+  id              String     @id @default(uuid()) @db.Uuid
+  sourceId        String     @map("source_id") @db.Uuid
+  actorId         String?    @map("actor_id")
+  apifyRunId      String?    @map("apify_run_id")
+  apifyDatasetId  String?    @map("apify_dataset_id")
+  status          RunStatus
+  trigger         RunTrigger
+  itemsFound      Int        @default(0) @map("items_found")
+  itemsImported   Int        @default(0) @map("items_imported")
+  itemsUpdated    Int        @default(0) @map("items_updated")
+  itemsDuplicate  Int        @default(0) @map("items_duplicate")
+  itemsInvalid    Int        @default(0) @map("items_invalid")
+  startedAt       DateTime?  @map("started_at")
+  finishedAt      DateTime?  @map("finished_at")
+  durationMs      Int?       @map("duration_ms")
+  errorMessage    String?    @map("error_message")
+  errorDetails    Json?      @map("error_details")
+  createdBy       String?    @map("created_by") @db.Uuid
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  source          Source     @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  createdByUser   User?      @relation("SourceRunCreatedBy", fields: [createdBy], references: [id])
+  rawOpportunities RawOpportunity[]
+  versions        OpportunityVersion[]
+
+  @@index([sourceId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([apifyRunId])
+  @@map("source_runs")
+}
+
+model SourceSuggestion {
+  id           String           @id @default(uuid()) @db.Uuid
+  suggestedBy  String?          @map("suggested_by") @db.Uuid
+  name         String
+  url          String
+  countryCode  String?          @map("country_code") @db.Char(2)
+  category     String?
+  notes        String?
+  status       SuggestionStatus @default(SUGGESTED)
+  reviewedBy   String?          @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime?        @map("reviewed_at")
+  reviewNotes  String?          @map("review_notes")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  suggestedByUser User? @relation("SourceSuggestionSuggestedBy", fields: [suggestedBy], references: [id])
+  reviewedByUser  User? @relation("SourceSuggestionReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@map("source_suggestions")
+}
+
+model RawOpportunity {
+  id                  String    @id @default(uuid()) @db.Uuid
+  sourceId            String    @map("source_id") @db.Uuid
+  sourceRunId         String?   @map("source_run_id") @db.Uuid
+  apifyDatasetItemId  String?   @map("apify_dataset_item_id")
+  payload             Json
+  payloadHash         String    @map("payload_hash")
+  fetchedAt           DateTime  @default(now()) @map("fetched_at")
+  processedAt         DateTime? @map("processed_at")
+  processingStatus    RawStatus @default(PENDING) @map("processing_status")
+  processingError     String?   @map("processing_error")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  source              Source     @relation(fields: [sourceId], references: [id])
+  sourceRun           SourceRun? @relation(fields: [sourceRunId], references: [id])
+  opportunitySources  OpportunitySource[]
+
+  @@unique([payloadHash, sourceId])
+  @@index([sourceId])
+  @@index([processingStatus])
+  @@map("raw_opportunities")
+}

@@ -1,0 +1,48 @@
+Error:
+  type: object
+  required: [error]
+  properties:
+    error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { nullable: true }
+        requestId: { type: string, nullable: true }
+
+User:
+  type: object
+  properties:
+    id: { type: string, format: uuid }
+    email: { type: string, format: email }
+    fullName: { type: string }
+    role: { type: string, enum: [SUPER_ADMIN, DATA_ADMIN, USER, API_DEVELOPER] }
+    status: { type: string, enum: [ACTIVE, PENDING, SUSPENDED, DELETED] }
+    countryCode: { type: string, nullable: true }
+    createdAt: { type: string, format: date-time }
+
+Opportunity:
+  type: object
+  properties:
+    id: { type: string, format: uuid }
+    title: { type: string }
+    slug: { type: string }
+    category: { type: string }
+    opportunityType: { type: string }
+    countryCode: { type: string, nullable: true }
+    deadline: { type: string, format: date-time, nullable: true }
+    publishedAt: { type: string, format: date-time, nullable: true }
+    status: { type: string }
+    systemState: { type: string }
+
+Source:
+  type: object
+  properties:
+    id: { type: string, format: uuid }
+    name: { type: string }
+    url: { type: string, format: uri }
+    sourceType: { type: string }
+    countryCode: { type: string, nullable: true }
+    health: { type: string }
+    active: { type: boolean }

@@ -1,0 +1,205 @@
+enum UserRole {
+  SUPER_ADMIN
+  DATA_ADMIN
+  USER
+  API_DEVELOPER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
+}
+
+enum UserType {
+  BUSINESS
+  PROFESSIONAL
+  STUDENT
+  RESEARCHER
+  NGO
+  STARTUP
+  OTHER
+}
+
+model User {
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String    @unique
+  emailVerifiedAt    DateTime? @map("email_verified_at")
+  passwordHash       String    @map("password_hash")
+  fullName           String    @map("full_name")
+  phone              String?
+  countryCode        String?   @map("country_code") @db.Char(2)
+  avatarUrl          String?   @map("avatar_url")
+  role               UserRole  @default(USER)
+  status             UserStatus @default(ACTIVE)
+  lastLoginAt        DateTime? @map("last_login_at")
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  profile            UserProfile?
+  businessProfile    BusinessProfile?
+  studentProfile     StudentProfile?
+  professionalProfile ProfessionalProfile?
+  dnaProfiles        DnaProfile[]
+  sessions           Session[]
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+  apiKeys            ApiKey[]
+  webhookEndpoints   WebhookEndpoint[]
+  notifications      Notification[]
+  notificationPrefs  NotificationPreference[]
+  watchlists         Watchlist[]
+  savedOpportunities SavedOpportunity[]
+  pipelines          Pipeline[]
+  pipelineItems      PipelineItem[] @relation("PipelineItemOwner")
+  pipelineEvents     PipelineEvent[] @relation("PipelineEventActor")
+  auditLogs          AuditLog[]
+  matches            Match[]
+  organizationMembers OrganizationMember[]
+  createdSources     Source[] @relation("SourceCreatedBy")
+  suggestedSources   SourceSuggestion[] @relation("SourceSuggestionSuggestedBy")
+  reviewedSources    SourceSuggestion[] @relation("SourceSuggestionReviewedBy")
+  createdRuns        SourceRun[] @relation("SourceRunCreatedBy")
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model UserProfile {
+  id                   String    @id @default(uuid()) @db.Uuid
+  userId               String    @unique @map("user_id") @db.Uuid
+  userType             UserType  @map("user_type")
+  headline             String?
+  bio                  String?
+  languages            String[]  @default([])
+  timezone             String?
+  preferredCurrency    String?   @map("preferred_currency") @db.Char(3)
+  onboardingCompleted  Boolean   @default(false) @map("onboarding_completed")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model BusinessProfile {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @map("user_id") @db.Uuid
+  companyName           String   @map("company_name")
+  registrationNumber    String?  @map("registration_number")
+  industry              String?
+  employeesCount        Int?     @map("employees_count")
+  annualRevenue         Decimal? @map("annual_revenue") @db.Decimal(20, 2)
+  annualRevenueCurrency String?  @map("annual_revenue_currency") @db.Char(3)
+  website               String?
+  description           String?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+model StudentProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  educationLevel  String?  @map("education_level")
+  fieldOfStudy    String?  @map("field_of_study")
+  institution     String?
+  graduationYear  Int?     @map("graduation_year")
+  interests       String[] @default([])
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_profiles")
+}
+
+model ProfessionalProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  profession      String?
+  seniority       String?
+  yearsExperience Int?     @map("years_experience")
+  skills          String[] @default([])
+  certifications  String[] @default([])
+  portfolioUrl    String?  @map("portfolio_url")
+  linkedinUrl     String?  @map("linkedin_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_profiles")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  refreshTokenHash String    @map("refresh_token_hash")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model EmailVerification {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  verifiedAt DateTime? @map("verified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  role         UserRole
+  permissionId String   @map("permission_id") @db.Uuid
+
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+  @@map("role_permissions")
+}

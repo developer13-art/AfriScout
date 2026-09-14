@@ -1,0 +1,28 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../../../node_modules/.prisma/client"
+  binaryTargets   = ["native"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm, uuid_ossp(map: "uuid-ossp")]
+}
+
+// Domain schemas are defined in ./schema/*.prisma and merged by Prisma.
+// Each file maps to a coherent domain:
+//
+//   user.prisma          identity, sessions, profiles, roles, permissions
+//   dna.prisma           matching DNA profiles and capabilities
+//   source.prisma        source registry, adapters, runs, raw opportunities
+//   opportunity.prisma   canonical opportunities, sources, documents, versions
+//   organization.prisma  organizations and members
+//   ai.prisma            AI analyses, prompts, usage
+//   matching.prisma      match results and weights
+//   pipeline.prisma      pipelines, items, checklists, notes, events
+//   notification.prisma  notifications, preferences, deliveries, push subs
+//   api.prisma           API keys, usage, webhook endpoints and deliveries
+//   audit.prisma         audit log
+//   system.prisma        settings, feature flags, job runs, health snapshots

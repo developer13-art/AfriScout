@@ -1,0 +1,61 @@
+model SystemSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+enum JobStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model JobRun {
+  id             String    @id @default(uuid()) @db.Uuid
+  jobName        String    @map("job_name")
+  status         JobStatus
+  startedAt      DateTime  @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  durationMs     Int?      @map("duration_ms")
+  itemsProcessed Int?      @map("items_processed")
+  errorMessage   String?   @map("error_message")
+  data           Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([jobName, startedAt(sort: Desc)])
+  @@index([status])
+  @@map("job_runs")
+}
+
+model SystemHealthSnapshot {
+  id           String   @id @default(uuid()) @db.Uuid
+  capturedAt   DateTime @default(now()) @map("captured_at")
+  dbOk         Boolean  @map("db_ok")
+  redisOk      Boolean  @map("redis_ok")
+  apifyOk      Boolean  @map("apify_ok")
+  aiOk         Boolean  @map("ai_ok")
+  queueDepth   Int?     @map("queue_depth")
+  workerCount  Int?     @map("worker_count")
+  details      Json?
+
+  @@index([capturedAt(sort: Desc)])
+  @@map("system_health_snapshots")
+}
