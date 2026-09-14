@@ -1,9 +1,19 @@
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
-import path from "node:path";
 
 loadEnv({ path: path.resolve(__dirname, "../../../../.env") });
 
+const booleanFromEnv = z
+  .union([z.boolean(), z.string()])
+  .transform((value) => {
+    if (typeof value === "boolean") return value;
+    const v = value.trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes" || v === "on";
+  });
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_NAME: z.string().default("AfriScout"),
@@ -17,11 +27,11 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   DATABASE_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
-  DATABASE_SSL: z.coerce.boolean().default(false),
+  DATABASE_SSL: booleanFromEnv.default(false),
 
   REDIS_URL: z.string().min(1),
   REDIS_PREFIX: z.string().default("afriscout"),
-  REDIS_TLS: z.coerce.boolean().default(false),
+  REDIS_TLS: booleanFromEnv.default(false),
 
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
@@ -52,7 +62,7 @@ const EnvSchema = z.object({
   APIFY_DEFAULT_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(600),
   APIFY_DEFAULT_MEMORY_MB: z.coerce.number().int().positive().default(1024),
 
-  AI_ENABLED: z.coerce.boolean().default(true),
+  AI_ENABLED: booleanFromEnv.default(true),
   AI_PROVIDER_PRIMARY: z.enum(["openai", "anthropic", "gemini", "mock"]).default("openai"),
   AI_PROVIDER_FALLBACK_1: z.enum(["openai", "anthropic", "gemini", "mock", ""]).default("anthropic"),
   AI_PROVIDER_FALLBACK_2: z.enum(["openai", "anthropic", "gemini", "mock", ""]).default("gemini"),
@@ -72,16 +82,16 @@ const EnvSchema = z.object({
   GEMINI_MODEL: z.string().default("gemini-1.5-flash"),
   GEMINI_BASE_URL: z.string().url().default("https://generativelanguage.googleapis.com"),
 
-  SMTP_ENABLED: z.coerce.boolean().default(false),
+  SMTP_ENABLED: booleanFromEnv.default(false),
   SMTP_HOST: z.string().default(""),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_SECURE: booleanFromEnv.default(false),
   SMTP_USER: z.string().default(""),
   SMTP_PASSWORD: z.string().default(""),
   SMTP_FROM_EMAIL: z.string().email().default("no-reply@afriscout.local"),
   SMTP_FROM_NAME: z.string().default("AfriScout"),
 
-  WEB_PUSH_ENABLED: z.coerce.boolean().default(false),
+  WEB_PUSH_ENABLED: booleanFromEnv.default(false),
   WEB_PUSH_PUBLIC_KEY: z.string().default(""),
   WEB_PUSH_PRIVATE_KEY: z.string().default(""),
   WEB_PUSH_SUBJECT: z.string().default("mailto:admin@afriscout.local"),
@@ -93,7 +103,7 @@ const EnvSchema = z.object({
   S3_BUCKET: z.string().default(""),
   S3_ACCESS_KEY_ID: z.string().default(""),
   S3_SECRET_ACCESS_KEY: z.string().default(""),
-  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
+  S3_FORCE_PATH_STYLE: booleanFromEnv.default(false),
 
   OUTBOUND_WEBHOOK_SECRET: z.string().min(16),
   OUTBOUND_WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().positive().default(6),
@@ -104,7 +114,7 @@ const EnvSchema = z.object({
   JOB_ATTEMPTS_DEFAULT: z.coerce.number().int().positive().default(5),
   JOB_BACKOFF_MS: z.coerce.number().int().positive().default(5000),
 
-  SCHEDULER_ENABLED: z.coerce.boolean().default(true),
+  SCHEDULER_ENABLED: booleanFromEnv.default(true),
   SCHEDULER_SOURCE_TICK_CRON: z.string().default("*/15 * * * *"),
   SCHEDULER_DEADLINE_TICK_CRON: z.string().default("0 * * * *"),
   SCHEDULER_EXPIRY_TICK_CRON: z.string().default("0 2 * * *"),
@@ -113,10 +123,10 @@ const EnvSchema = z.object({
   SENTRY_DSN: z.string().default(""),
   SENTRY_ENVIRONMENT: z.string().default("development"),
 
-  FEATURE_ASK_AFRISCOUT: z.coerce.boolean().default(true),
-  FEATURE_OPPORTUNITY_MAP: z.coerce.boolean().default(true),
-  FEATURE_API_PORTAL: z.coerce.boolean().default(true),
-  FEATURE_PUBLIC_API: z.coerce.boolean().default(true),
+  FEATURE_ASK_AFRISCOUT: booleanFromEnv.default(true),
+  FEATURE_OPPORTUNITY_MAP: booleanFromEnv.default(true),
+  FEATURE_API_PORTAL: booleanFromEnv.default(true),
+  FEATURE_PUBLIC_API: booleanFromEnv.default(true),
 
   PLAN_FREE_RPM: z.coerce.number().int().positive().default(60),
   PLAN_PRO_RPM: z.coerce.number().int().positive().default(300),

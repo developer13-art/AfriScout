@@ -17,33 +17,27 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:worker": "npm run dev:worker --workspace=apps/api",
-
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build --workspace=packages/shared",
     "build:api": "npm run build --workspace=apps/api",
     "build:web": "npm run build --workspace=apps/web",
-
     "start": "npm run start --workspace=apps/api",
     "start:api": "npm run start --workspace=apps/api",
     "start:worker": "npm run start:worker --workspace=apps/api",
-
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
-
     "test": "npm run test --workspaces --if-present",
     "test:api": "npm run test --workspace=apps/api",
     "test:web": "npm run test --workspace=apps/web",
-
     "db:generate": "npm run db:generate --workspace=apps/api",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:migrate:deploy": "npm run db:migrate:deploy --workspace=apps/api",
     "db:reset": "npm run db:reset --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
     "db:studio": "npm run db:studio --workspace=apps/api",
-
     "setup": "tsx scripts/setup.ts",
     "check:env": "tsx scripts/check-env.ts",
     "check:build": "tsx scripts/verify-build.ts",
@@ -51,12 +45,10 @@
     "check:ai": "tsx scripts/test-ai-providers.ts",
     "generate:api-key": "tsx scripts/generate-api-key.ts",
     "run:actor": "tsx scripts/run-actor.ts",
-
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:reset": "docker compose down -v && docker compose up -d",
-
     "clean": "rimraf node_modules apps/*/node_modules apps/*/dist packages/*/node_modules packages/*/dist apify/actors/*/node_modules apify/actors/*/dist",
     "clean:build": "rimraf apps/*/dist packages/*/dist apify/actors/*/dist"
   },
@@ -67,5 +59,14 @@
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   },
-  "packageManager": "npm@10.8.1"
+  "packageManager": "npm@10.8.1",
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true,
+    "@prisma/client@5.22.0": true,
+    "prisma@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "argon2@0.40.3": true,
+    "msgpackr-extract@3.0.4": true
+  }
 }

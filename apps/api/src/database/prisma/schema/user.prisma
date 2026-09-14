@@ -203,3 +203,31 @@ model RolePermission {
   @@id([role, permissionId])
   @@map("role_permissions")
 }
+model Watchlist {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  notifyDeadline  Boolean  @default(true) @map("notify_deadline")
+  notifyChanges   Boolean  @default(true) @map("notify_changes")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@index([userId])
+  @@map("watchlists")
+}
+model SavedOpportunity {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("saved_opportunities")
+}

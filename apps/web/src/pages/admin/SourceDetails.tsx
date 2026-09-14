@@ -9,26 +9,27 @@ import { SourceHealthBadge } from "../../components/admin/SourceHealthBadge";
 import { SourceRunTable } from "../../components/admin/SourceRunTable";
 import { Loader } from "../../components/ui/Loader";
 import { Alert } from "../../components/ui/Alert";
-import { useSource, useActorRuns } from "../../hooks/useSources" // fallback
+import { useSource } from "../../hooks/useSources";
+import { useActorRuns } from "../../hooks/useActorRuns";
 import { sourceService } from "../../services/source.service";
 import { actorRunService } from "../../services/actorRun.service";
 import { formatDateTime } from "../../utils/formatDate";
 import { SeoHead } from "../../components/common/SeoHead";
 
-// `useSource` and `useActorRuns` are re-exported from their own modules.
-import { useSource as useSourceHook } from "../../hooks/useSources";
-
 export function SourceDetails() {
   const { id } = useParams<{ id: string }>();
   const [message, setMessage] = useState<string | null>(null);
-  const source = useSourceHook(id);
+  const source = useSource(id);
   const runs = useActorRuns({ sourceId: id }, 1, 20);
 
   const test = useMutation({
-    mutationFn: () => (id ? sourceService.test(id) : Promise.resolve({ success: false, itemsFound: 0 })),
+    mutationFn: () =>
+      id ? sourceService.test(id) : Promise.resolve({ success: false, itemsFound: 0 }),
     onSuccess: (result) =>
       setMessage(
-        `Test completed. ${result.itemsFound} items found. ${result.success ? "Extraction succeeded." : "Extraction failed."}`,
+        `Test completed. ${result.itemsFound} items found. ${
+          result.success ? "Extraction succeeded." : "Extraction failed."
+        }`,
       ),
   });
 

@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { logger } from "../../../config/logger";
 import { seedRoles } from "./roles.seed";
@@ -34,29 +36,22 @@ export async function runSeed({ prisma }: SeedContext): Promise<void> {
   logger.info({ durationMs }, "seed_completed");
 }
 
-if (require.main === module) {
-  // Allow running as a standalone script through tsx
-  // `tsx apps/api/src/database/prisma/seed/index.ts`
-  import("../../../config/database").then(async ({ prisma, connectDatabase, disconnectDatabase }) => {
-    try {
-      await connectDatabase();
-      await runSeed({ prisma });
-    } catch (error) {
-      logger.error({ err: error }, "seed_failed");
-      process.exitCode = 1;
-    } finally {
-      await disconnectDatabase();
-    }
-  });
-}
+const isEntryPoint =
+  typeof process !== "undefined" &&
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
-export * from "./roles.seed";
-export * from "./permissions.seed";
-export * from "./categories.seed";
-export * from "./subcategories.seed";
-export * from "./countries.seed";
-export * from "./locations.seed";
-export * from "./currencies.seed";
-export * from "./settings.seed";
-export * from "./notificationTemplates.seed";
-export * from "./superAdmin.seed";
+if (isEntryPoint) {
+  const { prisma, connectDatabase, disconnectDatabase } = await import(
+    "../../../config/database"
+  );
+  try {
+    await connectDatabase();
+    await runSeed({ prisma });
+  } catch (error) {
+    logger.error({ err: error }, "seed_failed");
+    process.exitCode = 1;
+  } finally {
+    await disconnectDatabase();
+  }
+}

@@ -1,5 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
+  output          = "../../../../node_modules/.prisma/client"
   binaryTargets   = ["native"]
   previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
 }
@@ -10,6 +11,12 @@ datasource db {
   directUrl  = env("DATABASE_URL_DIRECT")
   extensions = [pg_trgm]
 }
+
+// =============================================================
+// Merged models. Source of truth is the individual files under
+// ./schema/. Re-run scripts/merge-prisma-schema.ps1 after editing
+// any file in that folder.
+// =============================================================
 
 // ---------- user.prisma ----------
 enum UserRole {
@@ -216,34 +223,6 @@ model RolePermission {
 
   @@id([role, permissionId])
   @@map("role_permissions")
-}
-model Watchlist {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  opportunityId   String   @map("opportunity_id") @db.Uuid
-  notifyDeadline  Boolean  @default(true) @map("notify_deadline")
-  notifyChanges   Boolean  @default(true) @map("notify_changes")
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, opportunityId])
-  @@index([userId])
-  @@map("watchlists")
-}
-model SavedOpportunity {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  opportunityId   String   @map("opportunity_id") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, opportunityId])
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("saved_opportunities")
 }
 
 // ---------- dna.prisma ----------
