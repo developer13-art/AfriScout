@@ -1,0 +1,71 @@
+{
+  "name": "afri-scout",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AfriScout — Africa's Opportunity Intelligence Platform",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/api & npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:worker": "npm run dev:worker --workspace=apps/api",
+
+    "build": "npm run build --workspaces --if-present",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+
+    "start": "npm run start --workspace=apps/api",
+    "start:api": "npm run start --workspace=apps/api",
+    "start:worker": "npm run start:worker --workspace=apps/api",
+
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
+
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace=apps/api",
+    "test:web": "npm run test --workspace=apps/web",
+
+    "db:generate": "npm run db:generate --workspace=apps/api",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=apps/api",
+    "db:reset": "npm run db:reset --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:studio": "npm run db:studio --workspace=apps/api",
+
+    "setup": "tsx scripts/setup.ts",
+    "check:env": "tsx scripts/check-env.ts",
+    "check:build": "tsx scripts/verify-build.ts",
+    "check:apify": "tsx scripts/test-apify-connection.ts",
+    "check:ai": "tsx scripts/test-ai-providers.ts",
+    "generate:api-key": "tsx scripts/generate-api-key.ts",
+    "run:actor": "tsx scripts/run-actor.ts",
+
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+
+    "clean": "rimraf node_modules apps/*/node_modules apps/*/dist packages/*/node_modules packages/*/dist apify/actors/*/node_modules apify/actors/*/dist",
+    "clean:build": "rimraf apps/*/dist packages/*/dist apify/actors/*/dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "prettier": "^3.3.2",
+    "rimraf": "^5.0.7",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  },
+  "packageManager": "npm@10.8.1"
+}
