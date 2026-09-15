@@ -1,9 +1,10 @@
 import { Actor } from "apify";
-import { selectAdapter } from "./adapters/registry";
-import type { ActorInput, ExtractedOpportunity } from "./types";
-import { validateExtracted } from "./validators/opportunity.validator";
-import { log } from "./utils/logger";
-import { randomDelay } from "./utils/delay";
+import { selectAdapter } from "./adapters/registry.js";
+import type { ActorInput, ExtractedOpportunity } from "./types.js";
+import { validateExtracted } from "./validators/opportunity.validator.js";
+import { log } from "./utils/logger.js";
+import { randomDelay } from "./utils/delay.js";
+import { closeBrowser } from "./utils/fetch.js";
 
 async function run(): Promise<void> {
   await Actor.init();
@@ -18,6 +19,7 @@ async function run(): Promise<void> {
     sourceId: input.sourceId,
     sourceUrl: input.sourceUrl,
     adapter: input.adapter,
+    waitUntil: input.waitUntil ?? "networkidle",
   });
 
   const adapter = selectAdapter(input);
@@ -47,6 +49,7 @@ async function run(): Promise<void> {
   }
 
   log.info("discovery_completed", { pushed: processed.length });
+  await closeBrowser();
   await Actor.exit();
 }
 
@@ -54,5 +57,10 @@ run().catch(async (error) => {
   log.error("discovery_failed", {
     message: error instanceof Error ? error.message : String(error),
   });
+  try {
+    await closeBrowser();
+  } catch {
+    // ignore
+  }
   await Actor.exit({ exitCode: 1 });
 });

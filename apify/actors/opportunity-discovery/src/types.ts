@@ -7,6 +7,10 @@ export interface ActorInput {
   adapter: string;
   maxItems?: number;
   requestTimeoutSeconds?: number;
+  // Path B additions
+  waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
+  waitForSelector?: string;
+  waitExtraMs?: number;
 }
 
 export interface RawListingItem {

@@ -1,4 +1,4 @@
-import { GovernmentAdapter } from "./government.adapter";
+import { GovernmentAdapter } from "./government.adapter.js";
 
 export class ProcurementPortalAdapter extends GovernmentAdapter {
   key = "procurementPortal";

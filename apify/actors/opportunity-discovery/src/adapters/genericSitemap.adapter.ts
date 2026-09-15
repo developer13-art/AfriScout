@@ -1,7 +1,7 @@
-import { BaseAdapter } from "./base.adapter";
-import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types";
-import { fetchHtml } from "../utils/fetch";
-import { absoluteUrl } from "../utils/crawler";
+import { BaseAdapter } from "./base.adapter.js";
+import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types.js";
+import { fetchHtml } from "../utils/fetch.js";
+import { absoluteUrl } from "../utils/crawler.js";
 import { load } from "cheerio";
 
 export class GenericSitemapAdapter extends BaseAdapter {

@@ -1,1 +1,1 @@
-export { extractLocation as parseLocation } from "../extractors/location.extractor";
+export { extractLocation as parseLocation } from "../extractors/location.extractor.js";

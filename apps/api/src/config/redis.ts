@@ -33,8 +33,9 @@ if (!isTest) {
 }
 
 export function createBullConnection(): Redis {
+  // BullMQ does not support ioredis keyPrefix. It manages its own prefixes
+  // through the "prefix" option passed to Queue/Worker constructors.
   return new IORedis(env.REDIS_URL, {
-    keyPrefix: `${env.REDIS_PREFIX}:bull:`,
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
     tls: env.REDIS_TLS ? {} : undefined,

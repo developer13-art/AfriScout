@@ -381,6 +381,7 @@ model Source {
   attributionRequired Boolean  @default(true) @map("attribution_required")
   termsUrl            String?  @map("terms_url")
   notes               String?
+  metadata            Json     @default("{}")
   health              SourceHealth @default(UNKNOWN)
   lastSuccessAt       DateTime? @map("last_success_at")
   lastFailureAt       DateTime? @map("last_failure_at")
@@ -459,6 +460,7 @@ model SourceSuggestion {
   countryCode  String?          @map("country_code") @db.Char(2)
   category     String?
   notes        String?
+  metadata            Json     @default("{}")
   status       SuggestionStatus @default(SUGGESTED)
   reviewedBy   String?          @map("reviewed_by") @db.Uuid
   reviewedAt   DateTime?        @map("reviewed_at")

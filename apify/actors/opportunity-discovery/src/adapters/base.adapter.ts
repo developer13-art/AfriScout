@@ -1,4 +1,4 @@
-import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types";
+import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types.js";
 
 export interface SourceAdapter {
   key: string;

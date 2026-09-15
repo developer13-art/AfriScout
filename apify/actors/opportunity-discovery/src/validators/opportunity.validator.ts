@@ -1,4 +1,4 @@
-import type { ExtractedOpportunity } from "../types";
+import type { ExtractedOpportunity } from "../types.js";
 
 export interface ValidationIssue {
   field: string;

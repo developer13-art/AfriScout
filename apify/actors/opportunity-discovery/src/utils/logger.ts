@@ -1,13 +1,13 @@
-import { Actor } from "apify";
+import { log as apifyLog } from "apify";
 
 export const log = {
   info(message: string, data?: Record<string, unknown>) {
-    void Actor.log.info(message, data);
+    apifyLog.info(message, data);
   },
   warn(message: string, data?: Record<string, unknown>) {
-    void Actor.log.warning(message, data);
+    apifyLog.warning(message, data);
   },
   error(message: string, data?: Record<string, unknown>) {
-    void Actor.log.error(message, data);
+    apifyLog.error(message, data);
   },
 };

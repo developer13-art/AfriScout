@@ -1,1 +1,1 @@
-export { DetailExtractor as DocumentLinkExtractor } from "./detail.extractor";
+export { DetailExtractor as DocumentLinkExtractor } from "./detail.extractor.js";

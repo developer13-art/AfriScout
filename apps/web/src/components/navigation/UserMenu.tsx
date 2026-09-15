@@ -1,5 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, User, LayoutDashboard } from "lucide-react";
+import {
+  LogOut,
+  Settings,
+  User,
+  LayoutDashboard,
+  ShieldCheck,
+} from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { Dropdown, DropdownItem, DropdownDivider } from "../ui/Dropdown";
 import { useAuth } from "../../hooks/useAuth";
@@ -10,6 +16,9 @@ export function UserMenu() {
 
   if (!user) return null;
 
+  const isAdmin =
+    user.role === "SUPER_ADMIN" || user.role === "DATA_ADMIN";
+
   return (
     <Dropdown
       align="right"
@@ -17,16 +26,31 @@ export function UserMenu() {
         <span className="flex items-center gap-2 rounded-full ring-1 ring-neutral-200 hover:ring-neutral-300 pr-2">
           <Avatar name={user.fullName} src={user.avatarUrl} size="sm" />
           <span className="hidden text-sm font-medium text-neutral-800 sm:inline">
-            {user.fullName.split(" ")[0]}
+            {(user.fullName ?? "").split(" ")[0] || "Account"}
           </span>
         </span>
       }
     >
       <div className="px-2.5 py-2">
-        <p className="text-sm font-medium text-neutral-900 truncate">{user.fullName}</p>
+        <p className="text-sm font-medium text-neutral-900 truncate">
+          {user.fullName}
+        </p>
         <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+        <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-400">
+          {user.role.replace("_", " ")}
+        </p>
       </div>
       <DropdownDivider />
+
+      {isAdmin ? (
+        <DropdownItem
+          icon={<ShieldCheck className="h-4 w-4" />}
+          onClick={() => navigate("/admin")}
+        >
+          Admin panel
+        </DropdownItem>
+      ) : null}
+
       <DropdownItem
         icon={<LayoutDashboard className="h-4 w-4" />}
         onClick={() => navigate("/dashboard")}

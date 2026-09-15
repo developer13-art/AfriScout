@@ -3,14 +3,60 @@
   "type": "object",
   "schemaVersion": 1,
   "properties": {
-    "sourceId": { "type": "string", "title": "Source ID", "editor": "textfield" },
-    "sourceUrl": { "type": "string", "title": "Source URL", "editor": "textfield" },
-    "sourceType": { "type": "string", "title": "Source type", "editor": "textfield" },
-    "country": { "type": "string", "title": "Country code", "editor": "textfield" },
-    "category": { "type": "string", "title": "Category hint", "editor": "textfield" },
-    "adapter": { "type": "string", "title": "Adapter key", "editor": "textfield" },
-    "maxItems": { "type": "integer", "title": "Max items", "default": 200 },
-    "requestTimeoutSeconds": { "type": "integer", "title": "Request timeout", "default": 600 }
+    "sourceId": {
+      "type": "string",
+      "title": "Source ID",
+      "description": "The AfriScout source identifier. Used to tag every item this run produces.",
+      "editor": "textfield"
+    },
+    "sourceUrl": {
+      "type": "string",
+      "title": "Source URL",
+      "description": "The public listing URL to crawl. Must be a full https URL.",
+      "editor": "textfield"
+    },
+    "sourceType": {
+      "type": "string",
+      "title": "Source type",
+      "description": "Source family hint, e.g. GOVERNMENT, PROCUREMENT_PORTAL, UNIVERSITY, NGO, FOUNDATION, ACCELERATOR, GRANT_PORTAL, JOB_BOARD, SCHOLARSHIP_PORTAL, DEVELOPMENT_ORG, PRIVATE_COMPANY, OTHER.",
+      "editor": "textfield"
+    },
+    "adapter": {
+      "type": "string",
+      "title": "Adapter key",
+      "description": "The adapter to use for extraction. One of: government, procurementPortal, university, ngo, foundation, accelerator, grantPortal, jobBoard, scholarshipPortal, genericListing, genericRss, genericSitemap.",
+      "editor": "textfield"
+    },
+    "country": {
+      "type": "string",
+      "title": "Country code",
+      "description": "Optional two-letter ISO country code (e.g. NG, KE, ZA) used when the source is country-specific.",
+      "editor": "textfield"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category hint",
+      "description": "Optional opportunity category hint, e.g. PROCUREMENT, GRANTS, SCHOLARSHIPS, EMPLOYMENT.",
+      "editor": "textfield"
+    },
+    "maxItems": {
+      "type": "integer",
+      "title": "Maximum items",
+      "description": "Upper limit on how many items this run should extract.",
+      "default": 200,
+      "minimum": 1,
+      "maximum": 5000,
+      "editor": "number"
+    },
+    "requestTimeoutSeconds": {
+      "type": "integer",
+      "title": "Request timeout (seconds)",
+      "description": "Per-request network timeout in seconds.",
+      "default": 60,
+      "minimum": 5,
+      "maximum": 3600,
+      "editor": "number"
+    }
   },
   "required": ["sourceId", "sourceUrl", "sourceType", "adapter"]
 }

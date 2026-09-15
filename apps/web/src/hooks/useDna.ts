@@ -10,11 +10,13 @@ export function useDna() {
     queryFn: () => dnaService.getActive(),
   });
 
+  // Whether to call create or update depends on whether an active DNA
+  // profile already exists on the server, not on the shape of the draft.
   const save = useMutation({
     mutationFn: (draft: DnaDraft | Partial<DnaDraft>) =>
-      draft && "industries" in draft && Array.isArray((draft as DnaDraft).industries)
-        ? dnaService.create(draft as DnaDraft)
-        : dnaService.update(draft as Partial<DnaDraft>),
+      query.data
+        ? dnaService.update(draft as Partial<DnaDraft>)
+        : dnaService.create(draft as DnaDraft),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dna"] }),
   });
 

@@ -1,9 +1,9 @@
-import { BaseAdapter } from "./base.adapter";
-import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types";
-import { ListingExtractor } from "../extractors/listing.extractor";
-import { DetailExtractor } from "../extractors/detail.extractor";
-import { fetchHtml } from "../utils/fetch";
-import { absoluteUrl } from "../utils/crawler";
+import { BaseAdapter } from "./base.adapter.js";
+import type { ActorInput, ExtractedOpportunity, RawListingItem } from "../types.js";
+import { ListingExtractor } from "../extractors/listing.extractor.js";
+import { DetailExtractor } from "../extractors/detail.extractor.js";
+import { fetchHtml } from "../utils/fetch.js";
+import { absoluteUrl } from "../utils/crawler.js";
 
 export class GenericListingAdapter extends BaseAdapter {
   key = "genericListing";

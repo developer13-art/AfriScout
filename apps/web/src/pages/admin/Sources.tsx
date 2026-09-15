@@ -26,7 +26,7 @@ export function Sources() {
       cell: (source) => (
         <Link
           to={`/admin/sources/${source.id}`}
-          className="font-medium text-neutral-900 hover:text-primary-700"
+          className="font-medium text-neutral-900 hover:text-primary-700 hover:underline"
         >
           {source.name}
         </Link>
@@ -53,6 +53,18 @@ export function Sources() {
       header: "Last run",
       cell: (source) =>
         source.lastRunAt ? formatDateTime(source.lastRunAt) : "Never",
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      cell: (source) => (
+        <Link to={`/admin/sources/${source.id}`}>
+          <Button variant="outline" size="sm">
+            View
+          </Button>
+        </Link>
+      ),
     },
   ];
 

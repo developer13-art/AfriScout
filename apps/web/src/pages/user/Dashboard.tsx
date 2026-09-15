@@ -68,7 +68,7 @@ export function Dashboard() {
     <>
       <SeoHead title="Dashboard" />
       <PageHeader
-        title={`Good day, ${user?.fullName.split(" ")[0] ?? "there"}`}
+        title={`Good day, ${(user?.fullName ?? "").split(" ")[0] || "there"}`}
         description="Here is what is happening with your opportunities."
         actions={
           <Link to="/explore">

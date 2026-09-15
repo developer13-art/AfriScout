@@ -7,9 +7,9 @@ import { TagInput } from "../../components/ui/TagInput";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { Alert } from "../../components/ui/Alert";
+import { CountryMultiSelect } from "../../components/ui/CountryMultiSelect";
 import { dnaService } from "../../services/dna.service";
 import { useDna } from "../../hooks/useDna";
-import { africanCountries } from "../../config/countries";
 import { opportunityCategories } from "../../config/categories";
 import type { DnaDraft } from "../../types/dna";
 import { SeoHead } from "../../components/common/SeoHead";
@@ -133,11 +133,12 @@ export function DNA() {
           <CardHeader title="Preferences" />
           <CardBody>
             <div className="space-y-4">
-              <TagInput
+              <CountryMultiSelect
                 label="Preferred countries"
                 value={draft.preferredCountries}
                 onChange={(value) => patch("preferredCountries", value)}
-                placeholder="Add a country code"
+                placeholder="Add a country"
+                hint="Pick from the list of African countries. The country code is stored automatically."
               />
               <TagInput
                 label="Preferred locations"

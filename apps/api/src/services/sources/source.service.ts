@@ -53,6 +53,7 @@ export async function createSource(
       attributionRequired: input.attributionRequired ?? true,
       termsUrl: input.termsUrl ?? null,
       notes: input.notes ?? null,
+      metadata: (input.metadata ?? {}) as never,
       active: input.active ?? false,
       createdBy,
     },
@@ -77,6 +78,7 @@ export async function updateSource(id: string, patch: SourceUpdateInput) {
       attributionRequired: patch.attributionRequired,
       termsUrl: patch.termsUrl,
       notes: patch.notes,
+      metadata: (patch.metadata ?? undefined) as never,
       active: patch.active,
     },
   });

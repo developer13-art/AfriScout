@@ -22,9 +22,13 @@ export function Login() {
     setError(null);
     setSubmitting(true);
     try {
-      await signIn(email.trim(), password);
-      const from = (location.state as { from?: string } | null)?.from ?? "/dashboard";
-      navigate(from, { replace: true });
+      const user = await signIn(email.trim(), password);
+      const requested = (location.state as { from?: string } | null)?.from;
+
+      const isAdmin = user?.role === "SUPER_ADMIN" || user?.role === "DATA_ADMIN";
+      const destination = requested ?? (isAdmin ? "/admin" : "/dashboard");
+
+      navigate(destination, { replace: true });
     } catch (err) {
       const message =
         err instanceof HttpError

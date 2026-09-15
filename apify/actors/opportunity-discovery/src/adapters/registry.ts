@@ -1,17 +1,17 @@
-import type { ActorInput } from "../types";
-import type { SourceAdapter } from "./base.adapter";
-import { GovernmentAdapter } from "./government.adapter";
-import { UniversityAdapter } from "./university.adapter";
-import { NgoAdapter } from "./ngo.adapter";
-import { FoundationAdapter } from "./foundation.adapter";
-import { AcceleratorAdapter } from "./accelerator.adapter";
-import { ProcurementPortalAdapter } from "./procurementPortal.adapter";
-import { GrantPortalAdapter } from "./grantPortal.adapter";
-import { JobBoardAdapter } from "./jobBoard.adapter";
-import { ScholarshipPortalAdapter } from "./scholarshipPortal.adapter";
-import { GenericListingAdapter } from "./genericListing.adapter";
-import { GenericRssAdapter } from "./genericRss.adapter";
-import { GenericSitemapAdapter } from "./genericSitemap.adapter";
+import type { ActorInput } from "../types.js";
+import type { SourceAdapter } from "./base.adapter.js";
+import { GovernmentAdapter } from "./government.adapter.js";
+import { UniversityAdapter } from "./university.adapter.js";
+import { NgoAdapter } from "./ngo.adapter.js";
+import { FoundationAdapter } from "./foundation.adapter.js";
+import { AcceleratorAdapter } from "./accelerator.adapter.js";
+import { ProcurementPortalAdapter } from "./procurementPortal.adapter.js";
+import { GrantPortalAdapter } from "./grantPortal.adapter.js";
+import { JobBoardAdapter } from "./jobBoard.adapter.js";
+import { ScholarshipPortalAdapter } from "./scholarshipPortal.adapter.js";
+import { GenericListingAdapter } from "./genericListing.adapter.js";
+import { GenericRssAdapter } from "./genericRss.adapter.js";
+import { GenericSitemapAdapter } from "./genericSitemap.adapter.js";
 
 const adapters: SourceAdapter[] = [
   new GovernmentAdapter(),

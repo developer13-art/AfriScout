@@ -24,3 +24,9 @@ export const opportunities = asyncHandler(async (_req: Request, res: Response) =
   const data = await AnalyticsService.scopedOpportunityAnalytics();
   res.json({ data });
 });
+import { getAdminDashboard } from "../services/analytics/adminDashboard.service";
+
+export const dashboard = asyncHandler(async (_req: Request, res: Response) => {
+  const data = await getAdminDashboard();
+  res.json({ data });
+});

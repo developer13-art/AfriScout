@@ -37,6 +37,7 @@ export const sourceCreateSchema = z.object({
   attributionRequired: z.boolean().optional(),
   termsUrl: z.string().url().optional(),
   notes: z.string().trim().max(4000).optional(),
+  metadata: z.record(z.unknown()).optional(),
   active: z.boolean().optional(),
 });
 

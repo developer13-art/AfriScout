@@ -38,6 +38,16 @@ function deterministicAnalyst() {
   };
 }
 
+function deterministicSearchIntent(input: AiRequestInput) {
+  // The search-intent prompt embeds the user's raw query on a line that
+  // starts with "Query:". We extract just that line so the downstream
+  // /search call receives a short, valid query instead of the full prompt.
+  const raw = input.userPrompt ?? "";
+  const match = raw.match(/Query:\s*(.+)/i);
+  const q = (match?.[1] ?? raw).trim().slice(0, 200);
+  return { q };
+}
+
 export const mockProvider: AiProvider = {
   name: "mock",
 
@@ -60,7 +70,7 @@ export const mockProvider: AiProvider = {
         output = deterministicAnalyst();
         break;
       case "SEARCH_INTENT":
-        output = { q: input.userPrompt };
+        output = deterministicSearchIntent(input);
         break;
       default:
         output = { note: "Mock provider output", taskType: input.taskType };

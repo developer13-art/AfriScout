@@ -1,2 +1,2 @@
-export * from "./opportunity.validator";
-export * from "./url.validator";
+export * from "./opportunity.validator.js";
+export * from "./url.validator.js";

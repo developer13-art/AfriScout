@@ -1,6 +1,6 @@
-import { BaseExtractor } from "./base.extractor";
+import { BaseExtractor } from "./base.extractor.js";
 import type { CheerioAPI } from "cheerio";
-import { absoluteUrl } from "../utils/crawler";
+import { absoluteUrl } from "../utils/crawler.js";
 
 export class PaginationExtractor extends BaseExtractor {
   nextPageUrl($: CheerioAPI, baseUrl: string): string | null {
