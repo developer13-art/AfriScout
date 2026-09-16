@@ -5,7 +5,6 @@ services:
     name: afriscout-api
     runtime: node
     plan: free
-    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
@@ -97,7 +96,6 @@ services:
     name: afriscout-worker
     runtime: node
     plan: free
-    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
@@ -176,7 +174,6 @@ services:
     name: afriscout-web
     runtime: static
     plan: free
-    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
