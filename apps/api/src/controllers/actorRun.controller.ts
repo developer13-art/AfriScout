@@ -1,7 +1,10 @@
 import type { Request, Response } from "express";
 import * as RunService from "../services/apify/run.service";
 import * as IngestionService from "../services/apify/runIngestion.service";
+import { enqueueRunApifyActor } from "../jobs/definitions/runApifyActor.job";
+import { apifyActors, abortActorRun } from "../services/apify/actor.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { logger } from "../config/logger";
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const result = await RunService.listRuns({
@@ -20,16 +23,40 @@ export const get = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const trigger = asyncHandler(async (req: Request, res: Response) => {
-  const data = await IngestionService.triggerIngestion({
-    sourceId: req.body.sourceId,
+  const { sourceId } = req.body as { sourceId: string };
+  if (!sourceId) {
+    res.status(400).json({
+      error: { code: "BAD_REQUEST", message: "sourceId is required" },
+    });
+    return;
+  }
+  if (!apifyActors.opportunityDiscovery) {
+    res.status(503).json({
+      error: {
+        code: "APIFY_NOT_CONFIGURED",
+        message: "Apify actor ID is not configured",
+      },
+    });
+    return;
+  }
+
+  const run = await IngestionService.triggerIngestion({
+    sourceId,
     trigger: "MANUAL_ADMIN",
     createdBy: req.user?.id ?? null,
   });
-  res.status(202).json({ data });
+
+  await enqueueRunApifyActor({
+    sourceId,
+    runId: run.id,
+    actorId: apifyActors.opportunityDiscovery,
+  });
+
+  logger.info({ sourceId, runId: run.id }, "actor_run_enqueued");
+  res.status(202).json({ data: run });
 });
 
 export const abort = asyncHandler(async (req: Request, res: Response) => {
-  const { abortActorRun } = await import("../services/apify/actor.service");
   const run = await RunService.getRun(req.params.id);
   if (run?.apifyRunId) await abortActorRun(run.apifyRunId);
   res.status(202).json({ data: { aborted: true } });

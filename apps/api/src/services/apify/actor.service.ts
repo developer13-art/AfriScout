@@ -1,5 +1,5 @@
 import { apifyConfig } from "../../config/apify";
-import { apifyRequest } from "./apify.service";
+import { apifyRequest, apifyRequestWithRetry } from "./apify.service";
 import type { ApifyActorInput, ApifyActorOutputItem } from "../../types/apify";
 import { InternalError } from "../../utils/errors";
 
@@ -24,9 +24,15 @@ export async function startActorRun(
   if (options.memoryMb) query.memory = options.memoryMb;
   if (options.timeoutSeconds) query.timeout = options.timeoutSeconds;
 
-  const response = await apifyRequest<{ data: ActorRunStartResult }>(
+  const response = await apifyRequestWithRetry<{ data: ActorRunStartResult }>(
     `/acts/${actorId}/runs`,
-    { method: "POST", query, body: input },
+    {
+      method: "POST",
+      query,
+      body: input,
+      attempts: 3,
+      backoffMs: 3000,
+    },
   );
 
   return response.data;
@@ -74,7 +80,10 @@ export interface ActorRunDetail {
 }
 
 export async function getActorRun(runId: string): Promise<ActorRunDetail> {
-  const response = await apifyRequest<{ data: ActorRunDetail }>(`/actor-runs/${runId}`);
+  const response = await apifyRequestWithRetry<{ data: ActorRunDetail }>(
+    `/actor-runs/${runId}`,
+    { attempts: 5, backoffMs: 3000 },
+  );
   return response.data;
 }
 

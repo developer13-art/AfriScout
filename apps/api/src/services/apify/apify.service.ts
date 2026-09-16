@@ -4,6 +4,7 @@ import { InternalError } from "../../utils/errors";
 import { sleep } from "../../utils/sleep";
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+const MAX_TIMEOUT_MS = 2_147_483_647; // Node's setTimeout max (2^31 - 1)
 
 export interface ApifyRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -42,7 +43,8 @@ export async function apifyRequest<T>(
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const effectiveTimeout = Math.min(timeoutMs, MAX_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), effectiveTimeout);
 
   try {
     const response = await fetch(url.toString(), {

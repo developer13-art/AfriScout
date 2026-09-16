@@ -12,14 +12,18 @@ export class GovernmentAdapter extends BaseAdapter {
 
   async list(input: ActorInput): Promise<RawListingItem[]> {
     const html = await fetchHtml(input.sourceUrl, {
-      waitUntil: input.waitUntil ?? "networkidle",
+      waitUntil: input.waitUntil ?? "domcontentloaded",
       waitForSelector: input.waitForSelector,
       waitExtraMs: input.waitExtraMs,
+      listingSelector: input.listingSelector,
+      interaction: input.interaction,
       timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
     });
 
     const $ = this.listing.load(html);
-    const candidates = this.listing.extractListingLinks($, input.sourceUrl);
+    const candidates = this.listing.extractListingLinks($, input.sourceUrl, {
+      listingSelector: input.listingSelector,
+    });
     const limited = candidates.slice(0, input.maxItems ?? 200);
 
     return limited.map((entry) => ({
@@ -34,7 +38,7 @@ export class GovernmentAdapter extends BaseAdapter {
     item: RawListingItem,
   ): Promise<ExtractedOpportunity> {
     const html = await fetchHtml(item.url, {
-      waitUntil: input.waitUntil ?? "networkidle",
+      waitUntil: input.waitUntil ?? "domcontentloaded",
       waitExtraMs: input.waitExtraMs,
       timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
     });

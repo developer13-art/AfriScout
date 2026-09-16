@@ -17,6 +17,7 @@ interface SourceMetadata {
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   waitForSelector?: string;
   waitExtraMs?: number;
+  listingSelector?: string;
 }
 
 export async function testSource(sourceId: string): Promise<SourceTestResult> {
@@ -48,6 +49,7 @@ export async function testSource(sourceId: string): Promise<SourceTestResult> {
       waitUntil: metadata.waitUntil,
       waitForSelector: metadata.waitForSelector,
       waitExtraMs: metadata.waitExtraMs,
+      listingSelector: metadata.listingSelector,
     });
 
     // Wait for the Actor to produce items. Playwright boots Chromium and

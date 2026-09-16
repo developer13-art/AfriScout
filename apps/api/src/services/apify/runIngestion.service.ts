@@ -4,12 +4,27 @@ import { apifyActors } from "./actor.service";
 import { fetchAllDatasetItems } from "./dataset.service";
 import { createSourceRun, markRunFinished, markRunStarted } from "./run.service";
 import { ingestRawItems } from "../opportunities/ingestion.service";
+import { enqueueProcessOpportunity } from "../../jobs/definitions/processOpportunity.job";
 import type { RunTrigger } from "@prisma/client";
 
 export interface TriggerRunInput {
   sourceId: string;
   trigger: RunTrigger;
   createdBy?: string | null;
+}
+
+export interface SourceMetadata {
+  waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
+  waitForSelector?: string;
+  waitExtraMs?: number;
+  listingSelector?: string;
+  interaction?: {
+    fill?: Array<{ selector: string; value: string }>;
+    check?: Array<{ selector: string }>;
+    click?: string;
+    waitFor?: string;
+    extraWaitMs?: number;
+  };
 }
 
 export async function triggerIngestion(input: TriggerRunInput) {
@@ -23,11 +38,29 @@ export async function triggerIngestion(input: TriggerRunInput) {
     createdBy: input.createdBy ?? null,
   });
 
-  // Actual Apify run starts via jobs/runApifyActor.job. This function
-  // records the SourceRun row and returns immediately for the worker to
-  // pick up. It is intentionally not synchronous.
   logger.info({ sourceId: source.id, runId: run.id }, "ingestion_triggered");
   return run;
+}
+
+export async function buildActorInput(sourceId: string) {
+  const source = await prisma.source.findUnique({ where: { id: sourceId } });
+  if (!source) throw new Error("Source not found");
+
+  const metadata = (source.metadata as SourceMetadata | null) ?? {};
+
+  return {
+    sourceId: source.id,
+    sourceUrl: source.url,
+    sourceType: source.sourceType,
+    country: source.countryCode ?? undefined,
+    category: source.category ?? undefined,
+    adapter: source.adapter,
+    waitUntil: metadata.waitUntil,
+    waitForSelector: metadata.waitForSelector,
+    waitExtraMs: metadata.waitExtraMs,
+    listingSelector: metadata.listingSelector,
+    interaction: metadata.interaction,
+  };
 }
 
 export async function finalizeIngestion(input: {
@@ -54,13 +87,30 @@ export async function finalizeIngestion(input: {
 
   const items = await fetchAllDatasetItems(input.apifyDatasetId);
 
-  const result = await ingestRawItems(input.sourceId, { id: input.runId } as never, items.map((payload, index) => ({
-    sourceId: input.sourceId,
-    sourceRunId: input.runId,
-    apifyDatasetItemId:
-      typeof payload.id === "string" ? payload.id : String(index),
-    payload: payload as Record<string, unknown>,
-  })));
+  const result = await ingestRawItems(
+    input.sourceId,
+    { id: input.runId } as never,
+    items.map((payload, index) => ({
+      sourceId: input.sourceId,
+      sourceRunId: input.runId,
+      apifyDatasetItemId:
+        typeof payload.id === "string" ? payload.id : String(index),
+      payload: payload as Record<string, unknown>,
+    })),
+  );
+
+  // After raw items are stored, enqueue pipeline processing for each one.
+  const raws = await prisma.rawOpportunity.findMany({
+    where: { sourceRunId: input.runId, processingStatus: "PENDING" },
+    select: { id: true },
+  });
+
+  for (const raw of raws) {
+    await enqueueProcessOpportunity({
+      rawOpportunityId: raw.id,
+      sourceId: input.sourceId,
+    });
+  }
 
   await markRunFinished({
     runId: input.runId,
@@ -72,4 +122,9 @@ export async function finalizeIngestion(input: {
     itemsInvalid: result.failed,
     apifyDatasetId: input.apifyDatasetId,
   });
+
+  logger.info(
+    { runId: input.runId, sourceId: input.sourceId, enqueued: raws.length },
+    "ingestion_finalized",
+  );
 }

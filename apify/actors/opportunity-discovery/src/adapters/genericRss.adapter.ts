@@ -8,26 +8,44 @@ export class GenericRssAdapter extends BaseAdapter {
   key = "genericRss";
 
   async list(input: ActorInput): Promise<RawListingItem[]> {
-    const xml = await fetchHtml(input.sourceUrl);
+    const xml = await fetchHtml(input.sourceUrl, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitForSelector: input.waitForSelector,
+      waitExtraMs: input.waitExtraMs,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
     const $ = load(xml, { xmlMode: true });
     const items: RawListingItem[] = [];
+
     $("item, entry").each((_i, element) => {
-      const link = $(element).find("link").text().trim() || $(element).find("link").attr("href") || "";
+      const link =
+        $(element).find("link").text().trim() ||
+        $(element).find("link").attr("href") ||
+        "";
       const title = $(element).find("title").text().trim();
       const description = $(element).find("description, summary").text().trim();
       if (!link) return;
       items.push({
         url: absoluteUrl(input.sourceUrl, link),
         title,
-        raw: { description },
+        raw: { listingText: `${title}\n\n${description}`.trim() },
       });
     });
+
     return items.slice(0, input.maxItems ?? 200);
   }
 
-  async extract(input: ActorInput, item: RawListingItem): Promise<ExtractedOpportunity> {
-    const html = await fetchHtml(item.url);
+  async extract(
+    input: ActorInput,
+    item: RawListingItem,
+  ): Promise<ExtractedOpportunity> {
+    const html = await fetchHtml(item.url, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitExtraMs: input.waitExtraMs,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
     const $ = load(html);
+
     return {
       title: this.normalize(item.title) ?? this.normalize($("h1").first().text()) ?? "Untitled",
       organization: null,
@@ -36,8 +54,9 @@ export class GenericRssAdapter extends BaseAdapter {
       category: input.category ?? null,
       publishedAt: null,
       deadline: null,
-      description: this.normalize($("main, article, .content").first().text()) ??
-        this.normalize(item.raw.description as string | undefined),
+      description:
+        this.normalize($("main, article, .content").first().text()) ??
+        this.normalize(item.raw?.listingText as string | undefined),
       sourceUrl: item.url,
       sourceName: null,
       sourceId: input.sourceId,

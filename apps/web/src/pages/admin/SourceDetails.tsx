@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { BackButton } from "../../components/common/BackButton";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
@@ -18,6 +18,7 @@ import { SeoHead } from "../../components/common/SeoHead";
 
 export function SourceDetails() {
   const { id } = useParams<{ id: string }>();
+  const qc = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
   const source = useSource(id);
   const runs = useActorRuns({ sourceId: id }, 1, 20);
@@ -33,11 +34,11 @@ export function SourceDetails() {
       ),
   });
 
-  const trigger = useMutation({
+  const runDiscovery = useMutation({
     mutationFn: () => (id ? actorRunService.trigger(id) : Promise.resolve(null)),
     onSuccess: () => {
-      setMessage("Discovery run enqueued.");
-      runs.refetch();
+      setMessage("Discovery run enqueued. It will appear in Recent runs shortly.");
+      qc.invalidateQueries({ queryKey: ["actor-runs"] });
     },
   });
 
@@ -65,7 +66,10 @@ export function SourceDetails() {
               >
                 Test source
               </Button>
-              <Button onClick={() => trigger.mutate()} loading={trigger.isPending}>
+              <Button
+                onClick={() => runDiscovery.mutate()}
+                loading={runDiscovery.isPending}
+              >
                 Run discovery
               </Button>
             </>

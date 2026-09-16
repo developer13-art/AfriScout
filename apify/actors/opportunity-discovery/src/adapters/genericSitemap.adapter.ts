@@ -8,26 +8,44 @@ export class GenericSitemapAdapter extends BaseAdapter {
   key = "genericSitemap";
 
   async list(input: ActorInput): Promise<RawListingItem[]> {
-    const xml = await fetchHtml(input.sourceUrl);
+    const xml = await fetchHtml(input.sourceUrl, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitForSelector: input.waitForSelector,
+      waitExtraMs: input.waitExtraMs,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
     const $ = load(xml, { xmlMode: true });
     const items: RawListingItem[] = [];
+
     $("url > loc, sitemap > loc").each((_i, element) => {
       const loc = $(element).text().trim();
       if (!loc) return;
       items.push({
         url: absoluteUrl(input.sourceUrl, loc),
         title: loc,
-        raw: {},
+        raw: { listingText: loc },
       });
     });
+
     return items.slice(0, input.maxItems ?? 200);
   }
 
-  async extract(input: ActorInput, item: RawListingItem): Promise<ExtractedOpportunity> {
-    const html = await fetchHtml(item.url);
+  async extract(
+    input: ActorInput,
+    item: RawListingItem,
+  ): Promise<ExtractedOpportunity> {
+    const html = await fetchHtml(item.url, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitExtraMs: input.waitExtraMs,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
     const $ = load(html);
+
     return {
-      title: this.normalize($("h1").first().text()) ?? item.title ?? "Untitled",
+      title:
+        this.normalize($("h1").first().text()) ??
+        this.normalize(item.title) ??
+        "Untitled",
       organization: null,
       country: input.country ?? null,
       location: null,

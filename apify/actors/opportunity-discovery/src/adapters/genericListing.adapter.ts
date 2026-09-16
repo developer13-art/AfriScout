@@ -11,9 +11,20 @@ export class GenericListingAdapter extends BaseAdapter {
   protected detail = new DetailExtractor();
 
   async list(input: ActorInput): Promise<RawListingItem[]> {
-    const html = await fetchHtml(input.sourceUrl);
+    const html = await fetchHtml(input.sourceUrl, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitForSelector: input.waitForSelector,
+      waitExtraMs: input.waitExtraMs,
+      listingSelector: input.listingSelector,
+      interaction: input.interaction,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
+
     const $ = this.listing.load(html);
-    const candidates = this.listing.extractListingLinks($, input.sourceUrl);
+    const candidates = this.listing.extractListingLinks($, input.sourceUrl, {
+      listingSelector: input.listingSelector,
+    });
+
     return candidates.slice(0, input.maxItems ?? 200).map((entry) => ({
       url: absoluteUrl(input.sourceUrl, entry.href),
       title: entry.title,
@@ -25,18 +36,27 @@ export class GenericListingAdapter extends BaseAdapter {
     input: ActorInput,
     item: RawListingItem,
   ): Promise<ExtractedOpportunity> {
-    const html = await fetchHtml(item.url);
+    const html = await fetchHtml(item.url, {
+      waitUntil: input.waitUntil ?? "domcontentloaded",
+      waitExtraMs: input.waitExtraMs,
+      timeoutMs: (input.requestTimeoutSeconds ?? 60) * 1000,
+    });
     const $ = this.detail.load(html);
 
     return {
-      title: this.normalize(item.title) ?? this.normalize($("h1").first().text()) ?? "Untitled",
-      organization: this.normalize($("[data-org], .organization, .org").first().text()),
+      title:
+        this.detail.extractTitle($, item.title) ?? "Untitled opportunity",
+      organization: this.detail.extractOrganization($),
       country: input.country ?? null,
       location: this.normalize($("[data-location], .location").first().text()),
       category: input.category ?? null,
-      publishedAt: this.toIsoOrNull($("time, [data-published]").first().attr("datetime")),
-      deadline: this.toIsoOrNull($("time, [data-deadline]").last().attr("datetime")),
-      description: this.normalize($("main, article, .content, .description").first().text()),
+      publishedAt: this.toIsoOrNull(
+        $("time, [data-published]").first().attr("datetime"),
+      ),
+      deadline: this.toIsoOrNull(
+        $("time, [data-deadline]").last().attr("datetime"),
+      ),
+      description: this.detail.extractDescription($),
       sourceUrl: item.url,
       sourceName: null,
       sourceId: input.sourceId,
@@ -48,7 +68,7 @@ export class GenericListingAdapter extends BaseAdapter {
       eligibility: null,
       requirements: null,
       documents: this.detail.extractDocumentLinks($, item.url),
-      raw: { listingText: item.raw.listingText ?? null },
+      raw: { listingText: item.raw?.listingText ?? null },
     };
   }
 }

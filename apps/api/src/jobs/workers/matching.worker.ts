@@ -2,46 +2,42 @@ import { Worker } from "bullmq";
 import { createBullConnection } from "../../config/redis";
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
-import {
-  MATCH_USERS_JOB,
-  RECOMPUTE_MATCHES_JOB,
-} from "../definitions/matchUsers.job";
-import { RECOMPUTE_ALL_MATCHES_JOB } from "../definitions/recomputeMatches.job";
-import {
-  computeMatch,
-  listMatchesForUser,
-} from "../../services/matching/match.service";
-import { recomputeMatchesForOpportunity, recomputeMatchesForUser } from "../../services/matching/batchMatch.service";
+import { MATCH_USERS_JOB } from "../definitions/matchUsers.job";
+import { recomputeMatchesForOpportunity } from "../../services/matching/batchMatch.service";
+import { enqueueSendNotification } from "../definitions/sendNotification.job";
 import { prisma } from "../../config/database";
 
 export function startMatchingWorker(): Worker {
   const worker = new Worker(
     "matching",
     async (job) => {
-      switch (job.name) {
-        case MATCH_USERS_JOB: {
-          const { opportunityId } = job.data as { opportunityId: string };
-          await recomputeMatchesForOpportunity(opportunityId);
-          break;
-        }
-        case RECOMPUTE_MATCHES_JOB: {
-          const { userId } = job.data as { userId: string };
-          await recomputeMatchesForUser(userId);
-          break;
-        }
-        case RECOMPUTE_ALL_MATCHES_JOB: {
-          const users = await prisma.dnaProfile.findMany({
-            where: { isActive: true },
-            select: { userId: true },
-            take: 1000,
-          });
-          for (const entry of users) {
-            await recomputeMatchesForUser(entry.userId);
-          }
-          break;
-        }
-        default:
-          logger.warn({ jobName: job.name }, "matching_unknown_job");
+      if (job.name !== MATCH_USERS_JOB) {
+        logger.warn({ jobName: job.name }, "matching_unknown_job");
+        return;
+      }
+
+      const { opportunityId } = job.data as { opportunityId: string };
+      const count = await recomputeMatchesForOpportunity(opportunityId);
+      logger.info({ opportunityId, count }, "matches_recomputed");
+
+      // Notify users with new high-score matches.
+      const strongMatches = await prisma.match.findMany({
+        where: { opportunityId, score: { gte: 85 }, notified: false },
+        select: { id: true, userId: true, score: true, opportunityId: true },
+      });
+
+      for (const match of strongMatches) {
+        await enqueueSendNotification({
+          userId: match.userId,
+          type: "NEW_MATCH",
+          title: "New high-match opportunity",
+          body: `An opportunity matches your profile at ${match.score}%.`,
+          opportunityId: match.opportunityId,
+        });
+        await prisma.match.update({
+          where: { id: match.id },
+          data: { notified: true },
+        });
       }
     },
     {
@@ -56,12 +52,4 @@ export function startMatchingWorker(): Worker {
   });
 
   return worker;
-}
-
-export async function matchesForUser(userId: string) {
-  return listMatchesForUser(userId);
-}
-
-export async function singleMatch(userId: string, dnaId: string, opportunityId: string) {
-  return computeMatch({ userId, dnaProfileId: dnaId, opportunityId });
 }

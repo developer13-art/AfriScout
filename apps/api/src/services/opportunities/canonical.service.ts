@@ -1,5 +1,7 @@
 import { prisma } from "../../config/database";
 import { hashObject } from "../../utils/hash";
+import { slugify, ensureUniqueSlug } from "../../utils/slugify";
+import type { NormalizedOpportunity } from "../../types/opportunity";
 
 export async function createVersion(input: {
   opportunityId: string;
@@ -30,10 +32,6 @@ export async function listVersions(opportunityId: string) {
     orderBy: { version: "desc" },
   });
 }
-import { prisma } from "../../config/database";
-import type { NormalizedOpportunity } from "../../types/opportunity";
-import { hashObject } from "../../utils/hash";
-import { slugify, ensureUniqueSlug } from "../../utils/slugify";
 
 export async function upsertCanonicalOpportunity(
   normalized: NormalizedOpportunity,
@@ -41,6 +39,7 @@ export async function upsertCanonicalOpportunity(
   rawOpportunityId: string | null,
   sourceRunId: string | null,
 ) {
+  // First, check whether an opportunity already has a source link with this exact URL.
   const existingLink = await prisma.opportunitySource.findFirst({
     where: { sourceUrl: normalized.sourceUrl },
     select: { opportunityId: true },
@@ -72,6 +71,7 @@ export async function upsertCanonicalOpportunity(
     });
   }
 
+  // Otherwise, create a new canonical opportunity.
   const base = slugify(normalized.title);
   let slug = base;
   let suffix = 1;
@@ -125,14 +125,10 @@ export async function upsertCanonicalOpportunity(
     },
   });
 
-  await prisma.opportunityVersion.create({
-    data: {
-      opportunityId: created.id,
-      version: 1,
-      snapshot: normalized as never,
-      snapshotHash: hashObject(normalized),
-      createdByRunId: sourceRunId,
-    },
+  await createVersion({
+    opportunityId: created.id,
+    snapshot: normalized as unknown as Record<string, unknown>,
+    createdByRunId: sourceRunId,
   });
 
   return created;

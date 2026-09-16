@@ -1,3 +1,11 @@
+export interface ApifyActorInteraction {
+  fill?: Array<{ selector: string; value: string }>;
+  check?: Array<{ selector: string }>;
+  click?: string;
+  waitFor?: string;
+  extraWaitMs?: number;
+}
+
 export interface ApifyActorInput {
   sourceId: string;
   sourceUrl: string;
@@ -7,6 +15,10 @@ export interface ApifyActorInput {
   adapter: string;
   maxItems?: number;
   requestTimeoutSeconds?: number;
+  waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
+  waitForSelector?: string;
+  waitExtraMs?: number;
+  interaction?: ApifyActorInteraction;
 }
 
 export interface ApifyActorOutputItem {

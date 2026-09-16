@@ -6,44 +6,44 @@
     "sourceId": {
       "type": "string",
       "title": "Source ID",
-      "description": "The AfriScout source identifier. Used to tag every item this run produces.",
+      "description": "The AfriScout source identifier.",
       "editor": "textfield"
     },
     "sourceUrl": {
       "type": "string",
       "title": "Source URL",
-      "description": "The public listing URL to crawl. Must be a full https URL.",
+      "description": "The public listing URL to crawl.",
       "editor": "textfield"
     },
     "sourceType": {
       "type": "string",
       "title": "Source type",
-      "description": "Source family hint, e.g. GOVERNMENT, PROCUREMENT_PORTAL, UNIVERSITY, NGO, FOUNDATION, ACCELERATOR, GRANT_PORTAL, JOB_BOARD, SCHOLARSHIP_PORTAL, DEVELOPMENT_ORG, PRIVATE_COMPANY, OTHER.",
+      "description": "Source family hint.",
       "editor": "textfield"
     },
     "adapter": {
       "type": "string",
       "title": "Adapter key",
-      "description": "The adapter to use for extraction. One of: government, procurementPortal, university, ngo, foundation, accelerator, grantPortal, jobBoard, scholarshipPortal, genericListing, genericRss, genericSitemap.",
+      "description": "The adapter to use for extraction.",
       "editor": "textfield"
     },
     "country": {
       "type": "string",
       "title": "Country code",
-      "description": "Optional two-letter ISO country code (e.g. NG, KE, ZA) used when the source is country-specific.",
+      "description": "Optional ISO country code.",
       "editor": "textfield"
     },
     "category": {
       "type": "string",
       "title": "Category hint",
-      "description": "Optional opportunity category hint, e.g. PROCUREMENT, GRANTS, SCHOLARSHIPS, EMPLOYMENT.",
+      "description": "Optional category hint.",
       "editor": "textfield"
     },
     "maxItems": {
       "type": "integer",
       "title": "Maximum items",
-      "description": "Upper limit on how many items this run should extract.",
-      "default": 200,
+      "description": "Upper limit on items to extract.",
+      "default": 20,
       "minimum": 1,
       "maximum": 5000,
       "editor": "number"
@@ -56,6 +56,35 @@
       "minimum": 5,
       "maximum": 3600,
       "editor": "number"
+    },
+    "waitUntil": {
+      "type": "string",
+      "title": "Wait until",
+      "description": "Playwright navigation wait strategy.",
+      "enum": ["load", "domcontentloaded", "networkidle", "commit"],
+      "default": "domcontentloaded",
+      "editor": "select"
+    },
+    "waitForSelector": {
+      "type": "string",
+      "title": "Wait for selector",
+      "description": "Optional CSS selector that must appear before extraction.",
+      "editor": "textfield"
+    },
+    "waitExtraMs": {
+      "type": "integer",
+      "title": "Extra wait (ms)",
+      "description": "Additional wait after navigation.",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 60000,
+      "editor": "number"
+    },
+    "listingSelector": {
+      "type": "string",
+      "title": "Listing selector",
+      "description": "Optional CSS selector that scopes the listing. Each matched element (or each row inside it) becomes one item.",
+      "editor": "textfield"
     }
   },
   "required": ["sourceId", "sourceUrl", "sourceType", "adapter"]

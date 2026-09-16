@@ -1,26 +1,12 @@
 import { Actor } from "apify";
-
-/**
- * Fetch HTML using Playwright. Boots a shared Chromium browser the first
- * time it is called, reuses it across pages, and closes it on Actor exit.
- *
- * Uses the browser binary that Apify's base image provides via the
- * APIFY_DEFAULT_BROWSER_PATH environment variable. Without this, Playwright
- * 1.49+ looks for a separate chromium_headless_shell binary, which the
- * apify/actor-node-playwright-chrome image does not ship.
- */
+import type { ActorInput } from "../types.js";
 
 let browserPromise: Promise<import("playwright").Browser> | null = null;
 
 async function getBrowser() {
   if (!browserPromise) {
     const { chromium } = await import("playwright");
-
-    // Apify base images expose the bundled Chromium binary path here.
-    // Passing it as executablePath short-circuits Playwright's browser
-    // resolution logic, so we always use the correct binary.
     const executablePath = process.env.APIFY_DEFAULT_BROWSER_PATH;
-
     browserPromise = chromium.launch({
       headless: true,
       executablePath: executablePath || undefined,
@@ -34,8 +20,10 @@ export interface FetchOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   waitForSelector?: string;
   waitExtraMs?: number;
+  listingSelector?: string;
   timeoutMs?: number;
   userAgent?: string;
+  interaction?: ActorInput["interaction"];
 }
 
 export async function fetchHtml(
@@ -57,7 +45,7 @@ export async function fetchHtml(
     const page = await context.newPage();
     page.setDefaultNavigationTimeout(timeoutMs);
 
-    const waitUntil = options.waitUntil ?? "networkidle";
+    const waitUntil = options.waitUntil ?? "domcontentloaded";
 
     try {
       await page.goto(url, { waitUntil, timeout: timeoutMs });
@@ -72,12 +60,75 @@ export async function fetchHtml(
       }
     }
 
+    // Run any configured interactions BEFORE waiting for selectors.
+    if (options.interaction) {
+      const { fill, check, click, waitFor, extraWaitMs } = options.interaction;
+
+      if (fill) {
+        for (const { selector, value } of fill) {
+          try {
+            await page.fill(selector, value, { timeout: 10_000 });
+          } catch (error) {
+            await Actor.setStatusMessage(
+              `interaction fill failed: ${selector}`,
+            );
+          }
+        }
+      }
+
+      if (check) {
+        for (const { selector } of check) {
+          try {
+            await page.check(selector, { timeout: 10_000 });
+          } catch (error) {
+            await Actor.setStatusMessage(
+              `interaction check failed: ${selector}`,
+            );
+          }
+        }
+      }
+
+      if (click) {
+        try {
+          await page.click(click, { timeout: 10_000 });
+        } catch (error) {
+          await Actor.setStatusMessage(`interaction click failed: ${click}`);
+        }
+      }
+
+      if (waitFor) {
+        try {
+          await page.waitForSelector(waitFor, { timeout: 20_000 });
+        } catch (error) {
+          await Actor.setStatusMessage(
+            `interaction waitFor timed out: ${waitFor}`,
+          );
+        }
+      }
+
+      if (extraWaitMs && extraWaitMs > 0) {
+        await page.waitForTimeout(extraWaitMs);
+      }
+    }
+
+    // Then the standard waitForSelector from the source metadata.
     if (options.waitForSelector) {
       try {
         await page.waitForSelector(options.waitForSelector, { timeout: timeoutMs });
       } catch {
         await Actor.setStatusMessage(
           `waitForSelector '${options.waitForSelector}' timed out for ${url}`,
+        );
+      }
+    }
+
+    // Then any listingSelector we want to specifically wait for.
+    if (options.listingSelector) {
+      try {
+        await page.waitForSelector(options.listingSelector, { timeout: 20_000 });
+      } catch {
+        await Actor.setStatusMessage(
+          `listingSelector '${options.listingSelector}' timed out for ${url}`,
         );
       }
     }

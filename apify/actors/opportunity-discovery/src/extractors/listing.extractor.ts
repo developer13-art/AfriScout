@@ -39,7 +39,6 @@ const OPPORTUNITY_KEYWORDS = [
   "view details",
   "view notice",
   "view tender",
-  "learn more",
 ];
 
 // URL path segments that suggest an opportunity detail page.
@@ -108,19 +107,40 @@ const REJECT_TEXT = new Set([
   "main menu",
   "read more",
   "more",
-  "learn more",
 ]);
 
+export interface ExtractOptions {
+  /**
+   * Optional CSS selector for the container that holds listing rows.
+   * When provided, only links inside this container are considered.
+   * When omitted, the whole document is scanned.
+   */
+  listingSelector?: string;
+}
+
 export class ListingExtractor extends BaseExtractor {
-  extractListingLinks($: CheerioAPI, baseUrl: string): ListingLink[] {
+  extractListingLinks(
+    $: CheerioAPI,
+    baseUrl: string,
+    options: ExtractOptions = {},
+  ): ListingLink[] {
     const results: ListingLink[] = [];
     const seen = new Set<string>();
 
-    $("a[href]").each((_i, element) => {
+    // Scope the search to the listing container when provided.
+    const root = options.listingSelector
+      ? $(options.listingSelector).first()
+      : $.root();
+
+    if (root.length === 0) {
+      // The selector matched nothing — fall back to the whole document.
+      return this.extractListingLinks($, baseUrl, {});
+    }
+
+    root.find("a[href]").each((_i, element) => {
       const href = $(element).attr("href");
       if (!href) return;
 
-      // Reject non-navigational or fragment URLs
       if (
         href.startsWith("#") ||
         href.startsWith("javascript:") ||
@@ -136,22 +156,19 @@ export class ListingExtractor extends BaseExtractor {
       const rawText = $(element).text().replace(/\s+/g, " ").trim();
       const lowerText = rawText.toLowerCase();
 
-      // Reject empty or trivially short anchor text
       if (rawText.length < 6 || rawText.length > 300) return;
-
-      // Reject known navigation strings
       if (REJECT_TEXT.has(lowerText)) return;
+      if (lowerText.startsWith("jump to")) return;
+      if (lowerText.startsWith("skip to")) return;
 
-      // Reject links whose text looks like a whole sentence of boilerplate
-      if (lowerText.startsWith("jump to") || lowerText.startsWith("skip to")) return;
-
-      // Score the link
       const textMatch = OPPORTUNITY_KEYWORDS.some((kw) => lowerText.includes(kw));
       const pathMatch = OPPORTUNITY_URL_SEGMENTS.some((seg) =>
         absolute.toLowerCase().includes(seg),
       );
 
-      // At least one signal must be present
+      // Require at least one strong signal.
+      // Text-only matches are weaker than path matches; require either
+      // a path match OR a text match with an opportunity keyword.
       if (!textMatch && !pathMatch) return;
 
       seen.add(absolute);
