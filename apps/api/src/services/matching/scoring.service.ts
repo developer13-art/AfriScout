@@ -1,5 +1,4 @@
 import type { MatchBreakdownItem, MatchWeights } from "../../types/match";
-import { DEFAULT_MATCH_WEIGHTS } from "../../constants/matchWeights";
 
 export interface ScoreInputs {
   industryScore: number;
@@ -10,9 +9,18 @@ export interface ScoreInputs {
   experienceScore: number;
 }
 
+const FALLBACK_WEIGHTS: MatchWeights = {
+  industry: 25,
+  location: 20,
+  capability: 20,
+  value: 15,
+  eligibility: 10,
+  experience: 10,
+};
+
 export function scoreOpportunity(
   inputs: ScoreInputs,
-  weights: MatchWeights = DEFAULT_MATCH_WEIGHTS as MatchWeights,
+  weights: MatchWeights = FALLBACK_WEIGHTS,
 ): { total: number; breakdown: MatchBreakdownItem[] } {
   const breakdown: MatchBreakdownItem[] = [
     { key: "industry", label: "Industry", score: inputs.industryScore, max: weights.industry },

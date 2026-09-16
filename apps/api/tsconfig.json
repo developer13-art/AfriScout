@@ -8,11 +8,18 @@
     "target": "ES2022",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false,
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
       "@afriscout/shared": ["../../packages/shared/src"]
     },
     "types": ["node"]

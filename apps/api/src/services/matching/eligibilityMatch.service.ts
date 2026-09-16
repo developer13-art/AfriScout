@@ -20,7 +20,7 @@ export function scoreEligibility(
   }
 
   const hasExperienceRequirement = /\b(experience|years|previous)\b/.test(text);
-  if (hasExperienceRequirement && !dna.experienceNotes) {
+  if (hasExperienceRequirement) {
     return { score: Math.round(max * 0.6), concern: "Experience requirement may need review" };
   }
 

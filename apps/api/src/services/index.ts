@@ -15,6 +15,15 @@ export * from "./notifications";
 export * from "./analytics";
 export * from "./map";
 export * from "./apiKeys";
-export * from "./webhooks";
+
+// webhooks — re-export only the outbound service to avoid clash with
+// notifications/webhook.channel.ts's deliverWebhook.
+export {
+  enqueueOutboundWebhook,
+  deliverWebhook as deliverOutboundWebhook,
+} from "./webhooks/outboundWebhook.service";
+export * from "./webhooks/webhookSigner.service";
+export * from "./webhooks/webhookRetry.service";
+
 export * from "./auditLog";
 export * from "./settings";

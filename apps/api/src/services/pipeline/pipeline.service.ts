@@ -94,3 +94,8 @@ export async function addItem(input: {
 
   return created;
 }
+export async function removeItem(userId: string, itemId: string): Promise<void> {
+  await prisma.pipelineItem.deleteMany({
+    where: { id: itemId, pipeline: { userId } },
+  });
+}

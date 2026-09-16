@@ -80,7 +80,7 @@ export async function deliverWebhook(deliveryId: string): Promise<void> {
         status: "FAILED",
         attempts: { increment: 1 },
         lastAttemptAt: new Date(),
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        responseBody: error instanceof Error ? error.message : "Unknown error",
         nextAttemptAt: new Date(Date.now() + 60_000),
       },
     });

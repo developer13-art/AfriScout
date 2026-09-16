@@ -1,20 +1,18 @@
-import { africanCountries } from "../../../apps/web/src/config/countries";
-
 import { prisma } from "../../config/database";
 
-export interface CountryAggregateRow {
-  countryCode: string;
-  countryName: string;
-  count: number;
+export interface CountryEntry {
+  code: string;
+  name: string;
+  region: string;
 }
 
-export async function listCountries(): Promise<{ code: string; name: string; region: string }[]> {
+export async function listCountries(): Promise<CountryEntry[]> {
   const setting = await prisma.systemSetting.findUnique({
     where: { key: "geo.countries" },
     select: { value: true },
   });
   if (!setting || !Array.isArray(setting.value)) return [];
-  return setting.value as { code: string; name: string; region: string }[];
+  return setting.value as unknown as CountryEntry[];
 }
 
 export async function countryNameFor(code: string): Promise<string> {

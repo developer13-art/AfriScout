@@ -19,6 +19,7 @@ export interface ApifyActorInput {
   waitForSelector?: string;
   waitExtraMs?: number;
   interaction?: ApifyActorInteraction;
+  listingSelector?: string;
 }
 
 export interface ApifyActorOutputItem {

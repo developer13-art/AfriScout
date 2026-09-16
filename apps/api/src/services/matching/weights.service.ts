@@ -1,6 +1,15 @@
 import { prisma } from "../../config/database";
-import { DEFAULT_MATCH_WEIGHTS, MATCH_WEIGHTS_VERSION } from "../../constants/matchWeights";
+import { MATCH_WEIGHTS_VERSION } from "../../constants/matchWeights";
 import type { MatchWeights } from "../../types/match";
+
+const DEFAULT_WEIGHTS: MatchWeights = {
+  industry: 25,
+  location: 20,
+  capability: 20,
+  value: 15,
+  eligibility: 10,
+  experience: 10,
+};
 
 export async function getWeightsForUserType(userType: string): Promise<{
   weights: MatchWeights;
@@ -18,8 +27,5 @@ export async function getWeightsForUserType(userType: string): Promise<{
     };
   }
 
-  return {
-    weights: DEFAULT_MATCH_WEIGHTS as MatchWeights,
-    version: MATCH_WEIGHTS_VERSION,
-  };
+  return { weights: DEFAULT_WEIGHTS, version: MATCH_WEIGHTS_VERSION };
 }

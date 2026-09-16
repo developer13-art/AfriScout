@@ -13,7 +13,13 @@ export * from "./hash";
 export * from "./crypto";
 export * from "./signature";
 export * from "./url";
-export * from "./retry";
+
+// retry.ts also exports sleep — re-export only the retry function
+export { retry } from "./retry";
+export type { RetryOptions } from "./retry";
+
+// sleep.ts owns the canonical sleep export
 export * from "./sleep";
+
 export * from "./chunk";
 export * from "./sanitize";
