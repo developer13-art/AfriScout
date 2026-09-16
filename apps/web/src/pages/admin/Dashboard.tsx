@@ -118,7 +118,7 @@ export function Dashboard() {
         }
       />
 
-      {/* Row 1 Ã¢â‚¬â€ KPI cards */}
+      {/* Row 1 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Sources"
@@ -172,11 +172,11 @@ export function Dashboard() {
           value={systemStatus.aiEnabled ? "On" : "Off"}
           hint={systemStatus.apifyConfigured ? "Apify configured" : "Apify not configured"}
           icon={<Sparkles className="h-4 w-4" />}
-          tone={systemStatus.aiEnabled ? "success" : "neutral"}
+          tone={systemStatus.aiEnabled ? "success" : "default"}
         />
       </div>
 
-      {/* Row 2 Ã¢â‚¬â€ Discovery chart + source health */}
+      {/* Row 2 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Discovery chart + source health */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader
@@ -255,7 +255,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 3 Ã¢â‚¬â€ Category + Country breakdown */}
+      {/* Row 3 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Category + Country breakdown */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Opportunities by category" />
@@ -329,7 +329,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 4 Ã¢â‚¬â€ Recent runs + recent changes */}
+      {/* Row 4 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Recent runs + recent changes */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
@@ -354,8 +354,8 @@ export function Dashboard() {
                           {run.sourceName ?? run.sourceId}
                         </p>
                         <p className="mt-0.5 text-xs text-neutral-500">
-                          {run.trigger} Ã‚Â· Found {run.itemsFound} Ã‚Â· Imported{" "}
-                          {run.itemsImported} Ã‚Â· Duplicates {run.itemsDuplicate}
+                          {run.trigger} ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Found {run.itemsFound} ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Imported{" "}
+                          {run.itemsImported} ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Duplicates {run.itemsDuplicate}
                         </p>
                       </div>
                       <Badge tone={runStatusTone(run.status)} size="sm">
@@ -367,7 +367,7 @@ export function Dashboard() {
                         ? formatDateTime(run.startedAt)
                         : formatDateTime(run.createdAt)}
                       {run.durationMs
-                        ? ` Ã‚Â· ${Math.round(run.durationMs / 1000)}s`
+                        ? ` ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${Math.round(run.durationMs / 1000)}s`
                         : ""}
                     </p>
                   </li>
@@ -407,7 +407,7 @@ export function Dashboard() {
                         </p>
                         <p className="mt-0.5 text-xs text-neutral-500">
                           Opportunity {change.opportunityId.slice(0, 8)}
-                          {change.notified ? " Ã‚Â· notified" : " Ã‚Â· pending"}
+                          {change.notified ? " ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· notified" : " ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· pending"}
                         </p>
                       </div>
                       <Badge tone={severityTone(change.severity)} size="sm">
@@ -431,7 +431,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 5 Ã¢â‚¬â€ Audit log + System status */}
+      {/* Row 5 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Audit log + System status */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
@@ -460,7 +460,7 @@ export function Dashboard() {
                       <p className="mt-0.5 text-xs text-neutral-500">
                         {entry.entityType ?? "system"}
                         {entry.entityId
-                          ? ` Ã‚Â· ${entry.entityId.slice(0, 8)}`
+                          ? ` ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${entry.entityId.slice(0, 8)}`
                           : ""}
                       </p>
                     </div>
@@ -514,7 +514,7 @@ export function Dashboard() {
                   Queue depth
                 </span>
                 <span className="text-xs text-neutral-500">
-                  {systemStatus.queueDepth ?? "Ã¢â‚¬â€"}
+                  {systemStatus.queueDepth ?? "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â"}
                 </span>
               </li>
               <li className="flex items-center justify-between py-3">
@@ -523,7 +523,7 @@ export function Dashboard() {
                   Worker count
                 </span>
                 <span className="text-xs text-neutral-500">
-                  {systemStatus.workerCount ?? "Ã¢â‚¬â€"}
+                  {systemStatus.workerCount ?? "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â"}
                 </span>
               </li>
             </ul>
