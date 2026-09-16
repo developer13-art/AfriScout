@@ -1,8 +1,5 @@
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import yaml from "yaml";
 import type { Request, Response } from "express";
 
@@ -21,5 +18,7 @@ export function openApiJson(_req: Request, res: Response): void {
 }
 
 export function openApiYaml(_req: Request, res: Response): void {
-  res.type("text/yaml").send(readFileSync(path.resolve(__dirname, "../openapi/openapi.yaml"), "utf8"));
+  res
+    .type("text/yaml")
+    .send(readFileSync(path.resolve(__dirname, "../openapi/openapi.yaml"), "utf8"));
 }

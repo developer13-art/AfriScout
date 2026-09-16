@@ -1,9 +1,6 @@
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
+import path from "node:path";
 
 loadEnv({ path: path.resolve(__dirname, "../../../../.env") });
 
@@ -14,6 +11,7 @@ const booleanFromEnv = z
     const v = value.trim().toLowerCase();
     return v === "true" || v === "1" || v === "yes" || v === "on";
   });
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_NAME: z.string().default("AfriScout"),
@@ -25,6 +23,7 @@ const EnvSchema = z.object({
   TZ: z.string().default("UTC"),
 
   DATABASE_URL: z.string().min(1),
+  DATABASE_URL_DIRECT: z.string().min(1).optional(),
   DATABASE_POOL_MIN: z.coerce.number().int().nonnegative().default(2),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
   DATABASE_SSL: booleanFromEnv.default(false),

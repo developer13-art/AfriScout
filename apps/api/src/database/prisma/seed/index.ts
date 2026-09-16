@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { logger } from "../../../config/logger";
 import { seedRoles } from "./roles.seed";
@@ -36,22 +34,19 @@ export async function runSeed({ prisma }: SeedContext): Promise<void> {
   logger.info({ durationMs }, "seed_completed");
 }
 
-const isEntryPoint =
-  typeof process !== "undefined" &&
-  process.argv[1] !== undefined &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (require.main === module) {
+  const { prisma, connectDatabase, disconnectDatabase } =
+    require("../../../config/database");
 
-if (isEntryPoint) {
-  const { prisma, connectDatabase, disconnectDatabase } = await import(
-    "../../../config/database"
-  );
-  try {
-    await connectDatabase();
-    await runSeed({ prisma });
-  } catch (error) {
-    logger.error({ err: error }, "seed_failed");
-    process.exitCode = 1;
-  } finally {
-    await disconnectDatabase();
-  }
+  (async () => {
+    try {
+      await connectDatabase();
+      await runSeed({ prisma });
+    } catch (error) {
+      logger.error({ err: error }, "seed_failed");
+      process.exitCode = 1;
+    } finally {
+      await disconnectDatabase();
+    }
+  })();
 }
