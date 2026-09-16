@@ -12,6 +12,6 @@ export * from "./analytics";
 export * from "./ai";
 export * from "./organization";
 export * from "./apiKey";
-export type { WebhookEndpoint, WebhookDelivery, WebhookEvent, WebhookEndpointDTO, WebhookDeliveryDTO } from "./webhook";
+export { WebhookEndpoint, WebhookDelivery, WebhookEvent } from "./webhook";
 export * from "./auditLog";
 export * from "./common";

@@ -11,20 +11,20 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  override state: ErrorBoundaryState = { error: null };
+  state: ErrorBoundaryState = { error: null };
 
-  static override getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { error };
   }
 
-  override componentDidCatch(error: Error, info: ErrorInfo): void {
+  componentDidCatch(error: Error, info: ErrorInfo): void {
     // eslint-disable-next-line no-console
     console.error("[AfriScout] Uncaught error", error, info);
   }
 
   reset = () => this.setState({ error: null });
 
-  override render() {
+  render() {
     if (this.state.error) {
       if (this.props.fallback) return this.props.fallback;
       return (

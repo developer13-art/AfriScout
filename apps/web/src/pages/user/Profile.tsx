@@ -14,7 +14,8 @@ import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
 export function Profile() {
-  const { profile } = useUserStore();
+  const user = useAuthStore((s) => s.user);
+  const profile = useUserStore((s) => s.profile);
   const setProfile = useUserStore((s) => s.setProfile);
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");

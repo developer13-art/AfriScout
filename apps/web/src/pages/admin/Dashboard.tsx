@@ -118,7 +118,7 @@ export function Dashboard() {
         }
       />
 
-      {/* Row 1 â€” KPI cards */}
+      {/* Row 1 Ã¢â‚¬â€ KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Sources"
@@ -176,7 +176,7 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Row 2 â€” Discovery chart + source health */}
+      {/* Row 2 Ã¢â‚¬â€ Discovery chart + source health */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader
@@ -255,7 +255,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 3 â€” Category + Country breakdown */}
+      {/* Row 3 Ã¢â‚¬â€ Category + Country breakdown */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Opportunities by category" />
@@ -329,7 +329,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 4 â€” Recent runs + recent changes */}
+      {/* Row 4 Ã¢â‚¬â€ Recent runs + recent changes */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
@@ -354,8 +354,8 @@ export function Dashboard() {
                           {run.sourceName ?? run.sourceId}
                         </p>
                         <p className="mt-0.5 text-xs text-neutral-500">
-                          {run.trigger} Â· Found {run.itemsFound} Â· Imported{" "}
-                          {run.itemsImported} Â· Duplicates {run.itemsDuplicate}
+                          {run.trigger} Ã‚Â· Found {run.itemsFound} Ã‚Â· Imported{" "}
+                          {run.itemsImported} Ã‚Â· Duplicates {run.itemsDuplicate}
                         </p>
                       </div>
                       <Badge tone={runStatusTone(run.status)} size="sm">
@@ -367,7 +367,7 @@ export function Dashboard() {
                         ? formatDateTime(run.startedAt)
                         : formatDateTime(run.createdAt)}
                       {run.durationMs
-                        ? ` Â· ${Math.round(run.durationMs / 1000)}s`
+                        ? ` Ã‚Â· ${Math.round(run.durationMs / 1000)}s`
                         : ""}
                     </p>
                   </li>
@@ -407,7 +407,7 @@ export function Dashboard() {
                         </p>
                         <p className="mt-0.5 text-xs text-neutral-500">
                           Opportunity {change.opportunityId.slice(0, 8)}
-                          {change.notified ? " Â· notified" : " Â· pending"}
+                          {change.notified ? " Ã‚Â· notified" : " Ã‚Â· pending"}
                         </p>
                       </div>
                       <Badge tone={severityTone(change.severity)} size="sm">
@@ -431,7 +431,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Row 5 â€” Audit log + System status */}
+      {/* Row 5 Ã¢â‚¬â€ Audit log + System status */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
@@ -460,7 +460,7 @@ export function Dashboard() {
                       <p className="mt-0.5 text-xs text-neutral-500">
                         {entry.entityType ?? "system"}
                         {entry.entityId
-                          ? ` Â· ${entry.entityId.slice(0, 8)}`
+                          ? ` Ã‚Â· ${entry.entityId.slice(0, 8)}`
                           : ""}
                       </p>
                     </div>
@@ -514,7 +514,7 @@ export function Dashboard() {
                   Queue depth
                 </span>
                 <span className="text-xs text-neutral-500">
-                  {systemStatus.queueDepth ?? "â€”"}
+                  {systemStatus.queueDepth ?? "Ã¢â‚¬â€"}
                 </span>
               </li>
               <li className="flex items-center justify-between py-3">
@@ -523,7 +523,7 @@ export function Dashboard() {
                   Worker count
                 </span>
                 <span className="text-xs text-neutral-500">
-                  {systemStatus.workerCount ?? "â€”"}
+                  {systemStatus.workerCount ?? "Ã¢â‚¬â€"}
                 </span>
               </li>
             </ul>
@@ -584,7 +584,7 @@ function StatusRow({
         <span className="text-neutral-500">{icon}</span>
         {label}
       </span>
-      <Badge tone={ok ? "success" : "default"}>
+      <Badge tone={ok ? "success" : "neutral"}>
         {ok ? okLabel : failLabel}
       </Badge>
     </li>
