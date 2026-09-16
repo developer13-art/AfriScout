@@ -83,3 +83,114 @@ services:
         value: 5
       - key: SCHEDULER_ENABLED
         value: false
+
+        services:
+  - type: web
+    name: afriscout-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: .
+    buildCommand: |
+      npm ci
+      npm run build:shared
+      npm run db:generate --workspace=apps/api
+      npm run build:api
+    startCommand: npm run start:api
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: 10000
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: info
+      - key: TZ
+        value: UTC
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_DIRECT
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: JWT_ISSUER
+        value: afriscout
+      - key: JWT_AUDIENCE
+        value: afriscout-web
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: SUPER_ADMIN_FULL_NAME
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APIFY_TOKEN
+        sync: false
+      - key: APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID
+        sync: false
+      - key: APIFY_WEBHOOK_SECRET
+        sync: false
+      - key: AI_ENABLED
+        value: true
+      - key: AI_PROVIDER_PRIMARY
+        value: openai
+      - key: AI_PROVIDER_FALLBACK_1
+        value: anthropic
+      - key: AI_PROVIDER_FALLBACK_2
+        value: gemini
+      - key: AI_PROVIDER_FALLBACK_3
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STORAGE_DRIVER
+        value: local
+      - key: STORAGE_LOCAL_PATH
+        value: /tmp/storage
+      - key: OUTBOUND_WEBHOOK_SECRET
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: 5
+      - key: SCHEDULER_ENABLED
+        value: false
+
+  - type: web
+    name: afriscout-web
+    runtime: static
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: .
+    buildCommand: |
+      npm ci
+      npm run build:shared
+      npm run build:web
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        value: https://afriscout-api.onrender.com/api/v1
+      - key: VITE_PUBLIC_APP_URL
+        sync: false
+      - key: VITE_ENABLE_DEVTOOLS
+        value: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
