@@ -1,10 +1,9 @@
-# render.yaml
 services:
-  # ---------- API (Web Service) ----------
   - type: web
     name: afriscout-api
     runtime: node
     plan: free
+    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
@@ -74,122 +73,13 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      - key: SMTP_ENABLED
-        value: false
-      - key: WEB_PUSH_ENABLED
-        value: false
       - key: STORAGE_DRIVER
         value: local
       - key: STORAGE_LOCAL_PATH
-        value: /var/data/storage
+        value: /tmp/storage
       - key: OUTBOUND_WEBHOOK_SECRET
         generateValue: true
       - key: WORKER_CONCURRENCY
         value: 5
       - key: SCHEDULER_ENABLED
         value: false
-      - key: SENTRY_DSN
-        sync: false
-
-  # ---------- Worker (Background Worker) ----------
-  - type: worker
-    name: afriscout-worker
-    runtime: node
-    plan: free
-    branch: main
-    rootDir: .
-    buildCommand: |
-      npm ci
-      npm run build:shared
-      npm run db:generate --workspace=apps/api
-      npm run build:api
-    startCommand: npm run start:worker
-    autoDeploy: true
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: LOG_LEVEL
-        value: info
-      - key: TZ
-        value: UTC
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_URL_DIRECT
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: JWT_ACCESS_SECRET
-        sync: false
-      - key: JWT_REFRESH_SECRET
-        sync: false
-      - key: APIFY_TOKEN
-        sync: false
-      - key: APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID
-        sync: false
-      - key: APIFY_WEBHOOK_SECRET
-        sync: false
-      - key: AI_ENABLED
-        value: true
-      - key: AI_PROVIDER_PRIMARY
-        value: openai
-      - key: AI_PROVIDER_FALLBACK_1
-        value: anthropic
-      - key: AI_PROVIDER_FALLBACK_2
-        value: gemini
-      - key: AI_PROVIDER_FALLBACK_3
-        value: mock
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: SMTP_ENABLED
-        value: false
-      - key: WEB_PUSH_ENABLED
-        value: false
-      - key: STORAGE_DRIVER
-        value: local
-      - key: STORAGE_LOCAL_PATH
-        value: /var/data/storage
-      - key: OUTBOUND_WEBHOOK_SECRET
-        sync: false
-      - key: WORKER_CONCURRENCY
-        value: 5
-      - key: SCHEDULER_ENABLED
-        value: true
-      - key: SCHEDULER_SOURCE_TICK_CRON
-        value: "*/15 * * * *"
-      - key: SCHEDULER_DEADLINE_TICK_CRON
-        value: "0 * * * *"
-      - key: SCHEDULER_EXPIRY_TICK_CRON
-        value: "0 2 * * *"
-      - key: SCHEDULER_HEALTH_TICK_CRON
-        value: "*/5 * * * *"
-      - key: SENTRY_DSN
-        sync: false
-
-  # ---------- Web (Static Site) ----------
-  - type: web
-    name: afriscout-web
-    runtime: static
-    plan: free
-    branch: main
-    rootDir: .
-    buildCommand: |
-      npm ci
-      npm run build:shared
-      npm run build:web
-    staticPublishPath: ./apps/web/dist
-    autoDeploy: true
-    envVars:
-      - key: VITE_API_URL
-        sync: false
-      - key: VITE_PUBLIC_APP_URL
-        sync: false
-      - key: VITE_ENABLE_DEVTOOLS
-        value: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
