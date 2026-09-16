@@ -1,8 +1,10 @@
+# render.yaml
 services:
+  # ---------- API (Web Service) ----------
   - type: web
     name: afriscout-api
     runtime: node
-    plan: starter
+    plan: free
     region: frankfurt
     branch: main
     rootDir: .
@@ -53,20 +55,10 @@ services:
         sync: false
       - key: APIFY_TOKEN
         sync: false
-      - key: APIFY_BASE_URL
-        value: https://api.apify.com/v2
       - key: APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID
-        sync: false
-      - key: APIFY_DOCUMENT_EXTRACTOR_ACTOR_ID
-        sync: false
-      - key: APIFY_OPPORTUNITY_MONITOR_ACTOR_ID
         sync: false
       - key: APIFY_WEBHOOK_SECRET
         generateValue: true
-      - key: APIFY_DEFAULT_TIMEOUT_SECONDS
-        value: 600
-      - key: APIFY_DEFAULT_MEMORY_MB
-        value: 1024
       - key: AI_ENABLED
         value: true
       - key: AI_PROVIDER_PRIMARY
@@ -100,10 +92,11 @@ services:
       - key: SENTRY_DSN
         sync: false
 
+  # ---------- Worker (Background Worker) ----------
   - type: worker
     name: afriscout-worker
     runtime: node
-    plan: starter
+    plan: free
     region: frankfurt
     branch: main
     rootDir: .
@@ -134,10 +127,6 @@ services:
       - key: APIFY_TOKEN
         sync: false
       - key: APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID
-        sync: false
-      - key: APIFY_DOCUMENT_EXTRACTOR_ACTOR_ID
-        sync: false
-      - key: APIFY_OPPORTUNITY_MONITOR_ACTOR_ID
         sync: false
       - key: APIFY_WEBHOOK_SECRET
         sync: false
@@ -182,10 +171,12 @@ services:
       - key: SENTRY_DSN
         sync: false
 
+  # ---------- Web (Static Site) ----------
   - type: web
     name: afriscout-web
     runtime: static
-    plan: starter
+    plan: free
+    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
