@@ -26,14 +26,11 @@ services:
       - key: TZ
         value: UTC
       - key: DATABASE_URL
-        fromDatabase:
-          name: afriscout-postgres
-          property: connectionString
+        sync: false
+      - key: DATABASE_URL_DIRECT
+        sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: afriscout-redis
-          property: connectionString
+        sync: false
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -56,6 +53,8 @@ services:
         sync: false
       - key: APIFY_TOKEN
         sync: false
+      - key: APIFY_BASE_URL
+        value: https://api.apify.com/v2
       - key: APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID
         sync: false
       - key: APIFY_DOCUMENT_EXTRACTOR_ACTOR_ID
@@ -64,6 +63,10 @@ services:
         sync: false
       - key: APIFY_WEBHOOK_SECRET
         generateValue: true
+      - key: APIFY_DEFAULT_TIMEOUT_SECONDS
+        value: 600
+      - key: APIFY_DEFAULT_MEMORY_MB
+        value: 1024
       - key: AI_ENABLED
         value: true
       - key: AI_PROVIDER_PRIMARY
@@ -82,24 +85,8 @@ services:
         sync: false
       - key: SMTP_ENABLED
         value: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM_EMAIL
-        sync: false
-      - key: SMTP_FROM_NAME
-        value: AfriScout
       - key: WEB_PUSH_ENABLED
         value: false
-      - key: WEB_PUSH_PUBLIC_KEY
-        sync: false
-      - key: WEB_PUSH_PRIVATE_KEY
-        sync: false
       - key: STORAGE_DRIVER
         value: local
       - key: STORAGE_LOCAL_PATH
@@ -135,14 +122,11 @@ services:
       - key: TZ
         value: UTC
       - key: DATABASE_URL
-        fromDatabase:
-          name: afriscout-postgres
-          property: connectionString
+        sync: false
+      - key: DATABASE_URL_DIRECT
+        sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: afriscout-redis
-          property: connectionString
+        sync: false
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
@@ -175,24 +159,8 @@ services:
         sync: false
       - key: SMTP_ENABLED
         value: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM_EMAIL
-        sync: false
-      - key: SMTP_FROM_NAME
-        value: AfriScout
       - key: WEB_PUSH_ENABLED
         value: false
-      - key: WEB_PUSH_PUBLIC_KEY
-        sync: false
-      - key: WEB_PUSH_PRIVATE_KEY
-        sync: false
       - key: STORAGE_DRIVER
         value: local
       - key: STORAGE_LOCAL_PATH
@@ -218,7 +186,6 @@ services:
     name: afriscout-web
     runtime: static
     plan: starter
-    region: frankfurt
     branch: main
     rootDir: .
     buildCommand: |
@@ -238,17 +205,3 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-
-  - type: redis
-    name: afriscout-redis
-    plan: starter
-    region: frankfurt
-    ipAllowList: []
-    maxmemoryPolicy: noeviction
-
-databases:
-  - name: afriscout-postgres
-    plan: starter
-    region: frankfurt
-    postgresMajorVersion: 16
-    ipAllowList: []
