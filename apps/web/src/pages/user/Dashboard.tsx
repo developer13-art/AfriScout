@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Bookmark, Sparkles, Workflow } from "lucide-react";
+import { Bookmark, Sparkles, Workflow } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { StatCard } from "../../components/dashboard/StatCard";
 import { RecentMatches } from "../../components/dashboard/RecentMatches";

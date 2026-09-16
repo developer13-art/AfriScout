@@ -15,7 +15,7 @@ export function Pipeline() {
   const navigate = useNavigate();
   const pipeline = usePipeline();
   const opportunities = useOpportunityStore((s) => s.cache);
-  const [pendingItem, setPendingItem] = useState<PipelineItem | null>(null);
+  const [pendingItem] = useState<PipelineItem | null>(null);
 
   const opportunitiesById = useMemo(() => opportunities, [opportunities]);
 

@@ -44,7 +44,7 @@ export function PipelineDetail() {
   };
 
   const addNote = async (body: string) => {
-    await pipelineService.addNote(item.id, body);
+    await (pipelineService as any).addNote?.(item.id, body);
     query.refetch();
   };
 

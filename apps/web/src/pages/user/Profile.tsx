@@ -1,3 +1,4 @@
+import { useAuthStore } from "../../stores/authStore";
 import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
@@ -13,7 +14,7 @@ import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
 export function Profile() {
-  const { user, profile } = useUserStore();
+  const { profile } = useUserStore();
   const setProfile = useUserStore((s) => s.setProfile);
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
