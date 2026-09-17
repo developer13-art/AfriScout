@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  ZoomableGroup,
-} from "react-simple-maps";
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 
 export interface MapCountryData {
   countryCode: string;
@@ -115,83 +110,73 @@ export function AfricaOpportunityMap({
           height={640}
           style={{ width: "100%", height: "auto" }}
         >
-          <ZoomableGroup disablePanning disableZooming>
-            <Geographies geography={topology as never}>
-              {({ geographies }) =>
-                geographies.map((geo) => {
-                  const numericId = String(geo.id).padStart(3, "0");
-                  const alpha2 = NUMERIC_TO_ALPHA2[numericId];
-                  if (!alpha2) {
-                    return (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        fill="#F8FAFC"
-                        stroke="#E2E8F0"
-                        strokeWidth={0.4}
-                        style={{
-                          default: { outline: "none" },
-                          hover: { outline: "none" },
-                          pressed: { outline: "none" },
-                        }}
-                      />
-                    );
-                  }
-
-                  const row = byCode.get(alpha2);
-                  const count = row?.count ?? 0;
-                  const fill = colorForCount(count, max);
-                  const isLabel = LABEL_COUNTRIES.has(alpha2) && count > 0;
-
+          <Geographies geography={topology as never}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const numericId = String(geo.id).padStart(3, "0");
+                const alpha2 = NUMERIC_TO_ALPHA2[numericId];
+                if (!alpha2) {
                   return (
-                    <g key={geo.rsmKey}>
-                      <Geography
-                        geography={geo}
-                        fill={fill}
-                        stroke="#FFFFFF"
-                        strokeWidth={0.6}
-                        onMouseMove={(event) => {
-                          const target = event.currentTarget as SVGPathElement;
-                          const rect = target.ownerSVGElement?.getBoundingClientRect();
-                          const x = rect ? event.clientX - rect.left : event.clientX;
-                          const y = rect ? event.clientY - rect.top : event.clientY;
-                          setTooltip({
-                            label: row?.countryName ?? alpha2,
-                            value: `${count} ${count === 1 ? "opportunity" : "opportunities"}`,
-                            x,
-                            y,
-                          });
-                        }}
-                        onMouseLeave={() => setTooltip(null)}
-                        onClick={() => onSelectCountry?.(alpha2)}
-                        style={{
-                          default: {
-                            outline: "none",
-                            cursor: onSelectCountry ? "pointer" : "default",
-                          },
-                          hover: { outline: "none", fill: "#0D9488" },
-                          pressed: { outline: "none" },
-                        }}
-                      />
-                      {isLabel ? (
-                        <text
-                          x={geo.properties?.centroid?.[0] ?? 0}
-                          y={geo.properties?.centroid?.[1] ?? 0}
-                          textAnchor="middle"
-                          fontSize={compact ? 9 : 11}
-                          fontWeight={600}
-                          fill={count > max * 0.5 ? "#FFFFFF" : "#0F172A"}
-                          pointerEvents="none"
-                        >
-                          {count}
-                        </text>
-                      ) : null}
-                    </g>
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill="#F8FAFC"
+                      stroke="#E2E8F0"
+                      strokeWidth={0.4}
+                    />
                   );
-                })
-              }
-            </Geographies>
-          </ZoomableGroup>
+                }
+
+                const row = byCode.get(alpha2);
+                const count = row?.count ?? 0;
+                const fill = colorForCount(count, max);
+                const isLabel = LABEL_COUNTRIES.has(alpha2) && count > 0;
+
+                return (
+                  <g key={geo.rsmKey}>
+                    <Geography
+                      geography={geo}
+                      fill={fill}
+                      stroke="#FFFFFF"
+                      strokeWidth={0.6}
+                      onMouseMove={(event) => {
+                        const target = event.currentTarget as SVGPathElement;
+                        const rect = target.ownerSVGElement?.getBoundingClientRect();
+                        const x = rect ? event.clientX - rect.left : event.clientX;
+                        const y = rect ? event.clientY - rect.top : event.clientY;
+                        setTooltip({
+                          label: row?.countryName ?? alpha2,
+                          value: `${count} ${count === 1 ? "opportunity" : "opportunities"}`,
+                          x,
+                          y,
+                        });
+                      }}
+                      onMouseLeave={() => setTooltip(null)}
+                      onClick={() => onSelectCountry?.(alpha2)}
+                      style={{
+                        default: { outline: "none", cursor: onSelectCountry ? "pointer" : "default" },
+                        hover: { outline: "none", fill: "#0D9488" },
+                        pressed: { outline: "none" },
+                      }}
+                    />
+                    {isLabel ? (
+                      <text
+                        x={geo.properties?.centroid?.[0] ?? 0}
+                        y={geo.properties?.centroid?.[1] ?? 0}
+                        textAnchor="middle"
+                        fontSize={compact ? 9 : 11}
+                        fontWeight={600}
+                        fill={count > max * 0.5 ? "#FFFFFF" : "#0F172A"}
+                        pointerEvents="none"
+                      >
+                        {count}
+                      </text>
+                    ) : null}
+                  </g>
+                );
+              })
+            }
+          </Geographies>
         </ComposableMap>
       )}
 
