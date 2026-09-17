@@ -6,6 +6,8 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Card } from "../../components/ui/Card";
 import { SeoHead } from "../../components/common/SeoHead";
+import { AfricaOpportunityMap } from "../../components/map/AfricaOpportunityMap";
+import { usePublicCountryBreakdown } from "../../hooks/usePublicAnalytics";
 import { appConfig } from "../../config/app";
 import { opportunityCategories } from "../../config/categories";
 
@@ -52,6 +54,9 @@ const howItWorks = [
 ];
 
 export function Home() {
+  const countryQuery = usePublicCountryBreakdown();
+  const countryData = countryQuery.data ?? [];
+
   return (
     <>
       <SeoHead
@@ -118,13 +123,11 @@ export function Home() {
             </div>
 
             <div className="relative">
-              <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-                <img
-                  src="/images/africa-map.svg"
-                  alt="Map of Africa"
-                  className="h-full w-full"
-                  loading="lazy"
-                  decoding="async"
+              <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <AfricaOpportunityMap
+                  data={countryData}
+                  height={420}
+                  compact
                 />
               </div>
             </div>

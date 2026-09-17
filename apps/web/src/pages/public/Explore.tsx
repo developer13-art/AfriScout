@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Filter, LayoutGrid, List } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Filter, LayoutGrid, List, Sparkles } from "lucide-react";
 import { Container } from "../../components/layout/Container";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Input } from "../../components/ui/Input";
@@ -9,17 +9,23 @@ import { IconButton } from "../../components/ui/IconButton";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { Pagination } from "../../components/ui/Pagination";
 import { Drawer } from "../../components/ui/Drawer";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
 import { OpportunityGrid } from "../../components/opportunities/OpportunityGrid";
 import { OpportunityList } from "../../components/opportunities/OpportunityList";
 import { OpportunityFilterPanel } from "../../components/opportunities/OpportunityFilterPanel";
+import { AfricaOpportunityMap } from "../../components/map/AfricaOpportunityMap";
 import { useOpportunities } from "../../hooks/useOpportunities";
 import { useSearchStore } from "../../stores/searchStore";
 import { useSaved } from "../../hooks/useSaved";
 import { useDebounce } from "../../hooks/useDebounce";
 import { usePagination } from "../../hooks/usePagination";
+import { usePublicCountryBreakdown, usePublicTotals } from "../../hooks/usePublicAnalytics";
 import { SeoHead } from "../../components/common/SeoHead";
 import { Loader } from "../../components/ui/Loader";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { labelForCategory } from "../../config/categories";
+import { countryName } from "../../config/countries";
 import type { OpportunityFilters } from "../../types/opportunity";
 
 const PAGE_SIZE = 20;
@@ -54,14 +60,19 @@ export function Explore() {
     PAGE_SIZE,
   );
 
+  const countryQuery = usePublicCountryBreakdown();
+  const totalsQuery = usePublicTotals();
+
+  const countryData = countryQuery.data ?? [];
+  const categoryRows = totalsQuery.data?.byCategory ?? [];
+
   const savedIds = useMemo(() => new Set<string>(), []);
 
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string; onRemove: () => void }[] = [];
-    const update = (key: string, value?: string) => {
+    const update = (key: string) => {
       const next = new URLSearchParams(params);
-      if (value) next.set(key, value);
-      else next.delete(key);
+      next.delete(key);
       setParams(next, { replace: true });
       resetPage();
     };
@@ -116,7 +127,7 @@ export function Explore() {
           <Button type="submit">Search</Button>
         </form>
 
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
           <aside className="hidden lg:block">
             <div className="sticky top-20 rounded-xl border border-neutral-200 bg-white p-4">
               <OpportunityFilterPanel
@@ -203,6 +214,98 @@ export function Explore() {
               />
             ) : null}
           </div>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-20 space-y-4">
+              <Card>
+                <CardHeader
+                  title="Opportunities across Africa"
+                  actions={
+                    <Link
+                      to="/explore?map=true"
+                      className="text-xs font-medium text-primary-700 hover:underline"
+                    >
+                      View map
+                    </Link>
+                  }
+                />
+                <CardBody>
+                  <AfricaOpportunityMap
+                    data={countryData}
+                    height={320}
+                    compact
+                    onSelectCountry={(code) => {
+                      const next = new URLSearchParams(params);
+                      next.set("countryCode", code);
+                      setParams(next, { replace: true });
+                      resetPage();
+                    }}
+                  />
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader
+                  title="Top categories"
+                  actions={
+                    <Link
+                      to="/explore"
+                      className="text-xs font-medium text-primary-700 hover:underline"
+                    >
+                      View all
+                    </Link>
+                  }
+                />
+                <CardBody>
+                  {categoryRows.length > 0 ? (
+                    <ul className="space-y-2">
+                      {categoryRows.slice(0, 6).map((row) => (
+                        <li key={row.category}>
+                          <Link
+                            to={`/explore?category=${row.category}`}
+                            className="flex items-center justify-between text-sm text-neutral-700 hover:text-primary-700"
+                          >
+                            <span>{labelForCategory(row.category)}</span>
+                            <span className="text-xs text-neutral-500">
+                              {row.count.toLocaleString()}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-neutral-500">
+                      Category counts will appear as opportunities are discovered.
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white">
+                      <Sparkles className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900">
+                        Let AI find the right opportunities for you
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-600">
+                        Use our smart matching and AI analysis to discover
+                        opportunities that fit your profile and goals.
+                      </p>
+                      <Link to="/ask" className="mt-3 inline-block">
+                        <Button size="sm" rightIcon={<Sparkles className="h-3.5 w-3.5" />}>
+                          Try AI Search
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
+          </aside>
         </div>
       </Container>
 
