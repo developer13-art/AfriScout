@@ -62,10 +62,10 @@ const EnvSchema = z.object({
   APIFY_DEFAULT_MEMORY_MB: z.coerce.number().int().positive().default(1024),
 
   AI_ENABLED: booleanFromEnv.default(true),
-  AI_PROVIDER_PRIMARY: z.enum(["openai", "anthropic", "gemini", "mock"]).default("openai"),
-  AI_PROVIDER_FALLBACK_1: z.enum(["openai", "anthropic", "gemini", "mock", ""]).default("anthropic"),
-  AI_PROVIDER_FALLBACK_2: z.enum(["openai", "anthropic", "gemini", "mock", ""]).default("gemini"),
-  AI_PROVIDER_FALLBACK_3: z.enum(["openai", "anthropic", "gemini", "mock", ""]).default("mock"),
+  AI_PROVIDER_PRIMARY: z.enum(["openai", "anthropic", "gemini", "openrouter", "mock"]).default("openai"),
+  AI_PROVIDER_FALLBACK_1: z.enum(["openai", "anthropic", "gemini", "openrouter", "mock", ""]).default("anthropic"),
+  AI_PROVIDER_FALLBACK_2: z.enum(["openai", "anthropic", "gemini", "openrouter", "mock", ""]).default("gemini"),
+  AI_PROVIDER_FALLBACK_3: z.enum(["openai", "anthropic", "gemini", "openrouter", "mock", ""]).default("mock"),
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   AI_MAX_RETRIES: z.coerce.number().int().nonnegative().default(2),
 
@@ -78,8 +78,14 @@ const EnvSchema = z.object({
   ANTHROPIC_BASE_URL: z.string().url().default("https://api.anthropic.com"),
 
   GEMINI_API_KEY: z.string().default(""),
-  GEMINI_MODEL: z.string().default("gemini-1.5-flash"),
+  GEMINI_MODEL: z.string().default("gemini-3.6-flash"),
   GEMINI_BASE_URL: z.string().url().default("https://generativelanguage.googleapis.com"),
+
+  OPENROUTER_API_KEY: z.string().default(""),
+  OPENROUTER_MODEL: z.string().default("openrouter/free"),
+  OPENROUTER_BASE_URL: z.string().url().default("https://openrouter.ai/api/v1"),
+  OPENROUTER_HTTP_REFERER: z.string().default("https://afriscout.online"),
+  OPENROUTER_APP_TITLE: z.string().default("AfriScout"),
 
   SMTP_ENABLED: booleanFromEnv.default(false),
   SMTP_HOST: z.string().default(""),

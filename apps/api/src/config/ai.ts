@@ -1,6 +1,6 @@
 import { env } from "./env";
 
-export type AiProviderName = "openai" | "anthropic" | "gemini" | "mock";
+export type AiProviderName = "openai" | "anthropic" | "gemini" | "openrouter" | "mock";
 
 export interface AiProviderConfig {
   name: AiProviderName;
@@ -57,7 +57,12 @@ export const aiConfig: AiConfig = {
       model: env.GEMINI_MODEL,
       baseUrl: env.GEMINI_BASE_URL,
     },
-    mock: {
+    openrouter: {
+      name: "openrouter",
+      apiKey: env.OPENROUTER_API_KEY,
+      model: env.OPENROUTER_MODEL,
+      baseUrl: env.OPENROUTER_BASE_URL,
+    },    mock: {
       name: "mock",
       apiKey: "",
       model: "mock",
