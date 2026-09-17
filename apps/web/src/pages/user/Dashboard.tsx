@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Bookmark, Sparkles, Workflow } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { StatCard } from "../../components/dashboard/StatCard";
-import { RecentMatches } from "../../components/dashboard/RecentMatches";
+import { RecentMatches, type RecentMatch } from "../../components/dashboard/RecentMatches";
 import { DeadlineWidget } from "../../components/dashboard/DeadlineWidget";
 import { PipelineSummary } from "../../components/dashboard/PipelineSummary";
 import { CategoryBreakdown } from "../../components/dashboard/CategoryBreakdown";
@@ -27,16 +27,21 @@ export function Dashboard() {
   const saved = useSaved();
   const dna = useDna();
 
-  const recentMatches = (matches.data?.matches ?? [])
-    .slice(0, 5)
-    .map((m) => ({
-      opportunity: matches.data?.opportunities[m.opportunityId],
-      score: m.score,
-    }))
-    .filter((entry) => Boolean(entry.opportunity)) as {
-    opportunity: NonNullable<typeof matches.data>["opportunities"][string];
-    score: number;
-  }[];
+  const savedIds = new Set((saved.data ?? []).map((entry) => entry.opportunityId));
+
+  const recentMatches: RecentMatch[] = (matches.data?.matches ?? [])
+    .slice(0, 4)
+    .map((m) => {
+      const opportunity = matches.data?.opportunities[m.opportunityId];
+      return {
+        opportunity,
+        score: m.score,
+        reasons: (m.reasons ?? []).map((reason) =>
+          reason.detail ? `${reason.label} — ${reason.detail}` : reason.label,
+        ),
+      };
+    })
+    .filter((entry): entry is RecentMatch => Boolean(entry.opportunity));
 
   const pipelineStages = Object.entries(
     (pipeline.data ?? []).reduce<Record<string, number>>((acc, item) => {
@@ -49,11 +54,12 @@ export function Dashboard() {
     count,
   }));
 
-  const categorySlices = (radar.data?.newOpportunities ?? [])
-    .reduce<Record<string, number>>((acc, opp) => {
-      acc[opp.category] = (acc[opp.category] ?? 0) + 1;
-      return acc;
-    }, {});
+  const categorySlices = (radar.data?.newOpportunities ?? []).reduce<
+    Record<string, number>
+  >((acc, opp) => {
+    acc[opp.category] = (acc[opp.category] ?? 0) + 1;
+    return acc;
+  }, {});
   const categorySlicesArray = Object.entries(categorySlices).map(
     ([key, count]) => ({
       key,
@@ -134,11 +140,15 @@ export function Dashboard() {
       ) : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {matches.isLoading ? (
             <Loader label="Loading matches" />
           ) : (
-            <RecentMatches matches={recentMatches} />
+            <RecentMatches
+              matches={recentMatches}
+              savedIds={savedIds}
+              onSave={(opportunityId) => saved.add.mutate(opportunityId)}
+            />
           )}
           {radar.isLoading ? (
             <Loader label="Loading radar" />

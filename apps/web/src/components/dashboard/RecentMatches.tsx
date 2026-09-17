@@ -3,22 +3,31 @@ import { Card, CardHeader } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { Sparkles, ArrowRight } from "lucide-react";
 import type { Opportunity } from "../../types/opportunity";
-import { MatchScoreBadge } from "../matching/MatchScoreBadge";
+import { OpportunityCard } from "../opportunities/OpportunityCard";
 
 export interface RecentMatch {
   opportunity: Opportunity;
   score: number;
+  reasons?: string[];
 }
 
 export interface RecentMatchesProps {
   matches: RecentMatch[];
+  onSave?: (opportunityId: string) => void;
+  savedIds?: Set<string>;
 }
 
-export function RecentMatches({ matches }: RecentMatchesProps) {
+export function RecentMatches({ matches, onSave, savedIds }: RecentMatchesProps) {
   return (
-    <Card>
+    <Card padding="md">
       <CardHeader
-        title="Top matches"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Sparkles aria-hidden className="h-4 w-4 text-primary-600" />
+            Top matches
+          </span>
+        }
+        subtitle="Opportunities ranked against your Business DNA"
         actions={
           <Link
             to="/matches"
@@ -28,33 +37,26 @@ export function RecentMatches({ matches }: RecentMatchesProps) {
           </Link>
         }
       />
+
       {matches.length === 0 ? (
         <EmptyState
-          icon={<Sparkles className="h-5 w-5" />}
+          icon={<Sparkles className="h-6 w-6" />}
           title="No matches yet"
-          description="Complete your Business DNA to start receiving matches."
+          description="Complete your Business DNA so we can find opportunities that fit."
         />
       ) : (
-        <ul className="divide-y divide-neutral-100">
-          {matches.slice(0, 5).map(({ opportunity, score }) => (
-            <li key={opportunity.id}>
-              <Link
-                to={`/opportunities/${opportunity.slug}`}
-                className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0 group"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-800 line-clamp-2 group-hover:text-primary-700">
-                    {opportunity.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-neutral-500">
-                    {opportunity.organizationName ?? ""}
-                  </p>
-                </div>
-                <MatchScoreBadge score={score} size="sm" />
-              </Link>
-            </li>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {matches.slice(0, 4).map(({ opportunity, score, reasons }) => (
+            <OpportunityCard
+              key={opportunity.id}
+              opportunity={opportunity}
+              matchScore={score}
+              matchReasons={reasons}
+              saved={savedIds?.has(opportunity.id)}
+              onSave={onSave ? () => onSave(opportunity.id) : undefined}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </Card>
   );
