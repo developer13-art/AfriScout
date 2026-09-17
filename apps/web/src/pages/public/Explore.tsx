@@ -10,7 +10,6 @@ import { FilterBar } from "../../components/ui/FilterBar";
 import { Pagination } from "../../components/ui/Pagination";
 import { Drawer } from "../../components/ui/Drawer";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
 import { OpportunityGrid } from "../../components/opportunities/OpportunityGrid";
 import { OpportunityList } from "../../components/opportunities/OpportunityList";
 import { OpportunityFilterPanel } from "../../components/opportunities/OpportunityFilterPanel";
@@ -25,7 +24,6 @@ import { SeoHead } from "../../components/common/SeoHead";
 import { Loader } from "../../components/ui/Loader";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { labelForCategory } from "../../config/categories";
-import { countryName } from "../../config/countries";
 import type { OpportunityFilters } from "../../types/opportunity";
 
 const PAGE_SIZE = 20;
