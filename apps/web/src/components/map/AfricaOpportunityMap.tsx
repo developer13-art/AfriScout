@@ -1,29 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ComposableMap,
   Geographies,
   Geography,
   ZoomableGroup,
 } from "react-simple-maps";
-import { feature } from "topojson-client";
-import type { FeatureCollection, Geometry } from "geojson";
-import worldAtlas from "world-atlas/countries-110m.json";
 
-export interface CountryData {
+export interface MapCountryData {
   countryCode: string;
   countryName: string | null;
   count: number;
 }
 
 export interface AfricaOpportunityMapProps {
-  data: CountryData[];
+  data: MapCountryData[];
   height?: number;
   onSelectCountry?: (countryCode: string) => void;
   compact?: boolean;
 }
 
-// ISO 3166-1 numeric → alpha-2. Covers all African countries.
-// Source: ISO 3166-1 numeric codes used in world-atlas topojson.
 const NUMERIC_TO_ALPHA2: Record<string, string> = {
   "012": "DZ", "024": "AO", "204": "BJ", "072": "BW", "854": "BF", "108": "BI",
   "132": "CV", "120": "CM", "140": "CF", "148": "TD", "174": "KM", "178": "CG",
@@ -36,10 +31,13 @@ const NUMERIC_TO_ALPHA2: Record<string, string> = {
   "834": "TZ", "768": "TG", "788": "TN", "800": "UG", "894": "ZM", "716": "ZW",
 };
 
-const AFRICAN_NUMERIC_IDS = new Set(Object.keys(NUMERIC_TO_ALPHA2));
-
-// 5-step teal scale from near-white to deep teal.
 const SCALE = ["#F0FDFA", "#CCFBF1", "#5EEAD4", "#14B8A6", "#0F766E"];
+
+const LABEL_COUNTRIES = new Set([
+  "DZ", "EG", "LY", "SD", "TD", "NE", "ML", "MR", "SN", "GN", "CI", "GH",
+  "NG", "CM", "CF", "CD", "ET", "KE", "TZ", "MZ", "MG", "AO", "ZM", "ZW",
+  "BW", "NA", "ZA", "SO",
+]);
 
 function colorForCount(count: number, max: number): string {
   if (count <= 0 || max <= 0) return SCALE[0]!;
@@ -49,15 +47,6 @@ function colorForCount(count: number, max: number): string {
   if (ratio < 0.7) return SCALE[3]!;
   return SCALE[4]!;
 }
-
-// Countries large enough to render a number inside at the default map size.
-// Smaller countries still appear and still respond to hover; their count is
-// shown in the tooltip and the "Top countries" list below the map.
-const LABEL_COUNTRIES = new Set([
-  "DZ", "EG", "LY", "SD", "TD", "NE", "ML", "MR", "SN", "GN", "CI", "GH",
-  "NG", "CM", "CF", "CD", "ET", "KE", "TZ", "MZ", "MG", "AO", "ZM", "ZW",
-  "BW", "NA", "ZA", "SO",
-]);
 
 export function AfricaOpportunityMap({
   data,
@@ -72,8 +61,26 @@ export function AfricaOpportunityMap({
     y: number;
   } | null>(null);
 
+  const [topology, setTopology] = useState<unknown>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/world-110m.json")
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((json) => {
+        if (!cancelled) setTopology(json);
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load world map topology", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const byCode = useMemo(() => {
-    const map = new Map<string, CountryData>();
+    const map = new Map<string, MapCountryData>();
     for (const row of data) map.set(row.countryCode, row);
     return map;
   }, [data]);
@@ -83,113 +90,110 @@ export function AfricaOpportunityMap({
     [data],
   );
 
-  const geographyCollection = useMemo(() => {
-    const topology = worldAtlas as unknown as Parameters<typeof feature>[0];
-    const collection = feature(topology, topology.objects.countries as never);
-    return collection as unknown as FeatureCollection<Geometry, { name: string }>;
-  }, []);
-
   const legendItems = [
     { label: "None", color: SCALE[0]!, range: "0" },
-    { label: "Low", color: SCALE[1]!, range: `1–${Math.max(1, Math.ceil(max * 0.1))}` },
-    { label: "Medium", color: SCALE[2]!, range: `${Math.ceil(max * 0.1) + 1}–${Math.max(1, Math.ceil(max * 0.3))}` },
-    { label: "High", color: SCALE[3]!, range: `${Math.ceil(max * 0.3) + 1}–${Math.max(1, Math.ceil(max * 0.7))}` },
+    { label: "Low", color: SCALE[1]!, range: `1-${Math.max(1, Math.ceil(max * 0.1))}` },
+    { label: "Medium", color: SCALE[2]!, range: `${Math.ceil(max * 0.1) + 1}-${Math.max(1, Math.ceil(max * 0.3))}` },
+    { label: "High", color: SCALE[3]!, range: `${Math.ceil(max * 0.3) + 1}-${Math.max(1, Math.ceil(max * 0.7))}` },
     { label: "Very high", color: SCALE[4]!, range: `${Math.ceil(max * 0.7) + 1}+` },
   ];
 
   return (
     <div className="relative w-full">
-      <svg style={{ display: "none" }} aria-hidden>
-        <defs />
-      </svg>
+      {!topology ? (
+        <div
+          className="flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50"
+          style={{ height }}
+        >
+          <span className="text-xs text-neutral-500">Loading map</span>
+        </div>
+      ) : (
+        <ComposableMap
+          projection="geoMercator"
+          projectionConfig={{ scale: compact ? 320 : 400, center: [17, 2] }}
+          width={600}
+          height={640}
+          style={{ width: "100%", height: "auto" }}
+        >
+          <ZoomableGroup disablePanning disableZooming>
+            <Geographies geography={topology as never}>
+              {({ geographies }) =>
+                geographies.map((geo) => {
+                  const numericId = String(geo.id).padStart(3, "0");
+                  const alpha2 = NUMERIC_TO_ALPHA2[numericId];
+                  if (!alpha2) {
+                    return (
+                      <Geography
+                        key={geo.rsmKey}
+                        geography={geo}
+                        fill="#F8FAFC"
+                        stroke="#E2E8F0"
+                        strokeWidth={0.4}
+                        style={{
+                          default: { outline: "none" },
+                          hover: { outline: "none" },
+                          pressed: { outline: "none" },
+                        }}
+                      />
+                    );
+                  }
 
-      <ComposableMap
-        projection="geoMercator"
-        projectionConfig={{ scale: compact ? 320 : 400, center: [17, 2] }}
-        width={600}
-        height={640}
-        style={{ width: "100%", height: "auto" }}
-      >
-        <ZoomableGroup disablePanning disableZooming>
-          <Geographies geography={geographyCollection}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const numericId = String(geo.id).padStart(3, "0");
-                const alpha2 = NUMERIC_TO_ALPHA2[numericId];
-                if (!alpha2) {
-                  // Non-African country: render very faintly so the continent
-                  // is visually grounded but not a focus.
+                  const row = byCode.get(alpha2);
+                  const count = row?.count ?? 0;
+                  const fill = colorForCount(count, max);
+                  const isLabel = LABEL_COUNTRIES.has(alpha2) && count > 0;
+
                   return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill="#F8FAFC"
-                      stroke="#E2E8F0"
-                      strokeWidth={0.4}
-                      style={{
-                        default: { outline: "none" },
-                        hover: { outline: "none" },
-                        pressed: { outline: "none" },
-                      }}
-                    />
+                    <g key={geo.rsmKey}>
+                      <Geography
+                        geography={geo}
+                        fill={fill}
+                        stroke="#FFFFFF"
+                        strokeWidth={0.6}
+                        onMouseMove={(event) => {
+                          const target = event.currentTarget as SVGPathElement;
+                          const rect = target.ownerSVGElement?.getBoundingClientRect();
+                          const x = rect ? event.clientX - rect.left : event.clientX;
+                          const y = rect ? event.clientY - rect.top : event.clientY;
+                          setTooltip({
+                            label: row?.countryName ?? alpha2,
+                            value: `${count} ${count === 1 ? "opportunity" : "opportunities"}`,
+                            x,
+                            y,
+                          });
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
+                        onClick={() => onSelectCountry?.(alpha2)}
+                        style={{
+                          default: {
+                            outline: "none",
+                            cursor: onSelectCountry ? "pointer" : "default",
+                          },
+                          hover: { outline: "none", fill: "#0D9488" },
+                          pressed: { outline: "none" },
+                        }}
+                      />
+                      {isLabel ? (
+                        <text
+                          x={geo.properties?.centroid?.[0] ?? 0}
+                          y={geo.properties?.centroid?.[1] ?? 0}
+                          textAnchor="middle"
+                          fontSize={compact ? 9 : 11}
+                          fontWeight={600}
+                          fill={count > max * 0.5 ? "#FFFFFF" : "#0F172A"}
+                          pointerEvents="none"
+                        >
+                          {count}
+                        </text>
+                      ) : null}
+                    </g>
                   );
-                }
-
-                const row = byCode.get(alpha2);
-                const count = row?.count ?? 0;
-                const fill = colorForCount(count, max);
-                const isLabel = LABEL_COUNTRIES.has(alpha2) && count > 0;
-
-                return (
-                  <g key={geo.rsmKey}>
-                    <Geography
-                      geography={geo}
-                      fill={fill}
-                      stroke="#FFFFFF"
-                      strokeWidth={0.6}
-                      onMouseMove={(event) => {
-                        const target = event.currentTarget as SVGPathElement;
-                        const rect = target.ownerSVGElement?.getBoundingClientRect();
-                        const x = rect ? event.clientX - rect.left : event.clientX;
-                        const y = rect ? event.clientY - rect.top : event.clientY;
-                        setTooltip({
-                          label: row?.countryName ?? alpha2,
-                          value: `${count} ${count === 1 ? "opportunity" : "opportunities"}`,
-                          x,
-                          y,
-                        });
-                      }}
-                      onMouseLeave={() => setTooltip(null)}
-                      onClick={() => onSelectCountry?.(alpha2)}
-                      style={{
-                        default: {
-                          outline: "none",
-                          cursor: onSelectCountry ? "pointer" : "default",
-                        },
-                        hover: { outline: "none", fill: "#0D9488" },
-                        pressed: { outline: "none" },
-                      }}
-                    />
-                    {isLabel ? (
-                      <text
-                        x={geo.properties.centroid?.[0] ?? 0}
-                        y={geo.properties.centroid?.[1] ?? 0}
-                        textAnchor="middle"
-                        fontSize={compact ? 9 : 11}
-                        fontWeight={600}
-                        fill={count > max * 0.5 ? "#FFFFFF" : "#0F172A"}
-                        pointerEvents="none"
-                      >
-                        {count}
-                      </text>
-                    ) : null}
-                  </g>
-                );
-              })
-            }
-          </Geographies>
-        </ZoomableGroup>
-      </ComposableMap>
+                })
+              }
+            </Geographies>
+          </ZoomableGroup>
+        </ComposableMap>
+      )}
 
       {tooltip ? (
         <div
