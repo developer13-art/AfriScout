@@ -71,12 +71,21 @@ const NUMERIC_TO_ALPHA2: Record<string, string> = {
   "716": "ZW",
 };
 
+/*
+ * Stronger AfriScout color scale:
+ *
+ * None      -> slate gray
+ * Low       -> light green
+ * Medium    -> emerald
+ * High      -> teal
+ * Very high -> deep green
+ */
 const SCALE = [
-  "#F0FDFA",
-  "#CCFBF1",
-  "#5EEAD4",
-  "#14B8A6",
-  "#0F766E",
+  "#E2E8F0",
+  "#A7F3D0",
+  "#34D399",
+  "#0D9488",
+  "#047857",
 ];
 
 const LABEL_COUNTRIES = new Set([
@@ -264,14 +273,19 @@ export function AfricaOpportunityMap({
                 const alpha2 =
                   NUMERIC_TO_ALPHA2[numericId];
 
+                /*
+                 * Countries outside Africa remain
+                 * visually subdued so Africa stays
+                 * as the main focus of the map.
+                 */
                 if (!alpha2) {
                   return (
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
                       fill="#F8FAFC"
-                      stroke="#E2E8F0"
-                      strokeWidth={0.4}
+                      stroke="#CBD5E1"
+                      strokeWidth={0.45}
                     />
                   );
                 }
@@ -294,7 +308,7 @@ export function AfricaOpportunityMap({
                       geography={geo}
                       fill={fill}
                       stroke="#FFFFFF"
-                      strokeWidth={0.6}
+                      strokeWidth={0.8}
                       onMouseMove={(event) => {
                         const target =
                           event.currentTarget as SVGPathElement;
@@ -331,7 +345,7 @@ export function AfricaOpportunityMap({
                       }
                       className={
                         onSelectCountry
-                          ? "cursor-pointer outline-none transition-colors duration-150 hover:opacity-80"
+                          ? "cursor-pointer outline-none transition-all duration-150 hover:opacity-75"
                           : "outline-none"
                       }
                     />
@@ -348,11 +362,11 @@ export function AfricaOpportunityMap({
                         }
                         textAnchor="middle"
                         fontSize={compact ? 9 : 11}
-                        fontWeight={600}
+                        fontWeight={700}
                         fill={
                           count > max * 0.5
                             ? "#FFFFFF"
-                            : "#0F172A"
+                            : "#064E3B"
                         }
                         pointerEvents="none"
                       >
@@ -370,7 +384,7 @@ export function AfricaOpportunityMap({
       {tooltip ? (
         <div
           role="tooltip"
-          className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full rounded-md bg-neutral-900 px-2 py-1 text-xs text-white shadow-lg"
+          className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full rounded-md bg-slate-950 px-3 py-2 text-xs text-white shadow-xl"
           style={{
             left: tooltip.x,
             top: tooltip.y,
@@ -380,7 +394,7 @@ export function AfricaOpportunityMap({
             {tooltip.label}
           </p>
 
-          <p className="text-white/80">
+          <p className="mt-0.5 text-white/80">
             {tooltip.value}
           </p>
         </div>
