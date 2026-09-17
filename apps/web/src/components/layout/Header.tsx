@@ -1,11 +1,13 @@
-import { Link } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, ChevronDown } from "lucide-react";
 import { Container } from "./Container";
 import { AppLogo } from "../common/AppLogo";
 import { Button } from "../ui/Button";
 import { IconButton } from "../ui/IconButton";
+import { Dropdown, DropdownItem } from "../ui/Dropdown";
 import { useAuth } from "../../hooks/useAuth";
 import { UserMenu } from "../navigation/UserMenu";
+import { publicNavigation, publicMoreNavigation } from "../../config/navigation";
 
 export interface HeaderProps {
   onOpenMobileNav?: () => void;
@@ -13,6 +15,7 @@ export interface HeaderProps {
 
 export function Header({ onOpenMobileNav }: HeaderProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur">
@@ -35,18 +38,38 @@ export function Header({ onOpenMobileNav }: HeaderProps) {
         </div>
 
         <nav className="hidden items-center gap-6 lg:flex">
-          <Link to="/explore" className="text-sm font-medium text-neutral-700 hover:text-primary-700">
-            Explore
-          </Link>
-          <Link to="/how-it-works" className="text-sm font-medium text-neutral-700 hover:text-primary-700">
-            How It Works
-          </Link>
-          <Link to="/sources" className="text-sm font-medium text-neutral-700 hover:text-primary-700">
-            Sources
-          </Link>
-          <Link to="/about" className="text-sm font-medium text-neutral-700 hover:text-primary-700">
-            About
-          </Link>
+          {publicNavigation.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-700"
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          <Dropdown
+            align="left"
+            trigger={
+              <span className="inline-flex items-center gap-1 text-sm font-medium text-neutral-700 transition-colors hover:text-primary-700">
+                More
+                <ChevronDown aria-hidden className="h-3.5 w-3.5" />
+              </span>
+            }
+          >
+            {publicMoreNavigation.map((item) => {
+              const Icon = item.icon;
+              return (
+                <DropdownItem
+                  key={item.to}
+                  icon={<Icon className="h-4 w-4" />}
+                  onClick={() => navigate(item.to)}
+                >
+                  {item.label}
+                </DropdownItem>
+              );
+            })}
+          </Dropdown>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

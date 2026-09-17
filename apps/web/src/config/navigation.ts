@@ -30,6 +30,11 @@ import {
   Gauge,
   BookOpen,
   TerminalSquare,
+  DollarSign,
+  Mail,
+  Scale,
+  Lock,
+  FileText,
 } from "lucide-react";
 
 export type NavItem = {
@@ -157,4 +162,12 @@ export const publicNavigation: NavItem[] = [
   { label: "How It Works", to: "/how-it-works", icon: Sparkles },
   { label: "Sources", to: "/sources", icon: Database },
   { label: "About", to: "/about", icon: HelpCircle },
+];
+
+export const publicMoreNavigation: NavItem[] = [
+  { label: "Pricing", to: "/pricing", icon: DollarSign },
+  { label: "Contact", to: "/contact", icon: Mail },
+  { label: "Legal", to: "/legal", icon: Scale },
+  { label: "Privacy", to: "/privacy", icon: Lock },
+  { label: "Terms", to: "/terms", icon: FileText },
 ];
