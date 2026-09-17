@@ -1,381 +1,339 @@
-# AfriScout
+<div align="center">
 
-Africa's Opportunity Intelligence Platform.
+# 🌍 AfriScout
 
-Discover Opportunities. Understand Them. Act With Confidence.
+### Africa's Opportunity Intelligence Platform
 
-AfriScout continuously discovers legitimate public opportunities
-across Africa, structures and verifies them, layers AI intelligence
-on top, matches them to each user's profile and capabilities,
-explains why each match matters, monitors important changes, and
-gives users a workspace to prepare for, apply to, and track
-opportunities through to outcome.
+**Discover Opportunities. Understand Them. Act With Confidence.**
 
-AfriScout is not a job board, not a tender scraper, and not a
-search engine. It is an opportunity intelligence platform.
+[![Status](https://img.shields.io/badge/status-actively--evolving-brightgreen)]()
+[![Platform](https://img.shields.io/badge/platform-pan--African-orange)]()
+[![License](https://img.shields.io/badge/license-proprietary-lightgrey)]()
+
+</div>
 
 ---
 
-## Platform overview
+## 📖 Table of Contents
 
-- Web application (React, TypeScript, Tailwind CSS, Vite, Zustand)
-- Backend API (Node.js, Express, TypeScript, Prisma, PostgreSQL)
-- Background workers (BullMQ, Redis)
-- Discovery and monitoring layer (Apify Actors, Datasets, Schedules, Webhooks)
-- AI intelligence layer (provider-agnostic with OpenAI, Anthropic, Gemini, Mock fallback)
-- Public API and webhooks for developers and AI agents
-- Admin platform for source registry, pipeline monitoring, data quality,
-  duplicates, changes, audit logs, and system settings
-- Deployment on Render (web service, background worker, static site,
-  managed Postgres, managed Redis)
-
----
-
-## Repository structure
-
-```
-afri-scout/
-  apps/
-    web/     React + Vite + TypeScript + Tailwind web application
-    api/     Express + TypeScript API, Prisma, BullMQ workers
-  packages/
-    shared/  Shared enums, types, validators, Apify IO schemas
-    config/  Shared ESLint, TypeScript, Prettier, Tailwind presets
-  apify/
-    actors/    Independent Apify Actor packages
-    schedules/ Schedule notes
-  docs/        Architecture, database, API, product, operations, design
-  scripts/     Setup, seed, migrations, connectivity checks
-```
+- [Overview](#-overview)
+- [The Problem](#-the-problem-we-solve)
+- [What AfriScout Does](#-what-afriscout-does)
+- [Opportunity Categories](#-opportunity-categories)
+- [Who It's For](#-who-afriscout-is-for)
+- [What Makes It Different](#-what-makes-afriscout-different)
+- [User Experience](#-the-user-experience)
+- [The Intelligence Layer](#-the-intelligence-layer)
+- [Source Integrity](#-source-integrity--responsible-data)
+- [Product Boundary](#-the-product-boundary)
+- [Accessibility](#-accessibility--reach)
+- [Roadmap](#-roadmap)
+- [Our Principles](#-what-we-believe)
+- [Status](#-status)
 
 ---
 
-## Requirements
+## 🧭 Overview
 
-- Node.js 20.11 or later
-- npm 10 or later
-- Docker and Docker Compose (for local Postgres and Redis)
-- An Apify account with an API token (required for real discovery)
-- At least one AI provider API key (optional; the Mock provider
-  enables full pipeline operation without any external AI service)
+**AfriScout** is an AI-powered opportunity intelligence platform built for Africa.
 
----
+Every day, thousands of opportunities are published across government portals, private organizations, universities, foundations, development agencies, startup ecosystems, NGOs, and public platforms — tenders, grants, jobs, scholarships, funding programs, fellowships, competitions, accelerators, research calls, partnerships, and more.
 
-## Local setup
+The problem isn't that opportunities are missing — it's that they are **fragmented**, **hard to understand**, **difficult to match**, and **easy to miss**.
 
-1. Clone the repository.
+AfriScout solves this by continuously discovering opportunities from legitimate public sources across the continent, structuring and verifying them, using AI to explain what each one actually means, matching them against each user's profile, monitoring them for important changes, and giving users a workspace to act on the ones that matter.
 
-   ```
-   git clone <repo-url> afri-scout
-   cd afri-scout
-   ```
-
-2. Install dependencies.
-
-   ```
-   npm install
-   ```
-
-3. Copy environment files.
-
-   ```
-   cp .env.example .env
-   cp .env.test.example .env.test
-   ```
-
-4. Edit `.env` and set the required values. At minimum:
-
-   - `JWT_ACCESS_SECRET`
-   - `JWT_REFRESH_SECRET`
-   - `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`, `SUPER_ADMIN_FULL_NAME`
-   - `APIFY_TOKEN`, `APIFY_WEBHOOK_SECRET` (required for real discovery)
-   - AI provider keys (optional; leave blank to use the Mock provider)
-
-5. Start Postgres and Redis.
-
-   ```
-   npm run docker:up
-   ```
-
-6. Generate the Prisma client and run migrations.
-
-   ```
-   npm run db:generate
-   npm run db:migrate
-   ```
-
-7. Seed reference data (roles, permissions, categories, countries,
-   currencies, settings, and one super admin account).
-
-   ```
-   npm run db:seed
-   ```
-
-8. Start the API, the worker, and the web app in separate terminals
-   or in one command:
-
-   ```
-   npm run dev
-   ```
-
-   Default endpoints:
-
-   - API: http://localhost:4000/api/v1
-   - Web: http://localhost:5173
-   - Health: http://localhost:4000/api/v1/health
-
-9. Sign in with the super admin credentials from your `.env`.
-
-10. Open the admin platform, add a source, configure its adapter,
-    test extraction, activate it, then schedule and monitor runs
-    through the Sources and Actor Runs screens.
+> AfriScout is **not** a job board.
+> AfriScout is **not** a tender scraper.
+> AfriScout is **not** a search engine.
+>
+> AfriScout is **opportunity intelligence.**
 
 ---
 
-## Environment configuration
+## ❗ The Problem We Solve
 
-All configuration lives in `.env` at the repository root for local
-development, and in Render environment variables for production.
-A full list with descriptions is in `.env.example`.
-
-No secrets are ever exposed to the frontend. Only variables prefixed
-with `VITE_` are embedded into the web bundle, and those must never
-contain credentials.
-
----
-
-## Database
-
-PostgreSQL, managed with Prisma.
-
-Schema layout:
-
-```
-apps/api/src/database/prisma/
-  schema.prisma          merge entry
-  schema/*.prisma        domain-split schema files
-  migrations/            Prisma migrations
-  seed/                  Reference-data seed scripts
-```
-
-Common commands:
-
-```
-npm run db:generate         regenerate the Prisma client
-npm run db:migrate          create and apply a migration in development
-npm run db:migrate:deploy   apply pending migrations (production)
-npm run db:reset            drop and recreate the database (development only)
-npm run db:seed             seed reference data
-npm run db:studio           open Prisma Studio
-```
-
-The seed provisions only legitimate reference data and the initial
-super admin account. It never creates opportunities, sources,
-matches, notifications, or statistics.
+| Challenge | Description |
+|---|---|
+| **Fragmentation** | Opportunities live across thousands of scattered sources with no unifying intelligence layer. |
+| **Understanding gap** | Finding an opportunity isn't the same as understanding eligibility, requirements, documents, and deadlines. |
+| **Relevance** | Keyword search can't tell a construction firm from a fintech startup what's actually a good fit. |
+| **Change** | Deadlines shift, requirements change, and opportunities get cancelled — without monitoring, users act on stale data. |
 
 ---
 
-## Apify integration
+## ⚙️ What AfriScout Does
 
-AfriScout uses Apify as its web discovery and monitoring layer.
+AfriScout runs a continuous intelligence loop:
 
-Actors (independent packages under `apify/actors/`):
+```
+Discover → Understand → Match → Act → Track → Learn
+```
 
-- `opportunity-discovery` — discovers opportunities from registered
-  sources using per-source adapters
-- `document-extractor` — extracts structured information from
-  opportunity documents (PDF, DOCX, HTML)
-- `opportunity-monitor` — re-checks active opportunities and reports
-  meaningful changes
-
-The backend triggers Actors through the Apify API, receives signed
-webhooks, retrieves datasets, and enqueues ingestion through BullMQ.
-
-The Apify token is server-side only. It is never sent to the browser.
-
-Every Actor run is recorded in `source_runs` with status, counts,
-timing, and error details. Source health is derived from run history.
+| Stage | Description |
+|---|---|
+| **1. Discovery** | Opportunities are collected from registered public sources across Africa. |
+| **2. Understanding** | Raw information is cleaned, structured, classified, and analyzed into a clear, self-contained record. |
+| **3. Matching** | Each opportunity is scored against a user's profile with an explainable relevance score, reasons, and concerns. |
+| **4. Monitoring** | Sources are continuously re-checked; important changes trigger alerts. |
+| **5. Action** | Users save, watch, add to pipeline, prepare documents, and complete the official application. |
+| **6. Tracking** | Users record outcomes — submitted, won, lost, or expired. |
+| **7. Learning** | Outcomes feed back into the platform to improve future recommendations. |
 
 ---
 
-## AI intelligence layer
+## 🗂 Opportunity Categories
 
-All AI usage flows through a provider-agnostic interface with a
-configurable fallback chain.
+AfriScout is a **universal** opportunity platform, not a niche one.
 
-Default order:
+<table>
+<tr>
+<td valign="top" width="20%">
 
-```
-OpenAI -> Anthropic -> Gemini -> Mock
-```
+**💼 Business**
+- Government tenders
+- Private procurement
+- Contracts
+- RFPs & RFQs
+- Supplier/vendor opportunities
+- Consultancy & professional services
+- Business partnerships
 
-Behavior:
+</td>
+<td valign="top" width="20%">
 
-- No provider-specific code exists outside `services/ai/providers/`.
-- Every AI output is stored with provider, model, task, prompt
-  version, timestamp, token usage, and confidence where available.
-- AI output is always labeled as AI-generated in API responses and
-  in the user interface.
-- Source facts and AI interpretation are stored and returned
-  separately and are never conflated.
-- A Mock provider produces deterministic structured output so the
-  full pipeline runs end-to-end without external AI keys. Switching
-  to real providers requires only an environment change.
+**💰 Funding**
+- Startup grants
+- NGO & development funding
+- Research & innovation grants
+- Seed & venture funding
+- Investment opportunities
 
----
+</td>
+<td valign="top" width="20%">
 
-## Background jobs
+**👔 Careers**
+- Full-time & part-time jobs
+- Remote roles
+- Internships
+- Graduate programs
+- Fellowships
+- Apprenticeships
 
-Queues and workers are implemented with BullMQ on Redis.
+</td>
+<td valign="top" width="20%">
 
-Queues:
+**🎓 Education**
+- Scholarships
+- Training programs
+- Bootcamps
+- Certifications
+- Research opportunities
 
-- pipeline
-- matching
-- notification
-- apify
-- document
-- maintenance
-- webhook
+</td>
+<td valign="top" width="20%">
 
-Workers run in a separate process:
+**🚀 Startup Ecosystem**
+- Accelerators
+- Incubators
+- Competitions
+- Hackathons
+- Founder/venture programs
 
-```
-npm run start:worker
-```
+</td>
+</tr>
+</table>
 
-Schedulers enqueue recurring jobs for source crawling, deadline
-checks, expiry, health snapshots, and source suggestion processing.
+**🌱 Development**
+Calls for proposals · NGO programs · Community & social-impact programs · Youth and women-focused programs · Innovation and research partnerships
 
----
-
-## API
-
-Base path:
-
-```
-/api/v1
-```
-
-Public endpoints (subset):
-
-```
-GET /api/v1/health
-GET /api/v1/opportunities
-GET /api/v1/opportunities/:id
-GET /api/v1/search
-GET /api/v1/categories
-GET /api/v1/countries
-GET /api/v1/organizations
-GET /api/v1/sources
-```
-
-Authenticated endpoints (subset):
-
-```
-GET  /api/v1/matches
-GET  /api/v1/radar
-GET  /api/v1/saved
-GET  /api/v1/watchlist
-GET  /api/v1/pipeline
-GET  /api/v1/notifications
-GET  /api/v1/analytics
-POST /api/v1/ai/analyst
-POST /api/v1/ai/ask
-```
-
-Admin endpoints (subset):
-
-```
-GET    /api/v1/admin/sources
-POST   /api/v1/admin/sources
-POST   /api/v1/admin/sources/:id/test
-POST   /api/v1/admin/sources/:id/activate
-GET    /api/v1/admin/actor-runs
-GET    /api/v1/admin/duplicates
-POST   /api/v1/admin/duplicates/:id/merge
-GET    /api/v1/admin/changes
-GET    /api/v1/admin/audit-logs
-```
-
-API keys are issued through the developer portal and hashed at
-rest. Scopes and per-key rate limits apply.
-
-Documentation:
-
-```
-docs/api/api-documentation.md
-docs/api/authentication.md
-docs/api/rate-limiting.md
-docs/api/webhooks.md
-docs/api/errors.md
-```
+> New categories can be added at any time without changing how the platform works.
 
 ---
 
-## Testing
+## 👥 Who AfriScout Is For
+
+- **🏢 Businesses** — contracts, procurement, suppliers, partnerships, expansion
+- **🚀 Startups** — grants, funding, accelerators, competitions, partnerships
+- **💼 Professionals** — jobs, internships, fellowships, consulting, professional development
+- **🎓 Students** — scholarships, internships, hackathons, competitions, training
+- **🔬 Researchers** — grants, research positions, fellowships, collaborations
+- **🤝 NGOs & organizations** — grants, funding, calls for proposals, partnerships
+- **👨‍💻 Developers & AI systems** — structured, machine-readable opportunity intelligence
+
+---
+
+## ✨ What Makes AfriScout Different
+
+- **🌍 Built for Africa, from day one** — sources, categories, currencies, locations, and application channels all support the continent as a whole.
+- **🧠 Intelligence, not a listing** — answers *who it's for*, *why you're a match*, *what's needed*, and *what to do next* — not just *what exists*.
+- **📊 Every match is explainable** — no score is ever shown without clear reasons and labelled concerns.
+- **✅ Every opportunity is verified and sourced** — full provenance, original links, discovery time, and verification status.
+- **🔀 Source vs. AI interpretation, clearly separated** — users always know what the publisher said vs. what AI concluded.
+- **🔔 Real-time change monitoring** — deadline shifts, new requirements, and status changes generate alerts.
+- **🗃 A workspace for action** — evaluate, prepare, apply, and track through to outcome, all in one place.
+
+---
+
+## 🖥 The User Experience
+
+### 🔍 Discovering Opportunities
+Browse by category, country, and type — with advanced filters, natural-language search, and a personalized radar.
+
+### 📄 Understanding an Opportunity
+Every opportunity has its own intelligence page:
+- Plain-language AI summary
+- Eligibility criteria & requirements
+- Required documents
+- Estimated value & currency
+- Deadline, organization, and location
+- Source information & verification
+- Full timeline and change history
+- Save / watch / add-to-pipeline / open-source actions
+
+### 🧬 Personal Intelligence — Business / User DNA
+Each user has a profile describing what they're looking for and what they can do — powering relevant, explainable matches.
+
+### 📡 Opportunity Radar
+A personalized feed highlighting new opportunities, strong matches, closing-soon deadlines, recent updates, and saved/watched items.
+
+### 🗄 Opportunity Workspace
+Each saved opportunity becomes a workspace with AI analysis, requirements, a preparation checklist, notes, deadlines, application details, and history.
+
+### 🔄 Opportunity Pipeline
 
 ```
-npm run test
+Discovered → Reviewing → Qualified → Preparing → Submitted → Under Review → Won / Lost
 ```
 
-Unit, integration, and end-to-end tests are organized under
-`apps/api/tests` and `apps/web/src/**/*.test.ts(x)` where applicable.
-Tests run against a dedicated Postgres and Redis instance started
-by `docker-compose.test.yml`.
+### 💬 Ask AfriScout
+Natural-language queries, e.g.:
+- *"Find construction opportunities in Kaduna closing this month."*
+- *"Find grants for African fintech startups."*
+- *"Show scholarships closing this month."*
+- *"Which opportunities are the best match for my company?"*
+
+### 🧠 AI Opportunity Analyst
+Ask *"Should I pursue this?"* and get a recommendation, strengths, concerns, missing requirements, and next steps — always labelled as AI-generated decision support, never a guarantee.
+
+### 🔔 Notifications
+New high-match opportunities · approaching/changed deadlines · requirement changes · updates · saved/watched activity.
+
+### 📈 Analytics
+Track opportunities discovered, saved, qualified, submitted, won, and lost — plus estimated pipeline value.
 
 ---
 
-## Deployment (Render)
+## 🤖 The Intelligence Layer
 
-`render.yaml` at the repository root defines:
+AI is applied at every meaningful stage:
 
-- afriscout-api      (web service)
-- afriscout-worker   (background worker)
-- afriscout-web      (static site)
-- afriscout-postgres (managed Postgres)
-- afriscout-redis    (managed Redis)
+- **Classification** — correct category and type
+- **Summarization** — complex descriptions → clear summaries
+- **Eligibility analysis** — who can apply, and under what conditions
+- **Requirement extraction** — structured requirements
+- **Document intelligence** — extraction from PDFs, DOCX, and HTML
+- **Risk & concern detection** — issues worth reviewing
+- **Action recommendations** — what to do next
+- **Opportunity Analyst** — decision support per opportunity
+- **NL search intent** — plain English → structured search
 
-To deploy:
-
-1. Push the repository to a Git provider connected to Render.
-2. Create a new Blueprint from `render.yaml`.
-3. Fill the `sync: false` environment variables in the Render
-   dashboard (Apify token, AI provider keys, super admin
-   credentials, CORS origins, SMTP, web push, storage, Sentry).
-4. Deploy. Migrations are applied on release through the API
-   release command.
+> Every AI output is clearly labelled as AI-generated, timestamped, and separated from the original publisher's information.
 
 ---
 
-## Documentation
+## 🔐 Source Integrity & Responsible Data
 
-Full documentation lives in `docs/`:
+AfriScout collects opportunities from **legitimate, public sources only**. We:
 
-- `docs/architecture/`  system architecture, data flow, decisions
-- `docs/database/`      schema and ERD
-- `docs/api/`           API reference and guides
-- `docs/product/`       product overview, lifecycles, matching
-- `docs/operations/`    runbook, monitoring, incident response
-- `docs/design/`        design tokens, components, accessibility
-- `docs/contributing/`  contribution guidelines
-
----
-
-## Principles
-
-- Real sources, real data, real intelligence, real actions.
-- No fabricated opportunities and no fabricated statistics.
-- Source facts and AI interpretation are always separated.
-- Source attribution and provenance are preserved on every record.
-- The publisher owns the official application. AfriScout owns the
-  intelligence and the workflow.
-- No secrets in the frontend.
-- No emojis anywhere in the product.
-- Empty and error states are honest and instructive.
+- ✅ Preserve original source attribution on every opportunity
+- ✅ Link back to the original publisher
+- ✅ Record discovery and verification timestamps
+- ✅ Track change history
+- ✅ Avoid unnecessary personal data
+- ✅ Clearly distinguish source information from AI interpretation
+- 🚫 Never impersonate the original publisher
+- 🚫 Never claim official authority over any opportunity
 
 ---
 
-## License
+## 🚧 The Product Boundary
 
-Proprietary. See `LICENSE`.
+| AfriScout owns | The publisher owns |
+|---|---|
+| Intelligence & workflow | The official application |
+
+When a user decides to pursue an opportunity, AfriScout directs them to the official source. The user applies on the publisher's platform, then returns to AfriScout to record submission and track outcome.
+
+> AfriScout never submits applications on a user's behalf and never obscures that the official source remains authoritative.
+
+---
+
+## ♿ Accessibility & Reach
+
+- Responsive on mobile and desktop
+- Fast on low-bandwidth connections
+- Clear in plain language
+- Consistent terminology across all countries
+- Built to expand into multiple African languages over time
+
+---
+
+## 🗺 Roadmap
+
+### Near-term
+- More sources, more countries
+- More categories (region-, sector-, and language-specific)
+- Richer intelligence (multi-document reasoning, smarter comparisons)
+- Stronger matching (refined signals, tighter feedback loops)
+- Better notifications (smarter alerting, personalized digests)
+
+### Medium-term
+- 🔌 **Developer & API platform** — API keys, usage tiers, webhooks
+- 🤖 **AI-agent infrastructure** — AfriScout as a tool for external AI agents
+- 🏢 **Organization workspaces** — teams, shared pipelines, analytics
+- ✅ **Verified organization profiles**
+- 📡 **Specialised intelligence feeds** (e.g. African construction, startup funding, scholarships, tech jobs, NGO grants)
+- 🎯 **Custom monitoring** — e.g. *"Monitor all road and bridge opportunities above ₦50M in Northern Nigeria."*
+
+### Long-term
+- 🕸 **The African Opportunity Graph** — relationship mapping across organizations, opportunities, industries, locations, skills, and outcomes
+- 🔮 **Opportunity forecasting**
+- 🧩 **Capability gap analysis**
+- 📊 **Market intelligence** for researchers, investors, and development organizations
+- 📱 **Mobile applications**
+- 🌐 **Localisation** — French, Arabic, Swahili, Hausa, and more
+- 🌍 **Full pan-African coverage**
+
+---
+
+## 💡 What We Believe
+
+- Every legitimate opportunity should be easier to discover, understand, and act on.
+- Intelligence is more valuable than a list.
+- Explainability builds trust — a score without a reason is not intelligence.
+- Source facts belong to the publisher; AI interpretation belongs to the platform. They should never be blurred.
+- Users should always be able to reach the original source.
+- The platform should never fabricate opportunities, statistics, or outcomes.
+- Opportunity intelligence is infrastructure — for individuals, businesses, researchers, developers, and AI agents alike.
+- Africa's opportunity ecosystem deserves infrastructure built for Africa — pan-African from day one.
+
+---
+
+## 📌 Status
+
+AfriScout is an **actively evolving platform**. The core intelligence loop — discovery, understanding, matching, monitoring, action, and tracking — is in place, and the platform continues to expand across sources, categories, countries, and users.
+
+> **Help Africans discover the opportunities they would otherwise miss — and help them act on the ones that matter.**
+
+---
+
+<div align="center">
+
+**AfriScout** — Africa's Opportunity Intelligence Platform
+
+*Discover Opportunities. Understand Them. Act With Confidence.*
+
+© AfriScout. All rights reserved.
+
+</div>
