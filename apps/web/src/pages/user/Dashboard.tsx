@@ -31,17 +31,14 @@ export function Dashboard() {
 
   const recentMatches: RecentMatch[] = (matches.data?.matches ?? [])
     .slice(0, 4)
-    .map((m) => {
+    .flatMap((m) => {
       const opportunity = matches.data?.opportunities[m.opportunityId];
-      return {
-        opportunity,
-        score: m.score,
-        reasons: (m.reasons ?? []).map((reason) =>
-          reason.detail ? `${reason.label} — ${reason.detail}` : reason.label,
-        ),
-      };
-    })
-    .filter((entry): entry is RecentMatch => Boolean(entry.opportunity));
+      if (!opportunity) return [];
+      const reasons = (m.reasons ?? []).map((reason) =>
+        reason.detail ? `${reason.label} - ${reason.detail}` : reason.label,
+      );
+      return [{ opportunity, score: m.score, reasons }];
+    });
 
   const pipelineStages = Object.entries(
     (pipeline.data ?? []).reduce<Record<string, number>>((acc, item) => {
