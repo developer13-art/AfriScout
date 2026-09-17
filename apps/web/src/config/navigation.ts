@@ -28,6 +28,8 @@ import {
   Sliders,
   Code2,
   Gauge,
+  BookOpen,
+  TerminalSquare,
 } from "lucide-react";
 
 export type NavItem = {
@@ -57,6 +59,28 @@ export const userNavigation: NavSection[] = [
       { label: "Pipeline", to: "/pipeline", icon: Workflow },
       { label: "Radar", to: "/radar", icon: RadarIcon },
       { label: "Notifications", to: "/notifications", icon: Bell, badgeKey: "unreadNotifications" },
+    ],
+  },
+  {
+    id: "organization",
+    label: "Organization",
+    items: [
+      { label: "Profile", to: "/org/profile", icon: Building2 },
+      { label: "Team", to: "/org/team", icon: Users },
+      { label: "Opportunities", to: "/org/opportunities", icon: Layers },
+      { label: "Settings", to: "/org/settings", icon: Sliders },
+    ],
+  },
+  {
+    id: "developer",
+    label: "Developer",
+    items: [
+      { label: "API Portal", to: "/developer", icon: Code2 },
+      { label: "API Keys", to: "/developer/keys", icon: KeyRound },
+      { label: "Documentation", to: "/developer/docs", icon: BookOpen },
+      { label: "Playground", to: "/developer/playground", icon: TerminalSquare },
+      { label: "Usage", to: "/developer/usage", icon: Gauge },
+      { label: "Webhooks", to: "/developer/webhooks", icon: Webhook },
     ],
   },
   {
