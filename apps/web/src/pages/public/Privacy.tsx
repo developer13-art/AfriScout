@@ -8,43 +8,171 @@ export function Privacy() {
   return (
     <>
       <SeoHead title="Privacy policy" description="AfriScout privacy policy." />
+
       <Container className="py-8">
-        <PageHeader title="Privacy policy" description="Last updated on deployment." />
-        <Card>
-          <div className="space-y-4 text-sm text-neutral-700">
-            <section>
-              <p className="font-semibold text-neutral-900">Data we collect</p>
-              <p className="mt-1">
-                We collect the minimum data required to operate AfriScout: your
-                account details, your DNA profile, and your activity in the
-                workspace. We never collect credentials from external
-                application systems.
-              </p>
-            </section>
-            <section>
-              <p className="font-semibold text-neutral-900">Source data</p>
-              <p className="mt-1">
-                Opportunity data is collected from legitimate public sources. We
-                preserve source attribution on every opportunity and provide a
-                link to the original source.
-              </p>
-            </section>
-            <section>
-              <p className="font-semibold text-neutral-900">Your rights</p>
-              <p className="mt-1">
-                You can request export or deletion of your account data at any
-                time by contacting{" "}
-                <a
-                  href={`mailto:${appConfig.privacyEmail}`}
-                  className="text-primary-700 hover:underline"
-                >
-                  {appConfig.privacyEmail}
-                </a>
-                .
-              </p>
-            </section>
-          </div>
-        </Card>
+        <PageHeader
+          title="Privacy policy"
+          description="How AfriScout handles user data, source data, and AI interpretation."
+        />
+
+        <div className="space-y-6">
+          <Card padding="lg">
+            <div className="space-y-4 text-sm text-neutral-700">
+              <section>
+                <p className="font-semibold text-neutral-900">Summary</p>
+                <p className="mt-1">
+                  AfriScout collects the minimum amount of personal data required to run the
+                  platform. We do not sell personal data. We do not collect credentials from
+                  external application systems. We preserve source attribution on every
+                  opportunity. AI interpretation is clearly separated from source facts.
+                </p>
+              </section>
+            </div>
+          </Card>
+
+          <Card padding="lg">
+            <div className="space-y-6 text-sm text-neutral-700">
+              <section>
+                <p className="font-semibold text-neutral-900">1. Data we collect</p>
+                <p className="mt-1">
+                  We collect the data you provide directly when you use AfriScout:
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>
+                    <span className="font-medium">Account data</span> — email, name, password
+                    (hashed), country, avatar.
+                  </li>
+                  <li>
+                    <span className="font-medium">Profile and DNA</span> — the information you
+                    provide about your industry, capabilities, locations, and preferences so that
+                    matching can work.
+                  </li>
+                  <li>
+                    <span className="font-medium">Workspace data</span> — saved opportunities,
+                    watchlists, pipelines, checklists, notes, and outcomes that you record.
+                  </li>
+                  <li>
+                    <span className="font-medium">Usage data</span> — request metadata and audit
+                    logs needed to keep the platform secure and reliable.
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  We do not collect credentials for external application portals. We do not
+                  collect payment information on our own servers.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">2. Source data</p>
+                <p className="mt-1">
+                  Opportunity data is collected from legitimate public sources. Every record
+                  preserves the original source URL and organisation, the discovery timestamp, the
+                  verification status, and any changes we detect. This provenance is visible to
+                  you in the product.
+                </p>
+                <p className="mt-2">
+                  If you believe a source should not be included, or you are a publisher and want
+                  to change how your data appears, contact{" "}
+                  <a
+                    href={`mailto:${appConfig.privacyEmail}`}
+                    className="text-primary-700 hover:underline"
+                  >
+                    {appConfig.privacyEmail}
+                  </a>
+                  .
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">3. AI interpretation</p>
+                <p className="mt-1">
+                  Some parts of AfriScout — summaries, eligibility analysis, requirement
+                  extraction, risk analysis, the Opportunity Analyst, and natural-language search
+                  — are generated by AI. All AI output is clearly labelled. AI output is never
+                  treated as a source fact, and it never overwrites the original publisher's
+                  information.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">4. How we use your data</p>
+                <p className="mt-1">
+                  We use your data to run and improve AfriScout: authentication, matching, alerts,
+                  analytics you request, security, and support. We do not sell or rent personal
+                  data. We do not use your data to train general-purpose AI models. We may use
+                  aggregate, anonymised statistics for platform metrics.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">5. Data sharing</p>
+                <p className="mt-1">
+                  We share data only with the infrastructure providers required to run the
+                  platform — hosting, database, Redis, AI providers for the specific AI tasks you
+                  invoke, email for the notifications you enable, and payment processors when paid
+                  plans are active. We share the minimum required.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">6. Data retention</p>
+                <p className="mt-1">
+                  Account data is kept while your account is active. Deleted accounts have their
+                  personal data removed within a reasonable period. Historical opportunity data
+                  may be retained in anonymised or aggregate form for analytics and research, but
+                  not linked back to you.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">7. Your rights</p>
+                <p className="mt-1">
+                  You can request a copy of your data, request corrections, or request deletion of
+                  your account by contacting{" "}
+                  <a
+                    href={`mailto:${appConfig.privacyEmail}`}
+                    className="text-primary-700 hover:underline"
+                  >
+                    {appConfig.privacyEmail}
+                  </a>
+                  . We will respond within a reasonable time.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">8. Security</p>
+                <p className="mt-1">
+                  Passwords are hashed. Session tokens are rotated. Access to production systems is
+                  restricted. Every privileged action on the platform is recorded in an audit log.
+                  We work continuously to reduce the amount of sensitive data we hold in the first
+                  place.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">9. Changes to this policy</p>
+                <p className="mt-1">
+                  We may update this policy from time to time. Material changes will be announced
+                  within the platform. Continued use after an update constitutes acceptance.
+                </p>
+              </section>
+
+              <section>
+                <p className="font-semibold text-neutral-900">10. Contact</p>
+                <p className="mt-1">
+                  Privacy questions, data requests, and complaints:{" "}
+                  <a
+                    href={`mailto:${appConfig.privacyEmail}`}
+                    className="text-primary-700 hover:underline"
+                  >
+                    {appConfig.privacyEmail}
+                  </a>
+                  .
+                </p>
+              </section>
+            </div>
+          </Card>
+        </div>
       </Container>
     </>
   );

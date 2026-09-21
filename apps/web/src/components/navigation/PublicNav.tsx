@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { cn } from "../../utils/strings";
-import { publicNavigation } from "../../config/navigation";
+import { publicNavigation, publicMoreNavigation } from "../../config/navigation";
 
 export function PublicNav() {
   return (
@@ -26,25 +26,59 @@ export function PublicNav() {
 
 export function PublicNavMobile() {
   return (
-    <nav className="space-y-1">
-      {publicNavigation.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.to === "/"}
-          className={({ isActive }) =>
-            cn(
-              "block rounded-md px-3 py-2 text-sm font-medium",
-              isActive
-                ? "bg-primary-50 text-primary-700"
-                : "text-neutral-700 hover:bg-neutral-100",
-            )
-          }
-        >
-          {item.label}
-        </NavLink>
-      ))}
-      <div className="pt-2">
+    <nav className="space-y-6">
+      <div>
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          Product
+        </p>
+        <ul className="space-y-0.5">
+          {publicNavigation.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  cn(
+                    "block rounded-md px-3 py-2 text-sm font-medium",
+                    isActive
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-neutral-700 hover:bg-neutral-100",
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          More
+        </p>
+        <ul className="space-y-0.5">
+          {publicMoreNavigation.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "block rounded-md px-3 py-2 text-sm font-medium",
+                    isActive
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-neutral-700 hover:bg-neutral-100",
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="border-t border-neutral-200 pt-3">
         <Link
           to="/login"
           className="block rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
