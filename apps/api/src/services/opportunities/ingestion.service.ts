@@ -118,22 +118,23 @@ export async function ingestRawItems(
             data: { lastSeenAt: new Date() },
           });
         } else {
-          // Material change detected. Create a new raw record so the pipeline
-          // can store a new version and emit change events.
-          const newRaw = await prisma.rawOpportunity.create({
+          // Material change detected. Do NOT create a new raw record — the
+          // raw payload is the same as existingRaw (that is why we found it
+          // by payload hash). Instead, re-queue the existing raw for
+          // processing so the pipeline stores a new version and emits
+          // change events.
+          await prisma.rawOpportunity.update({
+            where: { id: existingRaw.id },
             data: {
-              sourceId,
               sourceRunId: sourceRun.id,
-              apifyDatasetItemId: item.apifyDatasetItemId,
-              payload: item.payload as never,
-              payloadHash,
               processingStatus: "PENDING",
+              fetchedAt: new Date(),
             },
           });
 
           await prisma.opportunitySource.updateMany({
             where: { sourceId, rawOpportunityId: existingRaw.id },
-            data: { rawOpportunityId: newRaw.id, lastSeenAt: new Date() },
+            data: { lastSeenAt: new Date() },
           });
 
           updated += 1;
