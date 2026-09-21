@@ -220,7 +220,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
     }),
     prisma.sourceRun.findMany({
       where: { createdAt: { gte: last14Days } },
-      select: { createdAt: true, itemsImported: true },
+      select: { createdAt: true, itemsImported: true, itemsUpdated: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.source.count({ where: { health: "HEALTHY" } }),
@@ -238,7 +238,8 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
   for (const row of discoveryRows) {
     const key = startOfUtcDay(row.createdAt).toISOString().slice(0, 10);
     if (dayBuckets.has(key)) {
-      dayBuckets.set(key, (dayBuckets.get(key) ?? 0) + row.itemsImported);
+      const delta = (row.itemsImported ?? 0) + (row.itemsUpdated ?? 0);
+      dayBuckets.set(key, (dayBuckets.get(key) ?? 0) + delta);
     }
   }
   const discovery: DiscoveryPoint[] = Array.from(dayBuckets.entries()).map(

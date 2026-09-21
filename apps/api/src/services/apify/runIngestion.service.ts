@@ -79,6 +79,7 @@ export async function finalizeIngestion(input: {
       itemsImported: 0,
       itemsUpdated: 0,
       itemsDuplicate: 0,
+      itemsUnchanged: 0,
       itemsInvalid: 0,
       errorMessage: "No dataset was produced by the actor run",
     });
@@ -117,9 +118,10 @@ export async function finalizeIngestion(input: {
     status: "SUCCEEDED",
     itemsFound: items.length,
     itemsImported: result.imported,
-    itemsUpdated: 0,
-    itemsDuplicate: result.duplicates,
-    itemsInvalid: result.failed,
+    itemsUpdated: result.updated,
+    itemsDuplicate: 0,
+    itemsUnchanged: result.unchanged,
+    itemsInvalid: result.invalid,
     apifyDatasetId: input.apifyDatasetId,
   });
 

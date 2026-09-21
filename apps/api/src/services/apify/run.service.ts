@@ -39,6 +39,7 @@ export async function markRunFinished(input: {
   itemsImported: number;
   itemsUpdated: number;
   itemsDuplicate: number;
+  itemsUnchanged: number;
   itemsInvalid: number;
   errorMessage?: string | null;
   errorDetails?: Record<string, unknown> | null;
@@ -54,6 +55,7 @@ export async function markRunFinished(input: {
       itemsImported: input.itemsImported,
       itemsUpdated: input.itemsUpdated,
       itemsDuplicate: input.itemsDuplicate,
+      itemsUnchanged: input.itemsUnchanged,
       itemsInvalid: input.itemsInvalid,
       errorMessage: input.errorMessage ?? null,
       errorDetails: input.errorDetails as never,
