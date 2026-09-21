@@ -129,6 +129,7 @@ model SourceRun {
   itemsImported   Int        @default(0) @map("items_imported")
   itemsUpdated    Int        @default(0) @map("items_updated")
   itemsDuplicate  Int        @default(0) @map("items_duplicate")
+  itemsUnchanged  Int        @default(0) @map("items_unchanged")
   itemsInvalid    Int        @default(0) @map("items_invalid")
   startedAt       DateTime?  @map("started_at")
   finishedAt      DateTime?  @map("finished_at")
