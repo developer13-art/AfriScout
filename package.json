@@ -69,6 +69,9 @@
     "argon2@0.40.3": true,
     "msgpackr-extract@3.0.4": true
   },
+  "overrides": {
+    "rpc-websockets": "9.0.2"
+  },
   "dependencies": {
     "@solana/web3.js": "^1.99.0"
   }
