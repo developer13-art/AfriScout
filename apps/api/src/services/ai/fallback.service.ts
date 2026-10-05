@@ -8,7 +8,10 @@ export interface FallbackResult extends AiResponse {
   attemptedProviders: string[];
 }
 
-export async function runWithFallback(input: AiRequestInput): Promise<FallbackResult> {
+export async function runWithFallback(
+  input: AiRequestInput,
+  validateOutput?: (output: unknown) => unknown,
+): Promise<FallbackResult> {
   const chain = configuredChain();
   if (chain.length === 0) {
     throw new InternalError("No AI providers are configured");
@@ -21,11 +24,15 @@ export async function runWithFallback(input: AiRequestInput): Promise<FallbackRe
     attempted.push(provider.name);
     try {
       const response = await provider.complete(input);
+      const output = validateOutput
+        ? validateOutput(response.output)
+        : response.output;
       return {
         ...response,
+        output,
         fallbackUsed: attempted.length > 1,
         attemptedProviders: attempted,
-      } as FallbackResult;
+      };
     } catch (error) {
       lastError = error;
       logger.warn(

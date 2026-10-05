@@ -995,6 +995,7 @@ enum AiProvider {
   OPENAI
   ANTHROPIC
   GEMINI
+  OPENROUTER
   MOCK
 }
 
@@ -1510,4 +1511,3 @@ model SystemHealthSnapshot {
   @@index([capturedAt(sort: Desc)])
   @@map("system_health_snapshots")
 }
-

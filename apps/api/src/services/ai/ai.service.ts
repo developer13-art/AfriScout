@@ -7,6 +7,7 @@ import { logger } from "../../config/logger";
 export interface RunAiInput extends AiRequestInput {
   opportunityId?: string | null;
   opportunityVersion?: number | null;
+  validateOutput?: (output: unknown) => unknown;
 }
 
 export async function runAi(input: RunAiInput) {
@@ -15,7 +16,8 @@ export async function runAi(input: RunAiInput) {
   }
 
   const started = Date.now();
-  const result = await runWithFallback(input);
+  const { validateOutput, ...request } = input;
+  const result = await runWithFallback(request, validateOutput);
   const latencyMs = Date.now() - started;
 
   if (input.opportunityId) {

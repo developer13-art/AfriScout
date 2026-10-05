@@ -50,11 +50,17 @@ export interface AiSummaryPayload {
 }
 
 export interface AiAnalystPayload {
+  qualification: "LIKELY" | "POSSIBLE_GAPS" | "UNLIKELY" | "INSUFFICIENT_EVIDENCE";
+  qualificationReason: string;
   recommendation: string;
   strengths: string[];
   concerns: string[];
   missingRequirements: string[];
+  credentialEvidence: string[];
+  riskAssessment: string[];
+  opportunityChanges: string[];
   nextSteps: string[];
+  matchExplanation: string[];
 }
 
 export interface AskAfriScoutIntentPayload {

@@ -1,4 +1,4 @@
-export type AiProvider = "OPENAI" | "ANTHROPIC" | "GEMINI" | "MOCK";
+export type AiProvider = "OPENAI" | "ANTHROPIC" | "GEMINI" | "OPENROUTER" | "MOCK";
 
 export type AiTaskType =
   | "CLASSIFICATION"
@@ -40,11 +40,33 @@ export interface AiAnalysis {
 }
 
 export interface AiAnalystResult {
+  qualification: "LIKELY" | "POSSIBLE_GAPS" | "UNLIKELY" | "INSUFFICIENT_EVIDENCE";
+  qualificationReason: string;
   recommendation: string;
   strengths: string[];
   concerns: string[];
   missingRequirements: string[];
+  credentialEvidence: string[];
+  riskAssessment: string[];
+  opportunityChanges: string[];
   nextSteps: string[];
+  matchExplanation: string[];
+  match: {
+    score: number;
+    band: string;
+    breakdown: Array<{ label: string; score: number; max: number }>;
+    reasons: string[];
+    concerns: string[];
+  } | null;
+  context: {
+    reputationScore: number;
+    verifiedCredentialCount: number;
+    unanchoredAchievementCount: number;
+    completedOpportunityCount: number;
+    verifiedContributionCount: number;
+    walletVerified: boolean;
+    onChainRewardVerified: boolean;
+  };
   provider: AiProvider;
   model: string;
   analyzedAt: string;

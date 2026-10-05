@@ -30,11 +30,17 @@ function deterministicSummary(input: AiRequestInput) {
 
 function deterministicAnalyst() {
   return {
+    qualification: "INSUFFICIENT_EVIDENCE",
+    qualificationReason: "Mock mode cannot assess eligibility from a configured AI provider.",
     recommendation: "Insufficient data for a strong recommendation (mock mode).",
     strengths: [],
     concerns: ["Mock output. Configure a real provider."],
     missingRequirements: [],
+    credentialEvidence: [],
+    riskAssessment: ["AI output is mocked; verify all details against the official source."],
+    opportunityChanges: [],
     nextSteps: ["Configure an AI provider", "Review the opportunity manually"],
+    matchExplanation: [],
   };
 }
 
