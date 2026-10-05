@@ -1,7 +1,0 @@
-export enum SourceHealth {
-  UNKNOWN = "UNKNOWN",
-  HEALTHY = "HEALTHY",
-  WARNING = "WARNING",
-  FAILED = "FAILED",
-  INACTIVE = "INACTIVE",
-}
