@@ -1,0 +1,252 @@
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+  ARCHIVED
+}
+
+enum SystemLifecycle {
+  DISCOVERED
+  RAW
+  NORMALIZED
+  VALIDATED
+  DEDUPLICATED
+  VERIFIED
+  ANALYZED
+  PUBLISHED
+  MONITORED
+  UPDATED
+  EXPIRED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PARTIAL
+  VERIFIED
+  DISPUTED
+}
+
+enum RequirementKind {
+  DOCUMENT
+  EXPERIENCE
+  CERTIFICATION
+  FINANCIAL
+  TECHNICAL
+  ELIGIBILITY
+  GEOGRAPHIC
+  LEGAL
+  OTHER
+}
+
+enum RequirementSource {
+  SOURCE_FACT
+  AI_INTERPRETATION
+}
+
+enum DocumentStatus {
+  PENDING
+  FETCHING
+  EXTRACTING
+  EXTRACTED
+  FAILED
+  SKIPPED
+}
+
+enum ChangeSeverity {
+  NORMAL
+  IMPORTANT
+  CRITICAL
+}
+
+model Opportunity {
+  id                  String              @id @default(uuid()) @db.Uuid
+  title               String
+  slug                String              @unique
+  organizationId      String?             @map("organization_id") @db.Uuid
+  organizationName    String?             @map("organization_name")
+  category            String
+  subcategory         String?
+  opportunityType     String              @map("opportunity_type")
+  countryCode         String?             @map("country_code") @db.Char(2)
+  region              String?
+  city                String?
+  locationText        String?             @map("location_text")
+  isRemote            Boolean             @default(false) @map("is_remote")
+  description         String?
+  summaryShort        String?             @map("summary_short")
+  valueMin            Decimal?            @map("value_min") @db.Decimal(20, 2)
+  valueMax            Decimal?            @map("value_max") @db.Decimal(20, 2)
+  currency            String?             @db.Char(3)
+  publishedAt         DateTime?           @map("published_at")
+  deadline            DateTime?
+  deadlineConfirmed   Boolean             @default(false) @map("deadline_confirmed")
+  eligibility         String?
+  requirements        String?
+  applicationMethod   String?             @map("application_method")
+  applicationUrl      String?             @map("application_url")
+  referenceNumber     String?             @map("reference_number")
+  status              OpportunityStatus   @default(PUBLISHED)
+  systemState         SystemLifecycle     @default(PUBLISHED) @map("system_state")
+  verificationStatus  VerificationStatus  @default(UNVERIFIED) @map("verification_status")
+  verifiedAt          DateTime?           @map("verified_at")
+  verifiedBy          String?             @map("verified_by") @db.Uuid
+  aiProcessed         Boolean             @default(false) @map("ai_processed")
+  aiProcessedAt       DateTime?           @map("ai_processed_at")
+  extra               Json                @default("{}")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  organization        Organization?       @relation(fields: [organizationId], references: [id])
+  sources             OpportunitySource[]
+  documents           OpportunityDocument[]
+  requirementsList    OpportunityRequirement[]
+  versions            OpportunityVersion[]
+  changes             OpportunityChange[]
+  aiAnalyses          AiAnalysis[]
+  matches             Match[]
+  savedBy             SavedOpportunity[]
+  watchedBy           Watchlist[]
+  pipelineItems       PipelineItem[]
+  notifications       Notification[]
+
+  @@index([category])
+  @@index([opportunityType])
+  @@index([countryCode])
+  @@index([deadline])
+  @@index([status])
+  @@index([systemState])
+  @@index([publishedAt(sort: Desc)])
+  @@map("opportunities")
+}
+
+model OpportunitySource {
+  id               String    @id @default(uuid()) @db.Uuid
+  opportunityId    String    @map("opportunity_id") @db.Uuid
+  sourceId         String    @map("source_id") @db.Uuid
+  rawOpportunityId String?   @map("raw_opportunity_id") @db.Uuid
+  sourceUrl        String    @map("source_url")
+  sourceTitle      String?   @map("source_title")
+  publishedAt      DateTime? @map("published_at")
+  deadline         DateTime?
+  isPrimary        Boolean   @default(false) @map("is_primary")
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  opportunity      Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  rawOpportunity   RawOpportunity? @relation(fields: [rawOpportunityId], references: [id])
+
+  @@unique([opportunityId, sourceId, sourceUrl])
+  @@index([opportunityId])
+  @@index([sourceId])
+  @@map("opportunity_sources")
+}
+
+model OpportunityDocument {
+  id               String         @id @default(uuid()) @db.Uuid
+  opportunityId    String         @map("opportunity_id") @db.Uuid
+  sourceId         String?        @map("source_id") @db.Uuid
+  url              String
+  fileName         String?        @map("file_name")
+  mimeType         String?        @map("mime_type")
+  fileSize         BigInt?        @map("file_size")
+  checksum         String?
+  fetchedAt        DateTime?      @map("fetched_at")
+  extractionStatus DocumentStatus @default(PENDING) @map("extraction_status")
+  extractionError  String?        @map("extraction_error")
+  extractedText    String?        @map("extracted_text")
+  extractedFields  Json?          @map("extracted_fields")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  opportunity      Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  source           Source?        @relation(fields: [sourceId], references: [id])
+
+  @@index([opportunityId])
+  @@index([extractionStatus])
+  @@map("opportunity_documents")
+}
+
+model OpportunityRequirement {
+  id             String            @id @default(uuid()) @db.Uuid
+  opportunityId  String            @map("opportunity_id") @db.Uuid
+  kind           RequirementKind
+  label          String
+  description    String?
+  isMandatory    Boolean           @default(true) @map("is_mandatory")
+  source         RequirementSource
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@map("opportunity_requirements")
+}
+
+model OpportunityVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  version         Int
+  snapshot        Json
+  snapshotHash    String   @map("snapshot_hash")
+  createdByRunId  String?  @map("created_by_run_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdByRun    SourceRun?  @relation(fields: [createdByRunId], references: [id])
+
+  @@unique([opportunityId, version])
+  @@index([opportunityId])
+  @@map("opportunity_versions")
+}
+
+model OpportunityChange {
+  id              String         @id @default(uuid()) @db.Uuid
+  opportunityId   String         @map("opportunity_id") @db.Uuid
+  fromVersion     Int?           @map("from_version")
+  toVersion       Int?           @map("to_version")
+  field           String
+  oldValue        Json?          @map("old_value")
+  newValue        Json?          @map("new_value")
+  severity        ChangeSeverity @default(NORMAL)
+  detectedAt      DateTime       @default(now()) @map("detected_at")
+  notified        Boolean        @default(false)
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  opportunity     Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([detectedAt(sort: Desc)])
+  @@index([notified])
+  @@map("opportunity_changes")
+}
+
+model OpportunityDuplicate {
+  id           String   @id @default(uuid()) @db.Uuid
+  canonicalId  String   @map("canonical_id") @db.Uuid
+  candidateId  String   @map("candidate_id") @db.Uuid
+  similarity   Decimal  @db.Decimal(5, 4)
+  signals      Json
+  status       String   @default("PENDING")
+  reviewedBy   String?  @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([canonicalId])
+  @@index([candidateId])
+  @@index([status])
+  @@map("opportunity_duplicates")
+}
+
+model OpportunityView {
+  id             String   @id @default(uuid()) @db.Uuid
+  opportunityId  String   @map("opportunity_id") @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  viewedAt       DateTime @default(now()) @map("viewed_at")
+  source         String?
+
+  @@index([opportunityId])
+  @@index([userId])
+  @@map("opportunity_views")
+}

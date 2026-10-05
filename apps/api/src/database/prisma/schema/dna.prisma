@@ -1,0 +1,52 @@
+enum RemotePreference {
+  ONSITE
+  REMOTE
+  HYBRID
+  ANY
+}
+
+model DnaProfile {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @map("user_id") @db.Uuid
+  version               Int      @default(1)
+  isActive              Boolean  @default(true) @map("is_active")
+  industries            String[] @default([])
+  capabilities          String[] @default([])
+  sectors               String[] @default([])
+  preferredCountries    String[] @default([]) @map("preferred_countries")
+  preferredLocations    String[] @default([]) @map("preferred_locations")
+  remotePreference      RemotePreference? @map("remote_preference")
+  currency              String?  @db.Char(3)
+  minValue              Decimal? @map("min_value") @db.Decimal(20, 2)
+  maxValue              Decimal? @map("max_value") @db.Decimal(20, 2)
+  eligibilityNotes      String?  @map("eligibility_notes")
+  experienceNotes       String?  @map("experience_notes")
+  opportunityTypes      String[] @map("opportunity_types")
+  opportunityCategories String[] @map("opportunity_categories")
+  keywords              String[] @default([])
+  extra                 Json     @default("{}")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  capabilitiesRows      DnaCapability[]
+  matches               Match[]
+
+  @@unique([userId, version])
+  @@index([userId])
+  @@map("dna_profiles")
+}
+
+model DnaCapability {
+  id            String   @id @default(uuid()) @db.Uuid
+  dnaProfileId  String   @map("dna_profile_id") @db.Uuid
+  capability    String
+  strength      Int?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  dnaProfile    DnaProfile @relation(fields: [dnaProfileId], references: [id], onDelete: Cascade)
+
+  @@index([dnaProfileId])
+  @@index([capability])
+  @@map("dna_capabilities")
+}

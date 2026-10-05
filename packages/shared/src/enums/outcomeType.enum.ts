@@ -1,0 +1,8 @@
+export enum OutcomeType {
+  WON = "WON",
+  LOST = "LOST",
+  WITHDRAWN = "WITHDRAWN",
+  DISQUALIFIED = "DISQUALIFIED",
+  EXPIRED = "EXPIRED",
+  PENDING = "PENDING",
+}
