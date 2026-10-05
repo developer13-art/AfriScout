@@ -1,0 +1,809 @@
+New product direction
+AfriScout → Scout
+
+I would actually consider removing the geographic limitation from the product name/positioning while preserving AfriScout as the brand if you already have the deployed product.
+
+New positioning
+
+Scout — The Global Opportunity Intelligence Network
+
+Discover opportunities. Verify them. Match them. Build reputation. Act onchain.
+
+The core idea becomes:
+
+GLOBAL WEB
+   ↓
+Apify
+   ↓
+Opportunity Intelligence
+   ↓
+AI Analysis
+   ↓
+Personal / Business Matching
+   ↓
+On-chain Identity & Reputation
+   ↓
+Verified Opportunities
+   ↓
+Applications / Contributions / Bounties
+   ↓
+Solana
+   ↓
+Payments / Rewards / Credentials / Reputation
+
+This is much more interesting than simply adding a wallet-connect button.
+
+1. Global Opportunity Intelligence
+
+The existing AfriScout engine remains the foundation.
+
+Instead of:
+
+Africa → opportunities
+
+we have:
+
+World → opportunities
+
+Sources can cover:
+
+Government procurement
+Private-sector opportunities
+Grants
+Funding
+Jobs
+Internships
+Scholarships
+Fellowships
+Accelerators
+Hackathons
+Research
+RFPs
+RFQs
+Competitions
+Developer bounties
+Startup programs
+Business partnerships
+Freelance opportunities
+Open-source opportunities
+Web3 ecosystem opportunities
+
+Your existing:
+
+Source → Apify → Dataset → Normalize → Validate → Deduplicate → AI
+
+architecture remains useful.
+
+2. Solana Wallet Identity
+
+This should become one of the major new features.
+
+Users can connect a Solana wallet and create a Scout Identity.
+
+For example:
+
+SCOUT IDENTITY
+
+Wallet
+7xK...92P
+
+Skills
+React
+Node.js
+Solana
+AI
+Python
+
+Interests
+Web3
+AI
+Startups
+
+Experience
+Hackathons
+Open Source
+Software Engineering
+
+Reputation
+742
+
+Verified Credentials
+12
+
+Completed Opportunities
+18
+
+The important distinction:
+
+The wallet is not the entire identity.
+
+It becomes the cryptographic anchor for the user's Scout profile.
+
+3. On-chain Reputation
+
+This could become one of the strongest additions.
+
+Instead of users simply saying:
+
+"I'm a software engineer."
+
+Scout can build a reputation history from verifiable activity.
+
+For example:
+
+Scout Reputation
+────────────────────
+
+Opportunities Completed     18
+Verified Contributions      12
+Credentials                  7
+Community Contributions      9
+Successful Applications      6
+
+Reputation Score            742
+
+The reputation system should be designed so that users cannot simply edit their score.
+
+You could record verifiable achievements on Solana.
+
+For example:
+
+Credential
+      ↓
+Solana transaction
+      ↓
+Wallet
+      ↓
+Scout reputation
+4. On-chain Credentials
+
+This is another major feature.
+
+Organizations could issue verifiable credentials for:
+
+Completed programs
+Hackathons
+Certifications
+Contributions
+Grants
+Projects
+Training
+Community participation
+Successful work
+Awards
+
+Example:
+
+VERIFIED CREDENTIAL
+
+Solana Development Bootcamp
+
+Issued by:
+Example Organization
+
+Recipient:
+7xK...92P
+
+Issued:
+Oct 3, 2026
+
+Status:
+Verified
+
+The actual credential architecture needs to be designed carefully so that private personal information isn't unnecessarily written permanently onchain.
+
+5. Opportunity Verification
+
+This is where blockchain can solve a genuine problem.
+
+Currently AfriScout says:
+
+"This opportunity came from this source."
+
+The upgraded system can say:
+
+This opportunity has a verifiable provenance record.
+
+For example:
+
+Opportunity
+     ↓
+Original source
+     ↓
+Apify collection
+     ↓
+AfriScout verification
+     ↓
+Content fingerprint
+     ↓
+Solana record
+
+The chain does not need to store the entire opportunity.
+
+Instead, store something like:
+
+Opportunity ID
+Content Hash
+Source Hash
+Timestamp
+Verification Status
+
+This creates an immutable reference to the version that was observed.
+
+6. Opportunity Provenance
+
+Every opportunity gets a provenance panel.
+
+OPPORTUNITY PROVENANCE
+
+Original Source
+Government Portal
+
+First Discovered
+Oct 2, 2026
+
+Last Checked
+Oct 3, 2026
+
+Collected By
+AfriScout Discovery Actor
+
+Content Status
+Verified
+
+Version
+3
+
+On-chain Proof
+Verified
+
+This is especially valuable when opportunities change.
+
+7. Opportunity Change History
+
+You already planned change detection.
+
+Now make it much more powerful.
+
+Suppose:
+
+Original deadline:
+October 15
+
+Updated deadline:
+October 22
+
+Scout records:
+
+VERSION 1
+Deadline: Oct 15
+
+VERSION 2
+Deadline: Oct 22
+
+Change detected:
+Oct 4
+
+Proof:
+On-chain record
+
+Users can see exactly what changed.
+
+8. Global Opportunity Marketplace
+
+This is where the platform can move beyond being a search engine.
+
+Create:
+
+Opportunity Marketplace
+
+Different types of opportunities can coexist:
+
+Jobs
+Grants
+Bounties
+Hackathons
+Funding
+Research
+Procurement
+Freelance
+Developer Opportunities
+Startup Programs
+Challenges
+
+Users can discover opportunities globally.
+
+9. On-chain Bounties
+
+This is one of the strongest Web3-native additions.
+
+Organizations can create a bounty:
+
+BUILD A SOLANA ANALYTICS DASHBOARD
+
+Reward
+500 USDC
+
+Deadline
+Oct 20
+
+Skills
+React
+TypeScript
+Solana
+
+Submissions
+23
+
+Scout can manage the discovery and workflow while Solana handles the reward mechanism.
+
+Conceptually:
+
+Organization
+     ↓
+Create Bounty
+     ↓
+Fund Reward
+     ↓
+Scout publishes opportunity
+     ↓
+Builders submit work
+     ↓
+Review
+     ↓
+Winner
+     ↓
+Reward distribution
+
+This gives Scout a genuine on-chain marketplace use case rather than merely integrating a wallet.
+
+10. Opportunity Escrow
+
+For eligible opportunity types, you could introduce an escrow mechanism.
+
+Example:
+
+Organization
+      ↓
+Locks reward
+      ↓
+Solana escrow
+      ↓
+Opportunity
+      ↓
+Work completed
+      ↓
+Verification
+      ↓
+Release
+
+This can eventually support:
+
+Bounties
+Freelance work
+Grants
+Challenges
+Milestone-based projects
+
+For the hackathon, you don't need to build every possible escrow flow. One properly implemented bounty workflow is much stronger.
+
+11. Global Opportunity Passport
+
+This could become a signature feature.
+
+Scout Passport
+
+A user's portable opportunity history:
+
+┌───────────────────────────┐
+│       SCOUT PASSPORT      │
+│                           │
+│ Wallet                    │
+│ 7xK...92P                 │
+│                           │
+│ Reputation                │
+│ 742                       │
+│                           │
+│ Credentials               │
+│ 12 Verified               │
+│                           │
+│ Opportunities             │
+│ 31 Completed              │
+│                           │
+│ Contributions             │
+│ 18 Verified               │
+│                           │
+│ Skills                    │
+│ React · Node · Solana     │
+└───────────────────────────┘
+
+This becomes a portable Web3 professional identity.
+
+12. AI + Blockchain Together
+
+This is where the project becomes considerably more interesting.
+
+The AI shouldn't just answer:
+
+"What opportunities exist?"
+
+It can answer:
+
+"Which opportunities are relevant to this wallet/profile and why?"
+
+For example:
+
+USER
+Find opportunities I qualify for this month.
+
+AI
+I found 37 opportunities.
+
+12 have strong profile matches.
+
+5 have verified on-chain credentials
+requirements.
+
+3 are closing within 7 days.
+
+2 have on-chain reward pools.
+
+The AI uses:
+
+Profile
++
+Skills
++
+Credentials
++
+Reputation
++
+Preferences
++
+Opportunity data
++
+On-chain activity
+
+to produce intelligence.
+
+13. AI Opportunity Analyst 2.0
+
+Your existing AI Analyst becomes much more advanced.
+
+Instead of:
+
+Should I pursue this?
+
+It can answer:
+
+"Can I qualify?"
+"What am I missing?"
+"What credentials prove my eligibility?"
+"What is the opportunity risk?"
+"Has this opportunity changed?"
+"What opportunities match my reputation?"
+"Which opportunities have verified rewards?"
+"What should I work on to qualify for this opportunity?"
+
+Example:
+
+AI ANALYSIS
+
+Match: 91%
+
+Why:
+✓ React experience
+✓ Solana experience
+✓ Required location
+✓ Relevant credentials
+
+Potential Gap:
+• 2 years required experience
+• Current profile shows 1.5 years
+
+Recommendation:
+Build additional verified contribution history
+and review the experience requirement before applying.
+14. Proof of Contribution
+
+This can become a major Web3 feature.
+
+Users contribute to opportunities.
+
+For example:
+
+Opportunity
+     ↓
+User contribution
+     ↓
+Organization verifies
+     ↓
+Contribution credential
+     ↓
+Solana
+     ↓
+Reputation increases
+
+This creates a loop:
+
+Discover → Participate → Verify → Build Reputation → Unlock More Opportunities
+
+That is much more powerful than:
+
+Search → Apply → Leave
+
+15. Reputation-Based Matching
+
+Your existing matching engine can be expanded.
+
+Current:
+
+Industry
+Location
+Capability
+Eligibility
+Experience
+
+New:
+
+Industry
+Location
+Skills
+Eligibility
+Experience
+Credentials
+Reputation
+Verified Contributions
+On-chain Activity
+Opportunity History
+
+Example:
+
+MATCH SCORE
+
+Profile Compatibility       25/25
+Skills                       22/25
+Eligibility                  20/20
+Credentials                  8/10
+Reputation                   8/10
+Experience                    9/10
+
+TOTAL                        92%
+
+Again, keep the score explainable rather than making it a mysterious AI number.
+
+16. Organization Reputation
+
+Don't only score users.
+
+Organizations can have profiles too.
+
+ORGANIZATION
+
+Verified
+Since 2026
+
+Opportunities Published
+142
+
+Completed
+117
+
+Active
+25
+
+Verified Funding
+$1.2M
+
+Community Reputation
+Verified
+
+This creates two-sided trust:
+
+User reputation ↔ Organization reputation
+
+17. Verified Organization
+
+Organizations can connect wallets and verify their identity.
+
+For example:
+
+ORGANIZATION
+
+Acme Labs
+
+Website
+acme.example
+
+Wallet
+7x...92P
+
+Verification
+Verified
+
+Opportunities
+24
+
+Bounties
+8
+
+Completed
+19
+
+This helps users distinguish legitimate opportunities from suspicious ones.
+
+18. Web3 Opportunity Discovery
+
+Add a new category:
+
+Web3 Opportunities
+
+Scout can discover:
+
+Protocol grants
+Ecosystem grants
+Hackathons
+Developer bounties
+DAO opportunities
+Protocol jobs
+Contributor programs
+Ambassador programs
+Research programs
+Open-source tasks
+Community programs
+
+This makes the platform naturally relevant to the Solana ecosystem.
+
+19. Solana Ecosystem Radar
+
+Create a dedicated section:
+
+Solana Radar
+NEW
+Solana Developer Bounty
+
+REWARD
+500 USDC
+
+MATCH
+94%
+
+DEADLINE
+8 days
+
+Other cards:
+
+Solana Grants
+Solana Hackathons
+Solana Jobs
+Solana Bounties
+Solana Developer Programs
+Solana Ecosystem Funding
+
+This can make your demo immediately understandable to Solana judges.
+
+20. On-chain Opportunity Proof
+
+Every opportunity could have:
+
+SOURCE
+Verified
+
+DATA
+AI analyzed
+
+PROVENANCE
+Verified
+
+ON-CHAIN PROOF
+View transaction
+
+This gives the blockchain integration a real purpose.
+
+21. Global Map
+
+Your existing African Opportunity Map becomes:
+
+Global Opportunity Map
+Africa
+Europe
+North America
+South America
+Asia
+Middle East
+Oceania
+
+Filters:
+
+Country
+Region
+Category
+Blockchain
+Industry
+Reward
+Deadline
+Match
+
+Then add a special filter:
+
+On-chain opportunities
+
+22. New Platform Architecture
+
+The upgraded architecture becomes:
+
+                     GLOBAL INTERNET
+                           │
+                           ▼
+                    APIFY DISCOVERY
+                           │
+                           ▼
+                 SOURCE ADAPTER LAYER
+                           │
+                           ▼
+                DATA PROCESSING ENGINE
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+          Normalize     Validate     Deduplicate
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                   AI INTELLIGENCE
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+          Classify      Analyze      Match
+                           │
+                           ▼
+                  OPPORTUNITY ENGINE
+                           │
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+        Web2 Data      User Profiles   Organizations
+            │              │              │
+            └──────────────┼──────────────┘
+                           ▼
+                 SOLANA TRUST LAYER
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+        Identity       Credentials     Reputation
+            │              │              │
+            └──────────────┼──────────────┘
+                           ▼
+                 ON-CHAIN OPPORTUNITIES
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+           Bounties      Grants       Rewards
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                    SCOUT NETWORK
+23. The new product loop
+
+This is the part I would emphasize heavily in the hackathon presentation:
+
+DISCOVER
+   ↓
+UNDERSTAND
+   ↓
+MATCH
+   ↓
+VERIFY
+   ↓
+PARTICIPATE
+   ↓
+COMPLETE
+   ↓
+GET VERIFIED
+   ↓
+BUILD REPUTATION
+   ↓
+UNLOCK BETTER OPPORTUNITIES
+
+That creates a network effect.
+
+The more people participate, the more verifiable activity exists.
+
+The more organizations participate, the more opportunities exist.
+
+The more verified activity exists, the better matching becomes.
