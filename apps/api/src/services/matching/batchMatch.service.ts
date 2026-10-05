@@ -1,6 +1,62 @@
 import { prisma } from "../../config/database";
 import { computeMatch } from "./match.service";
 import { logger } from "../../config/logger";
+import { enqueueRecomputeMatches } from "../../jobs/definitions/matchUsers.job";
+
+export async function ensureMatchesForUser(userId: string): Promise<boolean> {
+  const dna = await prisma.dnaProfile.findFirst({
+    where: { userId, isActive: true },
+    select: { id: true, updatedAt: true },
+    orderBy: { version: "desc" },
+  });
+  if (!dna) return false;
+
+  const [latestMatch, publishedCount, matchedCount, latestOpportunity, unanalyzedCount] =
+    await Promise.all([
+      prisma.match.findFirst({
+        where: {
+          userId,
+          dnaProfileId: dna.id,
+          opportunity: { is: { status: "PUBLISHED" } },
+        },
+        orderBy: { computedAt: "desc" },
+        select: { computedAt: true },
+      }),
+      prisma.opportunity.count({ where: { status: "PUBLISHED" } }),
+      prisma.match.count({ where: { userId, dnaProfileId: dna.id } }),
+      prisma.opportunity.findFirst({
+        where: { status: "PUBLISHED" },
+        orderBy: { updatedAt: "desc" },
+        select: { updatedAt: true },
+      }),
+      prisma.match.count({
+        where: {
+          userId,
+          dnaProfileId: dna.id,
+          aiMatchAnalyzedAt: null,
+          opportunity: { is: { status: "PUBLISHED" } },
+        },
+      }),
+    ]);
+
+  const expectedMatchCount = Math.min(publishedCount, 200);
+  const staleMatches =
+    !latestMatch ||
+    latestMatch.computedAt < dna.updatedAt ||
+    (latestOpportunity !== null && latestMatch.computedAt < latestOpportunity.updatedAt) ||
+    matchedCount < expectedMatchCount;
+  const needsAnalysis = publishedCount > 0 && (staleMatches || unanalyzedCount > 0);
+
+  if (needsAnalysis) {
+    await enqueueRecomputeMatches({
+      userId,
+      dnaProfileId: dna.id,
+      dnaUpdatedAt: dna.updatedAt.getTime(),
+    });
+  }
+
+  return needsAnalysis;
+}
 
 export async function recomputeMatchesForUser(userId: string): Promise<number> {
   const dna = await prisma.dnaProfile.findFirst({
@@ -22,6 +78,7 @@ export async function recomputeMatchesForUser(userId: string): Promise<number> {
       userId,
       dnaProfileId: dna.id,
       opportunityId: opportunity.id,
+      invalidateAiExplanation: true,
     });
     if (match) computed += 1;
   }
@@ -43,6 +100,7 @@ export async function recomputeMatchesForOpportunity(opportunityId: string): Pro
       userId: dna.userId,
       dnaProfileId: dna.id,
       opportunityId,
+      invalidateAiExplanation: true,
     });
     if (match) computed += 1;
   }

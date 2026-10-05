@@ -12,10 +12,20 @@ export async function enqueueMatchUsers(payload: MatchUsersPayload) {
 
 export interface RecomputeMatchesPayload {
   userId: string;
+  dnaProfileId?: string;
+  dnaUpdatedAt?: number;
 }
 
 export const RECOMPUTE_MATCHES_JOB = "recompute-matches";
 
 export async function enqueueRecomputeMatches(payload: RecomputeMatchesPayload) {
-  return matchingQueue.add(RECOMPUTE_MATCHES_JOB, payload);
+  const jobId =
+    payload.dnaProfileId && payload.dnaUpdatedAt
+      ? `recompute-${payload.userId}-${payload.dnaProfileId}-${payload.dnaUpdatedAt}`
+      : undefined;
+  return matchingQueue.add(RECOMPUTE_MATCHES_JOB, payload, {
+    jobId,
+    removeOnComplete: true,
+    removeOnFail: true,
+  });
 }

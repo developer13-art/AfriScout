@@ -85,6 +85,71 @@ services:
       - key: SCHEDULER_ENABLED
         value: false
 
+  - type: worker
+    name: afriscout-worker
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    rootDir: .
+    buildCommand: |
+      npm ci --include=dev
+      npm run build:shared
+      npm run db:generate --workspace=apps/api
+      npm run build:api
+      npm run db:migrate:deploy --workspace=apps/api
+    startCommand: npm run start:worker
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: TZ
+        value: UTC
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_DIRECT
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: SUPER_ADMIN_FULL_NAME
+        sync: false
+      - key: APIFY_WEBHOOK_SECRET
+        sync: false
+      - key: OUTBOUND_WEBHOOK_SECRET
+        sync: false
+      - key: AI_ENABLED
+        value: true
+      - key: AI_PROVIDER_PRIMARY
+        value: openai
+      - key: AI_PROVIDER_FALLBACK_1
+        value: anthropic
+      - key: AI_PROVIDER_FALLBACK_2
+        value: gemini
+      - key: AI_PROVIDER_FALLBACK_3
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: 2
+      - key: SCHEDULER_ENABLED
+        value: false
+
   - type: web
     name: afriscout-web
     runtime: static

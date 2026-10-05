@@ -37,7 +37,14 @@ export function Dashboard() {
       const reasons = (m.reasons ?? []).map((reason) =>
         reason.detail ? `${reason.label} - ${reason.detail}` : reason.label,
       );
-      return [{ opportunity, score: m.score, reasons }];
+      return [{
+        opportunity,
+        score: m.score,
+        reasons,
+        aiMatchReason: m.aiMatchReason,
+        aiMatchProvider: m.aiMatchProvider,
+        aiMatchError: m.aiMatchError,
+      }];
     });
 
   const pipelineStages = Object.entries(
@@ -145,6 +152,13 @@ export function Dashboard() {
               matches={recentMatches}
               savedIds={savedIds}
               onSave={(opportunityId) => saved.add.mutate(opportunityId)}
+              emptyDescription={
+                onboarded
+                  ? "We checked published opportunities against your DNA, but none are available as matches right now. Check back when new opportunities are published."
+                  : "Complete your Business DNA so we can find opportunities that fit."
+              }
+              analyzing={matches.data?.aiAnalysisPending}
+              analysisErrorCount={matches.data?.aiAnalysisErrorCount}
             />
           )}
           {radar.isLoading ? (

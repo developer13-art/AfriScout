@@ -40,6 +40,11 @@ export interface Match {
   weightsVersion: string;
   computedAt: string;
   notified: boolean;
+  aiMatchQualification: string | null;
+  aiMatchReason: string | null;
+  aiMatchProvider: string | null;
+  aiMatchError: string | null;
+  aiMatchAnalyzedAt: string | null;
 }
 
 export interface MatchWeights {

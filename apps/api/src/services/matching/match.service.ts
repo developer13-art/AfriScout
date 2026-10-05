@@ -15,6 +15,7 @@ export async function computeMatch(input: {
   userId: string;
   dnaProfileId: string;
   opportunityId: string;
+  invalidateAiExplanation?: boolean;
 }) {
   const [dna, opportunity, userProfile] = await Promise.all([
     prisma.dnaProfile.findUnique({ where: { id: input.dnaProfileId } }),
@@ -84,6 +85,15 @@ export async function computeMatch(input: {
       breakdown: breakdown as never,
       reasons: reasons as never,
       concerns: concerns as never,
+      ...(input.invalidateAiExplanation
+        ? {
+            aiMatchQualification: null,
+            aiMatchReason: null,
+            aiMatchProvider: null,
+            aiMatchError: null,
+            aiMatchAnalyzedAt: null,
+          }
+        : {}),
       weightsVersion: weights.version,
       computedAt: new Date(),
     },
@@ -96,6 +106,11 @@ export async function computeMatch(input: {
       breakdown: breakdown as never,
       reasons: reasons as never,
       concerns: concerns as never,
+      aiMatchQualification: null,
+      aiMatchReason: null,
+      aiMatchProvider: null,
+      aiMatchError: null,
+      aiMatchAnalyzedAt: null,
       weightsVersion: weights.version,
     },
   });
@@ -105,11 +120,36 @@ export async function computeMatch(input: {
 }
 
 export async function listMatchesForUser(userId: string, limit = 50) {
-  const matches = await prisma.match.findMany({
-    where: { userId },
-    orderBy: { score: "desc" },
-    take: limit,
+  const dna = await prisma.dnaProfile.findFirst({
+    where: { userId, isActive: true },
+    orderBy: { version: "desc" },
+    select: { id: true },
   });
+  if (!dna) {
+    return { matches: [], opportunities: {}, aiAnalysisErrorCount: 0 };
+  }
+
+  const matchWhere = {
+    userId,
+    dnaProfileId: dna.id,
+    opportunity: { is: { status: "PUBLISHED" as const } },
+  };
+  const [matches, aiAnalysisErrorCount] = await Promise.all([
+    prisma.match.findMany({
+      where: {
+        ...matchWhere,
+        aiMatchQualification: { in: ["LIKELY", "POSSIBLE_GAPS"] },
+      },
+      orderBy: { score: "desc" },
+      take: limit,
+    }),
+    prisma.match.count({
+      where: {
+        ...matchWhere,
+        aiMatchError: { not: null },
+      },
+    }),
+  ]);
 
   const opportunityIds = matches.map((m) => m.opportunityId);
   const opportunities = await prisma.opportunity.findMany({
@@ -119,7 +159,7 @@ export async function listMatchesForUser(userId: string, limit = 50) {
   const map: Record<string, (typeof opportunities)[number]> = {};
   for (const opportunity of opportunities) map[opportunity.id] = opportunity;
 
-  return { matches, opportunities: map };
+  return { matches, opportunities: map, aiAnalysisErrorCount };
 }
 
 export async function getMatchForOpportunity(userId: string, opportunityId: string) {

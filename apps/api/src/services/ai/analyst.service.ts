@@ -9,6 +9,7 @@ import {
 import type { AiAnalystPayload } from "../../types/ai";
 import { InternalError } from "../../utils/errors";
 import { computeMatch } from "../matching/match.service";
+import * as OpportunityService from "../opportunities/opportunity.service";
 
 const analystPayloadSchema = z.object({
   qualification: z.enum(["LIKELY", "POSSIBLE_GAPS", "UNLIKELY", "INSUFFICIENT_EVIDENCE"]),
@@ -321,4 +322,40 @@ export async function analyseOpportunityForUser(input: {
     model: result.model,
     analyzedAt: new Date().toISOString(),
   };
+}
+
+export async function analyseOpportunityForUserById(input: {
+  userId: string;
+  opportunityId: string;
+}): Promise<AnalystResult> {
+  const opportunity = await OpportunityService.getOpportunityById(input.opportunityId);
+  return analyseOpportunityForUser({
+    userId: input.userId,
+    opportunityId: opportunity.id,
+    opportunity: {
+      title: opportunity.title,
+      description: opportunity.description,
+      eligibility: opportunity.eligibility,
+      requirements: opportunity.requirements,
+      structuredRequirements: opportunity.requirementsList.map((requirement) => ({
+        kind: requirement.kind,
+        label: requirement.label,
+        description: requirement.description,
+        mandatory: requirement.isMandatory,
+      })),
+      deadline: opportunity.deadline ? opportunity.deadline.toISOString() : null,
+      valueMin: opportunity.valueMin ? Number(opportunity.valueMin) : null,
+      valueMax: opportunity.valueMax ? Number(opportunity.valueMax) : null,
+      currency: opportunity.currency,
+      countryCode: opportunity.countryCode,
+      region: opportunity.region,
+      city: opportunity.city,
+      isRemote: opportunity.isRemote,
+      category: opportunity.category,
+      opportunityType: opportunity.opportunityType,
+      organizationName: opportunity.organizationName,
+      verificationStatus: opportunity.verificationStatus,
+      provenanceProofCount: opportunity.provenanceProofs.length,
+    },
+  });
 }

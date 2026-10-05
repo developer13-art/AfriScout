@@ -16,6 +16,9 @@ export interface OpportunityCardProps {
   opportunity: Opportunity;
   matchScore?: number;
   matchReasons?: string[];
+  aiMatchReason?: string | null;
+  aiMatchProvider?: string | null;
+  aiMatchError?: string | null;
   onSave?: () => void;
   saved?: boolean;
   compact?: boolean;
@@ -25,6 +28,9 @@ export function OpportunityCard({
   opportunity,
   matchScore,
   matchReasons,
+  aiMatchReason,
+  aiMatchProvider,
+  aiMatchError,
   onSave,
   saved,
   compact,
@@ -103,6 +109,27 @@ export function OpportunityCard({
             ))}
           </ul>
         </div>
+      ) : null}
+
+      {aiMatchReason ? (
+        <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-primary-100 bg-primary-50/50 px-3 py-2.5">
+          <p className="text-[11px] font-semibold text-primary-800">
+            AI match explanation
+          </p>
+          <p className="mt-1 whitespace-pre-line text-xs text-primary-900">
+            {aiMatchReason}
+          </p>
+          {aiMatchProvider ? (
+            <p className="mt-1 text-[10px] text-primary-700">
+              Analyzed with {aiMatchProvider}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {aiMatchError ? (
+        <p className="mt-2 text-xs text-red-700" role="status">
+          {aiMatchError}
+        </p>
       ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">

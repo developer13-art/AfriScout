@@ -35,6 +35,7 @@ export function OpportunityDetails() {
   const [aiAnalyst, setAiAnalyst] = useState<Awaited<ReturnType<typeof aiService.analyst>> | null>(null);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiAnalystLoading, setAiAnalystLoading] = useState(false);
+  const [aiAnalystError, setAiAnalystError] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const query = useQuery({
@@ -100,9 +101,14 @@ export function OpportunityDetails() {
   const runAnalyst = async () => {
     if (!query.data?.id) return;
     setAiAnalystLoading(true);
+    setAiAnalystError(null);
     try {
       const result = await aiService.analyst(query.data.id);
       setAiAnalyst(result);
+    } catch {
+      setAiAnalystError(
+        "Analysis could not be completed. Check that AI is enabled and a provider is configured, then try again.",
+      );
     } finally {
       setAiAnalystLoading(false);
     }
@@ -257,6 +263,7 @@ export function OpportunityDetails() {
                   <AiAnalystPanel
                     result={aiAnalyst}
                     loading={aiAnalystLoading}
+                    error={aiAnalystError}
                     onRun={runAnalyst}
                   />
                 </div>

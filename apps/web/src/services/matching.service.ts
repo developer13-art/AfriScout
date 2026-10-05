@@ -5,6 +5,12 @@ import type { Opportunity } from "../types/opportunity";
 export interface MatchesResponse {
   matches: Match[];
   opportunities: Record<string, Opportunity>;
+  aiAnalysisPending: boolean;
+  aiAnalysisErrorCount: number;
+}
+
+export interface RecomputeMatchesResponse {
+  started: boolean;
 }
 
 export const matchingService = {
@@ -13,5 +19,6 @@ export const matchingService = {
   forOpportunity: (opportunityId: string) =>
     http<Match | null>(`/matches/opportunity/${opportunityId}`),
 
-  recompute: () => http<{ started: true }>("/matches/recompute", { method: "POST" }),
+  recompute: () =>
+    http<RecomputeMatchesResponse>("/matches/recompute", { method: "POST" }),
 };

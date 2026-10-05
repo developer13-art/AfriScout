@@ -1096,6 +1096,11 @@ model Match {
   breakdown       Json
   reasons         Json
   concerns        Json
+  aiMatchQualification String?   @map("ai_match_qualification")
+  aiMatchReason        String?   @map("ai_match_reason")
+  aiMatchProvider      String?   @map("ai_match_provider")
+  aiMatchError         String?   @map("ai_match_error")
+  aiMatchAnalyzedAt    DateTime? @map("ai_match_analyzed_at")
   weightsVersion  String    @map("weights_version")
   computedAt      DateTime  @default(now()) @map("computed_at")
   notified        Boolean   @default(false)

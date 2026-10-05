@@ -9,9 +9,10 @@ export interface AiAnalystPanelProps {
   result?: AiAnalystResult | null;
   loading?: boolean;
   onRun?: () => void;
+  error?: string | null;
 }
 
-export function AiAnalystPanel({ result, loading, onRun }: AiAnalystPanelProps) {
+export function AiAnalystPanel({ result, loading, onRun, error }: AiAnalystPanelProps) {
   const qualificationLabel = result
     ? {
         LIKELY: "Likely qualified from available evidence",
@@ -40,12 +41,24 @@ export function AiAnalystPanel({ result, loading, onRun }: AiAnalystPanelProps) 
       />
 
       {!result ? (
-        <p className="text-sm text-neutral-500">
-          Ask the analyst whether this opportunity is worth pursuing for your
-          profile.
-        </p>
+        <div>
+          <p className="text-sm text-neutral-500">
+            Run an on-demand analysis for this opportunity using your profile.
+            Your matches are ranked separately on the Matches page.
+          </p>
+          {error ? (
+            <p className="mt-2 text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div className="space-y-4">
+          {error ? (
+            <p className="text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-sm font-semibold text-neutral-900">
               {qualificationLabel}
