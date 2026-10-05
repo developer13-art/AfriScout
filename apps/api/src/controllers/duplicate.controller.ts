@@ -201,7 +201,7 @@ export const merge = asyncHandler(async (req: Request, res: Response) => {
   // Recompute matches for the canonical after merge
   try {
     const { recomputeMatchesForOpportunity } = await import(
-      "../services/matching/batchMatch.service"
+      "../services/matching/batchMatch.service.js"
     );
     await recomputeMatchesForOpportunity(canonicalId);
   } catch (error) {

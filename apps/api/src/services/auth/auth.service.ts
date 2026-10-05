@@ -196,7 +196,7 @@ async function issueTokens(
 
   const refreshToken = signRefreshToken({ userId: user.id, sessionId: session.id });
 
-  const { hashToken } = await import("./session.hash");
+  const { hashToken } = await import("./session.hash.js");
   await prisma.session.update({
     where: { id: session.id },
     data: { refreshTokenHash: hashToken(refreshToken) },

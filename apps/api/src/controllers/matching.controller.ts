@@ -23,7 +23,9 @@ export const forOpportunity = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const recompute = asyncHandler(async (req: Request, res: Response) => {
-  const { recomputeMatchesForUser } = await import("../services/matching/batchMatch.service");
+  const { recomputeMatchesForUser } = await import(
+    "../services/matching/batchMatch.service.js"
+  );
   await recomputeMatchesForUser(requireUserId(req));
   res.status(202).json({ data: { started: true } });
 });

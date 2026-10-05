@@ -53,7 +53,7 @@ export const move = asyncHandler(async (req: Request, res: Response) => {
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   await PipelineService.removeItem
     ? PipelineService.removeItem
-    : await import("../config/database").then(({ prisma }) =>
+    : await import("../config/database.js").then(({ prisma }) =>
         prisma.pipelineItem.deleteMany({
           where: { id: req.params.itemId, pipeline: { userId: requireUserId(req) } },
         }),
