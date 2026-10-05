@@ -1,8 +1,8 @@
 export const appConfig = {
-  name: "AfriScout",
-  tagline: "Africa's Opportunity Intelligence Platform",
+  name: "Scout",
+  tagline: "The Global Opportunity Intelligence Network",
   shortDescription:
-    "Discover Opportunities. Understand Them. Act With Confidence.",
+    "Discover opportunities. Understand them. Match with confidence. Build a reputation you can carry.",
   defaultLocale: "en",
   defaultCurrency: "USD",
   supportEmail: "support@afriscout.example",

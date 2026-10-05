@@ -69,7 +69,7 @@ export function AskAfriScout() {
       <SeoHead title="Ask AfriScout" />
       <PageHeader
         title="Ask AfriScout"
-        description="Use natural language to search across Africa's opportunities."
+        description="Use natural language to search Scout's global opportunity index."
       />
 
       <AskComponent onSubmit={ask} loading={loading} />

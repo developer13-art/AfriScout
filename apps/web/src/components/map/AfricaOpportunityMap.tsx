@@ -7,79 +7,13 @@ export interface MapCountryData {
   count: number;
 }
 
-export interface AfricaOpportunityMapProps {
+export interface GlobalOpportunityMapProps {
   data: MapCountryData[];
   height?: number;
   onSelectCountry?: (countryCode: string) => void;
   compact?: boolean;
 }
 
-const NUMERIC_TO_ALPHA2: Record<string, string> = {
-  "012": "DZ",
-  "024": "AO",
-  "204": "BJ",
-  "072": "BW",
-  "854": "BF",
-  "108": "BI",
-  "132": "CV",
-  "120": "CM",
-  "140": "CF",
-  "148": "TD",
-  "174": "KM",
-  "178": "CG",
-  "180": "CD",
-  "384": "CI",
-  "262": "DJ",
-  "818": "EG",
-  "226": "GQ",
-  "232": "ER",
-  "748": "SZ",
-  "231": "ET",
-  "266": "GA",
-  "270": "GM",
-  "288": "GH",
-  "324": "GN",
-  "624": "GW",
-  "404": "KE",
-  "426": "LS",
-  "430": "LR",
-  "434": "LY",
-  "450": "MG",
-  "454": "MW",
-  "466": "ML",
-  "478": "MR",
-  "480": "MU",
-  "504": "MA",
-  "508": "MZ",
-  "516": "NA",
-  "562": "NE",
-  "566": "NG",
-  "646": "RW",
-  "678": "ST",
-  "686": "SN",
-  "690": "SC",
-  "694": "SL",
-  "706": "SO",
-  "710": "ZA",
-  "728": "SS",
-  "729": "SD",
-  "834": "TZ",
-  "768": "TG",
-  "788": "TN",
-  "800": "UG",
-  "894": "ZM",
-  "716": "ZW",
-};
-
-/*
- * Stronger AfriScout color scale:
- *
- * None      -> slate gray
- * Low       -> light green
- * Medium    -> emerald
- * High      -> teal
- * Very high -> deep green
- */
 const SCALE = [
   "#E2E8F0",
   "#A7F3D0",
@@ -88,36 +22,57 @@ const SCALE = [
   "#047857",
 ];
 
-const LABEL_COUNTRIES = new Set([
-  "DZ",
-  "EG",
-  "LY",
-  "SD",
-  "TD",
-  "NE",
-  "ML",
-  "MR",
-  "SN",
-  "GN",
-  "CI",
-  "GH",
-  "NG",
-  "CM",
-  "CF",
-  "CD",
-  "ET",
-  "KE",
-  "TZ",
-  "MZ",
-  "MG",
-  "AO",
-  "ZM",
-  "ZW",
-  "BW",
-  "NA",
-  "ZA",
-  "SO",
-]);
+const REGION_NAMES = new Intl.DisplayNames(["en"], { type: "region" });
+
+const COUNTRY_NAME_ALIASES: Record<string, string> = {
+  "united states of america": "united states",
+  "congo kinshasa": "dem rep congo",
+  "democratic republic of the congo": "dem rep congo",
+  "dem rep congo": "dem rep congo",
+  "congo brazzaville": "congo",
+  "republic of the congo": "congo",
+  "ivory coast": "cote d ivoire",
+  "cote d ivoire": "cote d ivoire",
+  "czech republic": "czechia",
+  "central african republic": "central african republic",
+  "central african rep": "central african republic",
+  "dominican republic": "dominican republic",
+  "dominican rep": "dominican republic",
+  "western sahara": "western sahara",
+  "w sahara": "western sahara",
+  "falkland islands": "falkland islands",
+  "falkland is": "falkland islands",
+  "equatorial guinea": "equatorial guinea",
+  "eq guinea": "equatorial guinea",
+  "sao tome principe": "sao tome and principe",
+  "sao tome and principe": "sao tome and principe",
+  "solomon islands": "solomon islands",
+  "solomon is": "solomon islands",
+  swaziland: "eswatini",
+  "east timor": "timor leste",
+  "cape verde": "cabo verde",
+  "north macedonia": "north macedonia",
+  macedonia: "north macedonia",
+  "myanmar burma": "myanmar",
+  "palestinian territories": "palestine",
+  palestine: "palestine",
+  turkey: "turkiye",
+  turkiye: "turkiye",
+  "vatican city": "vatican",
+  vatican: "vatican",
+};
+
+function normalizeCountryName(value: string): string {
+  const normalized = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return (COUNTRY_NAME_ALIASES[normalized] ?? normalized)
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
 
 function colorForCount(count: number, max: number): string {
   if (count <= 0 || max <= 0) {
@@ -141,12 +96,12 @@ function colorForCount(count: number, max: number): string {
   return SCALE[4]!;
 }
 
-export function AfricaOpportunityMap({
+export function GlobalOpportunityMap({
   data,
   height = 420,
   onSelectCountry,
   compact = false,
-}: AfricaOpportunityMapProps) {
+}: GlobalOpportunityMapProps) {
   const [tooltip, setTooltip] = useState<{
     label: string;
     value: string;
@@ -181,11 +136,15 @@ export function AfricaOpportunityMap({
     };
   }, []);
 
-  const byCode = useMemo(() => {
+  const byCountryName = useMemo(() => {
     const map = new Map<string, MapCountryData>();
 
     for (const row of data) {
-      map.set(row.countryCode.toUpperCase(), row);
+      const countryName =
+        row.countryName ??
+        REGION_NAMES.of(row.countryCode.toUpperCase()) ??
+        row.countryCode;
+      map.set(normalizeCountryName(countryName), { ...row, countryName });
     }
 
     return map;
@@ -250,13 +209,13 @@ export function AfricaOpportunityMap({
         </div>
       ) : (
         <ComposableMap
-          projection="geoMercator"
+          projection="geoEqualEarth"
           projectionConfig={{
-            scale: compact ? 320 : 400,
-            center: [17, 2],
+            scale: compact ? 145 : 170,
+            center: [0, 0],
           }}
-          width={600}
-          height={640}
+          width={760}
+          height={430}
           style={{
             width: "100%",
             height: "auto",
@@ -265,32 +224,8 @@ export function AfricaOpportunityMap({
           <Geographies geography={topology as never}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                const numericId = String(geo.id).padStart(
-                  3,
-                  "0",
-                );
-
-                const alpha2 =
-                  NUMERIC_TO_ALPHA2[numericId];
-
-                /*
-                 * Countries outside Africa remain
-                 * visually subdued so Africa stays
-                 * as the main focus of the map.
-                 */
-                if (!alpha2) {
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill="#F8FAFC"
-                      stroke="#CBD5E1"
-                      strokeWidth={0.45}
-                    />
-                  );
-                }
-
-                const row = byCode.get(alpha2);
+                const geoName = String(geo.properties?.name ?? "");
+                const row = byCountryName.get(normalizeCountryName(geoName));
                 const count = row?.count ?? 0;
 
                 const fill = colorForCount(
@@ -298,17 +233,13 @@ export function AfricaOpportunityMap({
                   max,
                 );
 
-                const isLabel =
-                  LABEL_COUNTRIES.has(alpha2) &&
-                  count > 0;
-
                 return (
                   <g key={geo.rsmKey}>
                     <Geography
                       geography={geo}
-                      fill={fill}
-                      stroke="#FFFFFF"
-                      strokeWidth={0.8}
+                      fill={row ? fill : "#F8FAFC"}
+                      stroke={row ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={0.45}
                       onMouseMove={(event) => {
                         const target =
                           event.currentTarget as SVGPathElement;
@@ -327,7 +258,7 @@ export function AfricaOpportunityMap({
                         setTooltip({
                           label:
                             row?.countryName ??
-                            alpha2,
+                            geoName,
                           value: `${count} ${
                             count === 1
                               ? "opportunity"
@@ -340,39 +271,15 @@ export function AfricaOpportunityMap({
                       onMouseLeave={() =>
                         setTooltip(null)
                       }
-                      onClick={() =>
-                        onSelectCountry?.(alpha2)
-                      }
+                      onClick={() => {
+                        if (row) onSelectCountry?.(row.countryCode);
+                      }}
                       className={
-                        onSelectCountry
+                        onSelectCountry && row
                           ? "cursor-pointer outline-none transition-all duration-150 hover:opacity-75"
                           : "outline-none"
                       }
                     />
-
-                    {isLabel ? (
-                      <text
-                        x={
-                          geo.properties?.centroid?.[0] ??
-                          0
-                        }
-                        y={
-                          geo.properties?.centroid?.[1] ??
-                          0
-                        }
-                        textAnchor="middle"
-                        fontSize={compact ? 9 : 11}
-                        fontWeight={700}
-                        fill={
-                          count > max * 0.5
-                            ? "#FFFFFF"
-                            : "#064E3B"
-                        }
-                        pointerEvents="none"
-                      >
-                        {count}
-                      </text>
-                    ) : null}
                   </g>
                 );
               })
@@ -402,7 +309,7 @@ export function AfricaOpportunityMap({
 
       <div className="mt-3 rounded-lg border border-neutral-200 bg-white/95 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Opportunities
+          Opportunities by country
         </p>
 
         <ul className="mt-2 space-y-1">
@@ -433,3 +340,6 @@ export function AfricaOpportunityMap({
     </div>
   );
 }
+
+// Keep the legacy export while existing consumers migrate to the global view.
+export const AfricaOpportunityMap = GlobalOpportunityMap;

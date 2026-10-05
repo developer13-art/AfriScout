@@ -15,8 +15,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 5173,
-      strictPort: false,
+      host: "0.0.0.0",
+      port: 5000,
+      strictPort: true,
+      allowedHosts: true,
       proxy: {
         "/api": {
           target: apiUrl.replace(/\/api\/v1$/, ""),

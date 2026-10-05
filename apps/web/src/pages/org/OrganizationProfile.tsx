@@ -10,7 +10,7 @@ import { Alert } from "../../components/ui/Alert";
 import { Loader } from "../../components/ui/Loader";
 import { OrgAvatar } from "../../components/common/OrgAvatar";
 import { organizationService } from "../../services/organization.service";
-import { africanCountries } from "../../config/countries";
+import { allCountries } from "../../config/countries";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
@@ -115,7 +115,7 @@ export function OrganizationProfile() {
                 placeholder="Select a country"
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
-                options={africanCountries.map((c) => ({
+                options={allCountries.map((c) => ({
                   value: c.code,
                   label: c.name,
                 }))}

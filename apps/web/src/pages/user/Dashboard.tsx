@@ -120,7 +120,7 @@ export function Dashboard() {
               {
                 id: "explore",
                 label: "Explore opportunities",
-                description: "Browse opportunities across Africa.",
+                description: "Browse opportunities from connected sources around the world.",
                 completed: true,
                 to: "/explore",
               },

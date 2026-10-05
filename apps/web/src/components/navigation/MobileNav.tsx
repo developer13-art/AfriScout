@@ -38,7 +38,7 @@ export function MobileNav({ open, onClose, children }: MobileNavProps) {
       />
       <div className="absolute inset-y-0 left-0 flex w-72 max-w-full flex-col bg-white shadow-xl animate-slide-up">
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
-          <Link to="/" onClick={onClose} aria-label="AfriScout home">
+          <Link to="/" onClick={onClose} aria-label="Scout by AfriScout home">
             <AppLogo />
           </Link>
           <IconButton

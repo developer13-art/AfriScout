@@ -9,7 +9,7 @@ import { Select } from "../../components/ui/Select";
 import { Alert } from "../../components/ui/Alert";
 import { userService } from "../../services/user.service";
 import { dnaService } from "../../services/dna.service";
-import { africanCountries } from "../../config/countries";
+import { allCountries } from "../../config/countries";
 import { opportunityCategories } from "../../config/categories";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
@@ -103,7 +103,7 @@ export function Onboarding() {
               placeholder="Select a country"
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              options={africanCountries.map((c) => ({
+              options={allCountries.map((c) => ({
                 value: c.code,
                 label: c.name,
               }))}

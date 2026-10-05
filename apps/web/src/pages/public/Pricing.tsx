@@ -95,7 +95,7 @@ const faqs = [
   {
     question: "How does AfriScout get its opportunity data?",
     answer:
-      "From legitimate public sources across Africa. Every opportunity carries a link to the original publisher. AfriScout is an intelligence layer, not a replacement for the source.",
+      "From the public sources currently connected to Scout. Every opportunity carries a link to the original publisher. Scout is an intelligence layer, not a replacement for the source.",
   },
   {
     question: "Do I apply through AfriScout?",

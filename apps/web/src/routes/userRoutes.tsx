@@ -16,6 +16,7 @@ import {
   AskAfriScoutPage,
   Settings,
   Help,
+  Passport,
 } from "../pages";
 
 export const userRoutes: RouteObject[] = [
@@ -28,6 +29,7 @@ export const userRoutes: RouteObject[] = [
     children: [
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/profile", element: <Profile /> },
+      { path: "/passport", element: <Passport /> },
       { path: "/dna", element: <DNA /> },
       { path: "/matches", element: <Matches /> },
       { path: "/saved", element: <Saved /> },

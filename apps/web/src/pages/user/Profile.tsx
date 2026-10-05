@@ -9,7 +9,7 @@ import { Alert } from "../../components/ui/Alert";
 import { Avatar } from "../../components/ui/Avatar";
 import { userService } from "../../services/user.service";
 import { useUserStore } from "../../stores/userStore";
-import { africanCountries } from "../../config/countries";
+import { allCountries } from "../../config/countries";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
@@ -103,7 +103,7 @@ export function Profile() {
                 placeholder="Select a country"
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
-                options={africanCountries.map((c) => ({
+                options={allCountries.map((c) => ({
                   value: c.code,
                   label: c.name,
                 }))}

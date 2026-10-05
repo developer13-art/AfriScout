@@ -32,7 +32,7 @@ export function Header({ onOpenMobileNav }: HeaderProps) {
               />
             </span>
           ) : null}
-          <Link to="/" className="flex items-center" aria-label="AfriScout home">
+          <Link to="/" className="flex items-center" aria-label="Scout by AfriScout home">
             <AppLogo />
           </Link>
         </div>

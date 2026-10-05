@@ -13,7 +13,7 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { OpportunityGrid } from "../../components/opportunities/OpportunityGrid";
 import { OpportunityList } from "../../components/opportunities/OpportunityList";
 import { OpportunityFilterPanel } from "../../components/opportunities/OpportunityFilterPanel";
-import { AfricaOpportunityMap } from "../../components/map/AfricaOpportunityMap";
+import { GlobalOpportunityMap } from "../../components/map/AfricaOpportunityMap";
 import { useOpportunities } from "../../hooks/useOpportunities";
 import { useSearchStore } from "../../stores/searchStore";
 import { useSaved } from "../../hooks/useSaved";
@@ -95,13 +95,13 @@ export function Explore() {
     <>
       <SeoHead
         title="Explore opportunities"
-        description="Search tenders, grants, jobs, scholarships, and more from trusted African sources."
+        description="Search opportunities from the sources currently connected to Scout."
       />
 
       <Container className="py-8">
         <PageHeader
           title="Explore Opportunities"
-          description="Discover and access the best opportunities across Africa."
+          description="Explore opportunities across countries, categories, and industries."
         />
 
         <form
@@ -217,7 +217,7 @@ export function Explore() {
             <div className="sticky top-20 space-y-4">
               <Card>
                 <CardHeader
-                  title="Opportunities across Africa"
+                  title="Global opportunity map"
                   actions={
                     <Link
                       to="/explore?map=true"
@@ -228,7 +228,7 @@ export function Explore() {
                   }
                 />
                 <CardBody>
-                  <AfricaOpportunityMap
+                  <GlobalOpportunityMap
                     data={countryData}
                     height={320}
                     compact

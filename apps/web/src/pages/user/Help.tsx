@@ -21,7 +21,7 @@ export function Help() {
         <Card>
           <CardHeader title="Where do opportunities come from?" />
           <CardBody>
-            From legitimate public sources across Africa. We record the source
+            From legitimate public sources currently connected to Scout. We record the source
             and link back to the official listing so you can verify anything.
           </CardBody>
         </Card>

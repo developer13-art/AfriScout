@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🌍 AfriScout
+# Scout (AfriScout)
 
-### Africa's Opportunity Intelligence Platform
+### The Global Opportunity Intelligence Network
 
-**Discover Opportunities. Understand Them. Act With Confidence.**
+**Discover opportunities. Verify them. Match them. Build reputation. Act with confidence.**
 
 [![Status](https://img.shields.io/badge/status-actively--evolving-brightgreen)]()
-[![Platform](https://img.shields.io/badge/platform-pan--African-orange)]()
+[![Platform](https://img.shields.io/badge/platform-global-orange)]()
 [![License](https://img.shields.io/badge/license-proprietary-lightgrey)]()
 
 </div>
@@ -35,19 +35,19 @@
 
 ## 🧭 Overview
 
-**AfriScout** is an AI-powered opportunity intelligence platform built for Africa.
+**Scout** is a global opportunity intelligence network growing from the foundation built as **AfriScout**.
 
-Every day, thousands of opportunities are published across government portals, private organizations, universities, foundations, development agencies, startup ecosystems, NGOs, and public platforms — tenders, grants, jobs, scholarships, funding programs, fellowships, competitions, accelerators, research calls, partnerships, and more.
+Opportunities are published across government portals, private organizations, universities, foundations, development agencies, startup ecosystems, NGOs, and public platforms — tenders, grants, jobs, scholarships, funding programs, fellowships, competitions, accelerators, research calls, partnerships, and more. Scout's coverage depends on the public sources currently connected to the network.
 
 The problem isn't that opportunities are missing — it's that they are **fragmented**, **hard to understand**, **difficult to match**, and **easy to miss**.
 
-AfriScout solves this by continuously discovering opportunities from legitimate public sources across the continent, structuring and verifying them, using AI to explain what each one actually means, matching them against each user's profile, monitoring them for important changes, and giving users a workspace to act on the ones that matter.
+Scout brings those public listings into one intelligence layer: it structures and checks source records, uses AI to explain what each opportunity means, matches listings against user profiles, monitors changes, and gives people a workspace to act on the opportunities that matter.
 
-> AfriScout is **not** a job board.
-> AfriScout is **not** a tender scraper.
-> AfriScout is **not** a search engine.
+> Scout is **not** a job board.
+> Scout is **not** a tender scraper.
+> Scout is **not** just a search engine.
 >
-> AfriScout is **opportunity intelligence.**
+> Scout is **opportunity intelligence.**
 
 ---
 
@@ -64,7 +64,7 @@ AfriScout solves this by continuously discovering opportunities from legitimate 
 
 ## ⚙️ What AfriScout Does
 
-AfriScout runs a continuous intelligence loop:
+Scout runs a continuous intelligence loop:
 
 ```
 Discover → Understand → Match → Act → Track → Learn
@@ -72,7 +72,7 @@ Discover → Understand → Match → Act → Track → Learn
 
 | Stage | Description |
 |---|---|
-| **1. Discovery** | Opportunities are collected from registered public sources across Africa. |
+| **1. Discovery** | Opportunities are collected from public sources registered in the network. |
 | **2. Understanding** | Raw information is cleaned, structured, classified, and analyzed into a clear, self-contained record. |
 | **3. Matching** | Each opportunity is scored against a user's profile with an explainable relevance score, reasons, and concerns. |
 | **4. Monitoring** | Sources are continuously re-checked; important changes trigger alerts. |
@@ -165,7 +165,7 @@ Calls for proposals · NGO programs · Community & social-impact programs · You
 
 ## ✨ What Makes AfriScout Different
 
-- **🌍 Built for Africa, from day one** — sources, categories, currencies, locations, and application channels all support the continent as a whole.
+- **🌍 Global by design, grounded in Africa** — Scout's opportunity model supports international sources, locations, currencies, and application channels.
 - **🧠 Intelligence, not a listing** — answers *who it's for*, *why you're a match*, *what's needed*, and *what to do next* — not just *what exists*.
 - **📊 Every match is explainable** — no score is ever shown without clear reasons and labelled concerns.
 - **✅ Every opportunity is verified and sourced** — full provenance, original links, discovery time, and verification status.
@@ -297,13 +297,13 @@ When a user decides to pursue an opportunity, AfriScout directs them to the offi
 - 🎯 **Custom monitoring** — e.g. *"Monitor all road and bridge opportunities above ₦50M in Northern Nigeria."*
 
 ### Long-term
-- 🕸 **The African Opportunity Graph** — relationship mapping across organizations, opportunities, industries, locations, skills, and outcomes
+- 🕸 **The Global Opportunity Graph** — relationship mapping across organizations, opportunities, industries, locations, skills, and outcomes
 - 🔮 **Opportunity forecasting**
 - 🧩 **Capability gap analysis**
 - 📊 **Market intelligence** for researchers, investors, and development organizations
 - 📱 **Mobile applications**
 - 🌐 **Localisation** — French, Arabic, Swahili, Hausa, and more
-- 🌍 **Full pan-African coverage**
+- 🌍 **Worldwide source coverage**
 
 ---
 
@@ -316,7 +316,7 @@ When a user decides to pursue an opportunity, AfriScout directs them to the offi
 - Users should always be able to reach the original source.
 - The platform should never fabricate opportunities, statistics, or outcomes.
 - Opportunity intelligence is infrastructure — for individuals, businesses, researchers, developers, and AI agents alike.
-- Africa's opportunity ecosystem deserves infrastructure built for Africa — pan-African from day one.
+- Opportunity ecosystems everywhere deserve infrastructure that helps people discover and act with confidence.
 
 ---
 
@@ -324,13 +324,13 @@ When a user decides to pursue an opportunity, AfriScout directs them to the offi
 
 AfriScout is an **actively evolving platform**. The core intelligence loop — discovery, understanding, matching, monitoring, action, and tracking — is in place, and the platform continues to expand across sources, categories, countries, and users.
 
-> **Help Africans discover the opportunities they would otherwise miss — and help them act on the ones that matter.**
+> **Help people discover the opportunities they would otherwise miss — and help them act on the ones that matter.**
 
 ---
 
 <div align="center">
 
-**AfriScout** — Africa's Opportunity Intelligence Platform
+**Scout by AfriScout** — The Global Opportunity Intelligence Network
 
 *Discover Opportunities. Understand Them. Act With Confidence.*
 

@@ -1,6 +1,6 @@
 import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
-import { africanCountries, countryName } from "../../config/countries";
+import { allCountries, countryName } from "../../config/countries";
 import { cn } from "../../utils/strings";
 
 export interface CountryMultiSelectProps {
@@ -31,8 +31,8 @@ export function CountryMultiSelect({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return africanCountries;
-    return africanCountries.filter(
+    if (!q) return allCountries;
+    return allCountries.filter(
       (country) =>
         country.name.toLowerCase().includes(q) ||
         country.code.toLowerCase().includes(q) ||

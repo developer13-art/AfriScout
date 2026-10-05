@@ -105,8 +105,8 @@ export function HowItWorks() {
               How AfriScout works
             </h1>
             <p className="mt-4 text-base text-neutral-600">
-              AfriScout continuously discovers opportunities from legitimate public sources across
-              Africa, structures and verifies them, layers AI on top to explain what each one
+              Scout discovers opportunities from the public sources currently connected to its
+              network, structures and verifies them, layers AI on top to explain what each one
               actually means, matches them against your profile, monitors them for important
               changes, and gives you a workspace to act.
             </p>

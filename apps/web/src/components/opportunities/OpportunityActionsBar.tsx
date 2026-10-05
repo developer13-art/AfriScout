@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, Eye, Workflow, Sparkles, ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, Eye, Workflow, Sparkles, ExternalLink, Share2 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { cn } from "../../utils/strings";
 
@@ -10,6 +10,7 @@ export interface OpportunityActionsBarProps {
   onWatch: () => void;
   onAddToPipeline: () => void;
   onAnalyze?: () => void;
+  onShare?: () => void;
   applyUrl?: string;
   className?: string;
 }
@@ -22,6 +23,7 @@ export function OpportunityActionsBar({
   onWatch,
   onAddToPipeline,
   onAnalyze,
+  onShare,
   applyUrl,
   className,
 }: OpportunityActionsBarProps) {
@@ -35,6 +37,16 @@ export function OpportunityActionsBar({
           onClick={onAnalyze}
         >
           Analyze
+        </Button>
+      ) : null}
+      {onShare ? (
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Share2 className="h-4 w-4" />}
+          onClick={onShare}
+        >
+          Share opportunity
         </Button>
       ) : null}
       <Button

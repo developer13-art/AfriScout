@@ -42,7 +42,7 @@ const endpoints = [
   {
     method: "GET",
     path: "/api/v1/countries",
-    description: "List supported African countries.",
+    description: "List country codes represented in the current opportunity index.",
   },
   {
     method: "GET",

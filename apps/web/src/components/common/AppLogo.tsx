@@ -29,11 +29,14 @@ export function AppLogo({
         )}
         aria-hidden
       >
-        A
+        S
       </span>
       {withText ? (
-        <span className="text-sm font-semibold text-neutral-900">
-          AfriScout
+        <span className="flex flex-col text-sm font-semibold leading-tight text-neutral-900">
+          <span>Scout</span>
+          <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-neutral-500">
+            by AfriScout
+          </span>
         </span>
       ) : null}
     </span>
@@ -41,7 +44,7 @@ export function AppLogo({
 
   if (to) {
     return (
-      <Link to={to} className="inline-flex" aria-label="AfriScout home">
+      <Link to={to} className="inline-flex" aria-label="Scout by AfriScout home">
         {content}
       </Link>
     );

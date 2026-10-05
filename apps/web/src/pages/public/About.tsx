@@ -52,8 +52,8 @@ export function About() {
   return (
     <>
       <SeoHead
-        title="About AfriScout"
-        description="AfriScout is an AI-powered opportunity intelligence platform built for Africa."
+        title="About Scout"
+        description="Scout is a global opportunity intelligence network, growing from AfriScout's foundation."
       />
 
       <section className="border-b border-neutral-200 bg-gradient-to-b from-teal-50/60 to-white">
@@ -64,18 +64,18 @@ export function About() {
               {appConfig.tagline}
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight text-neutral-900 sm:text-4xl">
-              About AfriScout
+              About Scout
             </h1>
             <p className="mt-4 text-base text-neutral-600">
-              AfriScout is an AI-powered opportunity intelligence platform built for Africa. Our
-              goal is simple: make every legitimate opportunity easier to discover, easier to
-              understand, easier to match, and easier to act on.
+              Scout is a global opportunity intelligence network built on AfriScout's
+              foundation. Our goal is to make opportunities easier to discover, understand,
+              match, verify, and act on.
             </p>
             <p className="mt-4 text-base text-neutral-600">
-              Every day, thousands of tenders, grants, jobs, scholarships, fellowships,
-              competitions, and partnerships are published across Africa. Most of them go unseen by
-              the very people and organizations who would benefit most. That gap â€” between
-              publication and discovery â€” is what we exist to close.
+              Opportunities are published across the world in disconnected portals, sites, and
+              communities. Scout is expanding beyond its African roots to make those listings
+              easier to find and evaluate. Coverage depends on the public sources currently
+              connected to the network.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link to="/how-it-works">
@@ -101,8 +101,8 @@ export function About() {
               <Card>
                 <p className="text-sm font-semibold text-neutral-900">The gap</p>
                 <p className="mt-2 text-sm text-neutral-600">
-                  Africa does not lack opportunity. What it lacks is visibility. A tender on a
-                  state portal, a grant on a foundation page, a scholarship on a university site,
+                  People and organizations do not lack opportunity. What they lack is visibility.
+                  A tender on a government portal, a grant on a foundation page, a scholarship on a university site,
                   a funding program on an accelerator page â€” each one is published, but each one is
                   hidden behind its own website, its own terminology, its own update rhythm, and
                   its own language.

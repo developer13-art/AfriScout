@@ -8,7 +8,7 @@ import { OpportunityRequirements } from "../../components/opportunities/Opportun
 import { OpportunityDocuments } from "../../components/opportunities/OpportunityDocuments";
 import { OpportunityEligibility } from "../../components/opportunities/OpportunityEligibility";
 import { OpportunityTimeline } from "../../components/opportunities/OpportunityTimeline";
-import { OpportunitySourcePanel } from "../../components/opportunities/OpportunitySourcePanel";
+import { OpportunityProvenancePanel } from "../../components/opportunities/OpportunityProvenancePanel";
 import { OpportunityChangeHistory } from "../../components/opportunities/OpportunityChangeHistory";
 import { OpportunityActionsBar } from "../../components/opportunities/OpportunityActionsBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs";
@@ -33,6 +33,7 @@ export function OpportunityDetails() {
   const [aiAnalyst, setAiAnalyst] = useState<Awaited<ReturnType<typeof aiService.analyst>> | null>(null);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiAnalystLoading, setAiAnalystLoading] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["opportunity", slug],
@@ -99,6 +100,31 @@ export function OpportunityDetails() {
     }
   };
 
+  const shareOpportunity = async () => {
+    if (!query.data) return;
+    setShareMessage(null);
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: query.data.title,
+          text: query.data.summaryShort ?? "View this opportunity on Scout.",
+          url,
+        });
+        return;
+      }
+      if (!navigator.clipboard) {
+        setShareMessage("Sharing is not available in this browser.");
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareMessage("Opportunity link copied.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setShareMessage("Could not share this opportunity.");
+    }
+  };
+
   if (query.isLoading) return <Loader fullPage label="Loading opportunity" />;
   if (query.isError || !query.data) {
     return (
@@ -134,8 +160,14 @@ export function OpportunityDetails() {
             onWatch={() => watchlist.add.mutate(opportunity.id)}
             onAddToPipeline={() => pipeline.add.mutate(opportunity.id)}
             onAnalyze={user ? runAnalyst : undefined}
+            onShare={shareOpportunity}
             applyUrl={opportunity.applicationUrl ?? undefined}
           />
+          {shareMessage ? (
+            <p className="mt-2 text-xs text-neutral-600" role="status">
+              {shareMessage}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -223,7 +255,11 @@ export function OpportunityDetails() {
               </TabsContent>
 
               <TabsContent value="source">
-                <OpportunitySourcePanel sources={sourcesQuery.data ?? []} />
+                <OpportunityProvenancePanel
+                  opportunity={opportunity}
+                  sources={sourcesQuery.data ?? []}
+                  changes={changesQuery.data ?? []}
+                />
               </TabsContent>
             </Tabs>
           </div>

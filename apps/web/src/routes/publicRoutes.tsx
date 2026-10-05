@@ -14,6 +14,7 @@ import {
   Terms,
   NotFound,
   ServerError,
+  SolanaRadar,
 } from "../pages";
 
 export const publicRoutes: RouteObject[] = [
@@ -22,6 +23,7 @@ export const publicRoutes: RouteObject[] = [
     children: [
       { path: "/", element: <Home /> },
       { path: "/explore", element: <Explore /> },
+      { path: "/solana-radar", element: <SolanaRadar /> },
       { path: "/opportunities/:slug", element: <OpportunityDetails /> },
       { path: "/sources", element: <Sources /> },
       { path: "/how-it-works", element: <HowItWorks /> },

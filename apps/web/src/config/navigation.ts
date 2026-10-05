@@ -35,6 +35,7 @@ import {
   Scale,
   Lock,
   FileText,
+  Fingerprint,
 } from "lucide-react";
 
 export type NavItem = {
@@ -63,6 +64,7 @@ export const userNavigation: NavSection[] = [
       { label: "Watchlist", to: "/watchlist", icon: Eye },
       { label: "Pipeline", to: "/pipeline", icon: Workflow },
       { label: "Radar", to: "/radar", icon: RadarIcon },
+      { label: "Solana Radar", to: "/solana-radar", icon: RadarIcon },
       { label: "Notifications", to: "/notifications", icon: Bell, badgeKey: "unreadNotifications" },
     ],
   },
@@ -93,6 +95,7 @@ export const userNavigation: NavSection[] = [
     label: "Account",
     items: [
       { label: "Profile", to: "/profile", icon: User },
+      { label: "Scout Passport", to: "/passport", icon: Fingerprint },
       { label: "Business DNA", to: "/dna", icon: Layers },
       { label: "Analytics", to: "/analytics", icon: BarChart3 },
       { label: "Ask AfriScout", to: "/ask", icon: Sparkles },
@@ -159,6 +162,7 @@ export const developerNavigation: NavSection[] = [
 export const publicNavigation: NavItem[] = [
   { label: "Home", to: "/", icon: LayoutDashboard },
   { label: "Explore", to: "/explore", icon: Compass },
+  { label: "Solana Radar", to: "/solana-radar", icon: RadarIcon },
   { label: "How It Works", to: "/how-it-works", icon: Sparkles },
   { label: "Sources", to: "/sources", icon: Database },
   { label: "About", to: "/about", icon: HelpCircle },

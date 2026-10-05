@@ -1,6 +1,7 @@
 // Public
 export { Home } from "./public/Home";
 export { Explore } from "./public/Explore";
+export { SolanaRadar } from "./public/SolanaRadar";
 export { OpportunityDetails } from "./public/OpportunityDetails";
 export { Sources } from "./public/Sources";
 export { HowItWorks } from "./public/HowItWorks";
@@ -25,6 +26,7 @@ export { Onboarding } from "./auth/Onboarding";
 // User
 export { Dashboard } from "./user/Dashboard";
 export { Profile } from "./user/Profile";
+export { Passport } from "./user/Passport";
 export { DNA } from "./user/DNA";
 export { Matches } from "./user/Matches";
 export { Saved } from "./user/Saved";

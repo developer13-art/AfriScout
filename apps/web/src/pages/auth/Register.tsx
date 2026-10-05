@@ -7,7 +7,7 @@ import { Alert } from "../../components/ui/Alert";
 import { Select } from "../../components/ui/Select";
 import { authService } from "../../services/auth.service";
 import { useAuthStore } from "../../stores/authStore";
-import { africanCountries } from "../../config/countries";
+import { allCountries } from "../../config/countries";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
@@ -94,7 +94,7 @@ export function Register() {
             placeholder="Select a country"
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
-            options={africanCountries.map((c) => ({
+            options={allCountries.map((c) => ({
               value: c.code,
               label: c.name,
             }))}

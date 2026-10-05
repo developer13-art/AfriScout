@@ -138,7 +138,7 @@ export function DNA() {
                 value={draft.preferredCountries}
                 onChange={(value) => patch("preferredCountries", value)}
                 placeholder="Add a country"
-                hint="Pick from the list of African countries. The country code is stored automatically."
+                hint="Choose any country or territory. Scout stores its two-letter country code."
               />
               <TagInput
                 label="Preferred locations"

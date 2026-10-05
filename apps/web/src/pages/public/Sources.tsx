@@ -18,7 +18,7 @@ export function Sources() {
     <>
       <SeoHead
         title="Sources"
-        description="The public sources AfriScout monitors for opportunities across Africa."
+        description="The public sources currently connected to Scout's opportunity index."
       />
       <Container className="py-8">
         <PageHeader
