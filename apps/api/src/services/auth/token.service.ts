@@ -5,7 +5,7 @@ import type { RoleKey } from "../../constants/roles";
 
 export interface AccessTokenPayload extends JwtPayload {
   sub: string;
-  email: string;
+  email?: string | null;
   role: RoleKey;
 }
 
@@ -25,7 +25,7 @@ function signOptions(expiresIn: string): SignOptions {
 
 export function signAccessToken(input: {
   userId: string;
-  email: string;
+  email: string | null;
   role: RoleKey;
 }): string {
   return jwt.sign(
@@ -54,7 +54,7 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
       throw new UnauthorizedError("Malformed access token");
     }
     const p = payload as AccessTokenPayload;
-    if (!p.sub || !p.email || !p.role) {
+    if (!p.sub || !p.role) {
       throw new UnauthorizedError("Incomplete access token");
     }
     return p;

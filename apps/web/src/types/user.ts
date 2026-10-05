@@ -13,7 +13,9 @@ export type UserType =
 
 export interface User {
   id: string;
-  email: string;
+  email: string | null;
+  walletAddress?: string | null;
+  walletVerifiedAt?: string | null;
   fullName: string;
   phone?: string | null;
   countryCode?: string | null;

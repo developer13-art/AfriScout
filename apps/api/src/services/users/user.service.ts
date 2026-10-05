@@ -8,6 +8,8 @@ export async function findUserById(id: string) {
     select: {
       id: true,
       email: true,
+      walletAddress: true,
+      walletVerifiedAt: true,
       fullName: true,
       phone: true,
       countryCode: true,
@@ -58,6 +60,7 @@ export async function listUsers(input: {
       select: {
         id: true,
         email: true,
+        walletAddress: true,
         fullName: true,
         role: true,
         status: true,
@@ -93,6 +96,7 @@ export async function updateUser(
     select: {
       id: true,
       email: true,
+      walletAddress: true,
       fullName: true,
       phone: true,
       countryCode: true,

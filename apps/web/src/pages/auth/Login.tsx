@@ -5,11 +5,14 @@ import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { Alert } from "../../components/ui/Alert";
 import { useAuth } from "../../hooks/useAuth";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
+import { Wallet2 } from "lucide-react";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 
 export function Login() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithWallet } = useAuth();
+  const wallet = useSolanaWallet();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -40,13 +43,32 @@ export function Login() {
     }
   };
 
+  const onWalletSignIn = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const walletAddress = wallet.address ?? await wallet.connect();
+      if (!walletAddress) {
+        throw new Error(wallet.error ?? "Connect a Solana wallet to continue.");
+      }
+      const user = await signInWithWallet(walletAddress, wallet.signMessage);
+      const requested = (location.state as { from?: string } | null)?.from;
+      const isAdmin = user.role === "SUPER_ADMIN" || user.role === "DATA_ADMIN";
+      navigate(requested ?? (isAdmin ? "/admin" : "/dashboard"), { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Wallet sign-in failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <SeoHead title="Sign in" />
       <Card padding="lg">
         <h1 className="text-xl font-semibold text-neutral-900">Sign in</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Welcome back. Enter your credentials to continue.
+          Sign in with your Scout account or verify a Solana wallet.
         </p>
 
         {error ? (
@@ -84,6 +106,28 @@ export function Login() {
             Sign in
           </Button>
         </form>
+
+        <div className="my-4 flex items-center gap-3 text-xs text-neutral-400" aria-hidden>
+          <span className="h-px flex-1 bg-neutral-200" />
+          or
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          loading={submitting || wallet.connecting}
+          leftIcon={<Wallet2 className="h-4 w-4" />}
+          onClick={onWalletSignIn}
+        >
+          Continue with Solana wallet
+        </Button>
+        <p className="mt-2 text-center text-xs text-neutral-500">
+          You will sign a short message. Scout will never ask for a transfer or recovery phrase.
+        </p>
+        {wallet.error ? (
+          <Alert tone="danger" className="mt-3">{wallet.error}</Alert>
+        ) : null}
 
         <p className="mt-4 text-center text-xs text-neutral-500">
           Don&apos;t have an account?{" "}

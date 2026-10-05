@@ -7,7 +7,7 @@ declare global {
       requestId: string;
       user?: {
         id: string;
-        email: string;
+        email: string | null;
         role: RoleKey;
       };
       apiKey?: {

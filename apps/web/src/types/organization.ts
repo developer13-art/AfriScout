@@ -22,6 +22,7 @@ export interface Organization {
   verified: boolean;
   verifiedAt?: string | null;
   logoUrl?: string | null;
+  membershipRole?: "OWNER" | "ADMIN" | "MEMBER";
   createdAt: string;
   updatedAt: string;
 }

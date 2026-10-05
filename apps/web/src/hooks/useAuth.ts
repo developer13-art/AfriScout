@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { authService } from "../services/auth.service";
 import { useUserStore } from "../stores/userStore";
+import type { AuthResponse } from "../services/auth.service";
 
 export function useAuth() {
   const { user, accessToken, loading, setUser, setTokens, setLoading, clear } =
@@ -43,6 +44,26 @@ export function useAuth() {
     [setTokens, setUser],
   );
 
+  const signInWithWallet = useCallback(
+    async (walletAddress: string, signMessage: (message: string) => Promise<Uint8Array>) => {
+      const challenge = await authService.walletChallenge(walletAddress, false);
+      const signature = await signMessage(challenge.message);
+      const encodedSignature = btoa(
+        Array.from(signature, (byte) => String.fromCharCode(byte)).join(""),
+      );
+      const result = await authService.walletVerify(
+        { walletAddress, nonce: challenge.nonce, signature: encodedSignature },
+        false,
+      );
+      if (!("accessToken" in result)) throw new Error("Wallet sign-in did not create a session.");
+      const authResult = result as AuthResponse;
+      setTokens(authResult.accessToken, authResult.refreshToken);
+      setUser(authResult.user);
+      return authResult.user;
+    },
+    [setTokens, setUser],
+  );
+
   const signOut = useCallback(async () => {
     try {
       await authService.logout();
@@ -53,5 +74,5 @@ export function useAuth() {
     resetUser();
   }, [clear, resetUser]);
 
-  return { user, loading, signIn, signOut };
+  return { user, loading, signIn, signInWithWallet, signOut };
 }

@@ -36,10 +36,10 @@ export function UserDetails() {
 
   return (
     <>
-      <SeoHead title={u.email} />
+      <SeoHead title={u.email ?? u.walletAddress ?? u.fullName} />
       <BackButton label="Back to users" to="/admin/users" />
       <div className="mt-3">
-        <PageHeader title={u.fullName} description={u.email} />
+        <PageHeader title={u.fullName} description={u.email ?? u.walletAddress ?? "Wallet-only account"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

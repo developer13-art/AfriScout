@@ -1,7 +1,21 @@
 import { prisma } from "../../config/database";
-import { ConflictError, NotFoundError } from "../../utils/errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors";
 
-export async function listMembers(organizationId: string) {
+async function requireManager(organizationId: string, userId: string) {
+  const member = await prisma.organizationMember.findUnique({
+    where: { organizationId_userId: { organizationId, userId } },
+    select: { role: true },
+  });
+  if (!member || (member.role !== "OWNER" && member.role !== "ADMIN")) {
+    throw new ForbiddenError("Only organization owners and admins can manage this team");
+  }
+}
+
+export async function listMembers(organizationId: string, requesterId: string) {
+  const membership = await prisma.organizationMember.findUnique({
+    where: { organizationId_userId: { organizationId, userId: requesterId } },
+  });
+  if (!membership) throw new ForbiddenError("You are not a member of this organization");
   return prisma.organizationMember.findMany({
     where: { organizationId },
     orderBy: { createdAt: "asc" },
@@ -12,7 +26,9 @@ export async function addMember(input: {
   organizationId: string;
   userId: string;
   role: string;
+  actorUserId: string;
 }) {
+  await requireManager(input.organizationId, input.actorUserId);
   const organization = await prisma.organization.findUnique({
     where: { id: input.organizationId },
     select: { id: true },
@@ -38,8 +54,29 @@ export async function addMember(input: {
   });
 }
 
-export async function removeMember(organizationId: string, memberId: string) {
-  await prisma.organizationMember.deleteMany({
+export async function removeMember(
+  organizationId: string,
+  memberId: string,
+  actorUserId: string,
+) {
+  await requireManager(organizationId, actorUserId);
+  const target = await prisma.organizationMember.findFirst({
     where: { id: memberId, organizationId },
+    select: { userId: true, role: true },
   });
+  if (!target) throw new NotFoundError("Organization member not found");
+  if (target.role === "OWNER") {
+    const ownerCount = await prisma.organizationMember.count({
+      where: { organizationId, role: "OWNER" },
+    });
+    if (ownerCount <= 1) throw new ConflictError("An organization must keep at least one owner");
+    if (target.userId !== actorUserId) {
+      const actor = await prisma.organizationMember.findUnique({
+        where: { organizationId_userId: { organizationId, userId: actorUserId } },
+        select: { role: true },
+      });
+      if (actor?.role !== "OWNER") throw new ForbiddenError("Only an owner can remove another owner");
+    }
+  }
+  await prisma.organizationMember.delete({ where: { id: memberId } });
 }

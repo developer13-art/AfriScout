@@ -68,5 +68,8 @@
     "@prisma/engines@5.22.0": true,
     "argon2@0.40.3": true,
     "msgpackr-extract@3.0.4": true
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.99.0"
   }
 }

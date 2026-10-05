@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { Connection, Transaction } from "@solana/web3.js";
 
 interface SolanaPublicKey {
   toString(): string;
@@ -14,6 +15,15 @@ interface SolanaWalletProvider {
     publicKey?: SolanaPublicKey;
   }>;
   disconnect?: () => Promise<void>;
+  signMessage?: (
+    message: Uint8Array,
+    display?: "utf8" | "hex",
+  ) => Promise<{ signature: Uint8Array }>;
+  sendTransaction?: (
+    transaction: Transaction,
+    connection: Connection,
+    options?: { preflightCommitment?: "processed" | "confirmed" | "finalized" },
+  ) => Promise<string>;
   on?: (event: "connect" | "disconnect", listener: () => void) => void;
   off?: (event: "connect" | "disconnect", listener: () => void) => void;
 }
@@ -82,12 +92,12 @@ export function useSolanaWallet() {
     };
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (): Promise<string | null> => {
     const provider = getProvider();
     setError(null);
     if (!provider) {
       setError("No compatible Solana wallet was found in this browser.");
-      return;
+      return null;
     }
 
     setConnecting(true);
@@ -99,14 +109,41 @@ export function useSolanaWallet() {
       }
       setAddress(connectedAddress);
       setWalletName(walletLabel(provider));
+      return connectedAddress;
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Could not connect to the wallet.",
       );
+      return null;
     } finally {
       setConnecting(false);
     }
   }, []);
+
+  const signMessage = useCallback(async (message: string): Promise<Uint8Array> => {
+    const provider = getProvider();
+    if (!provider?.signMessage) {
+      throw new Error("This wallet does not support message signing.");
+    }
+    const result = await provider.signMessage(new TextEncoder().encode(message), "utf8");
+    if (!(result.signature instanceof Uint8Array) || result.signature.length !== 64) {
+      throw new Error("The wallet returned an invalid message signature.");
+    }
+    return result.signature;
+  }, []);
+
+  const sendTransaction = useCallback(
+    async (transaction: Transaction, connection: Connection): Promise<string> => {
+      const provider = getProvider();
+      if (!provider?.sendTransaction) {
+        throw new Error("This wallet cannot send Solana transactions.");
+      }
+      return provider.sendTransaction(transaction, connection, {
+        preflightCommitment: "confirmed",
+      });
+    },
+    [],
+  );
 
   const disconnect = useCallback(async () => {
     const provider = getProvider();
@@ -122,5 +159,15 @@ export function useSolanaWallet() {
     }
   }, []);
 
-  return { address, walletName, available, error, connecting, connect, disconnect };
+  return {
+    address,
+    walletName,
+    available,
+    error,
+    connecting,
+    connect,
+    disconnect,
+    signMessage,
+    sendTransaction,
+  };
 }

@@ -46,6 +46,19 @@ export const acceptInviteSchema = z.object({
   password: passwordSchema,
 });
 
+const solanaAddressSchema = z.string().trim().min(32).max(44).regex(/^[1-9A-HJ-NP-Za-km-z]+$/);
+
+export const walletChallengeSchema = z.object({
+  walletAddress: solanaAddressSchema,
+});
+
+export const walletVerifySchema = z.object({
+  walletAddress: solanaAddressSchema,
+  nonce: z.string().min(20).max(80),
+  signature: z.string().min(80).max(100).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  fullName: z.string().trim().min(2).max(200).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;

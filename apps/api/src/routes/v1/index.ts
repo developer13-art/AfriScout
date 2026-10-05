@@ -23,6 +23,7 @@ import webhookRoutes from "./webhook.routes";
 import auditLogRoutes from "./auditLog.routes";
 import adminRoutes from "./admin.routes";
 import healthRoutes from "./health.routes";
+import bountyRoutes from "./bounty.routes";
 
 const router = Router();
 
@@ -46,6 +47,7 @@ router.use("/actor-runs", actorRunRoutes);
 router.use("/duplicates", duplicateRoutes);
 router.use("/changes", changeRoutes);
 router.use("/organizations", organizationRoutes);
+router.use("/bounties", bountyRoutes);
 router.use("/api-keys", apiKeyRoutes);
 router.use("/webhooks", webhookRoutes);
 router.use("/audit-logs", auditLogRoutes);

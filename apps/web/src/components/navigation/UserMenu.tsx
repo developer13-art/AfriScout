@@ -35,7 +35,9 @@ export function UserMenu() {
         <p className="text-sm font-medium text-neutral-900 truncate">
           {user.fullName}
         </p>
-        <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+        <p className="text-xs text-neutral-500 truncate">
+          {user.email ?? user.walletAddress ?? "Wallet account"}
+        </p>
         <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-400">
           {user.role.replace("_", " ")}
         </p>

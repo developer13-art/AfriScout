@@ -8,6 +8,7 @@ import { errorMiddleware, notFoundMiddleware } from "./middleware/error.middlewa
 import { rateLimit } from "./middleware/rateLimit.middleware";
 import { env } from "./config/env";
 import apiRoutes from "./routes";
+import actionRoutes from "./routes/actions.routes";
 
 export function createApp(): Application {
   const app = express();
@@ -38,6 +39,9 @@ export function createApp(): Application {
   app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
   for (const middleware of securityMiddleware) app.use(middleware);
+  // Solana Actions/Blinks require cross-origin requests. Keep the wildcard CORS
+  // policy scoped to unsigned, public transaction construction endpoints.
+  app.use(actionRoutes);
   app.use(corsMiddleware);
   app.use(requestIdMiddleware);
   app.use(requestLoggerMiddleware);

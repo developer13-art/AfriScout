@@ -26,7 +26,8 @@ import { logger } from "../../config/logger";
 export interface AuthResult {
   user: {
     id: string;
-    email: string;
+    email: string | null;
+    walletAddress?: string | null;
     fullName: string;
     role: RoleKey;
   };
@@ -97,7 +98,9 @@ export async function login(input: {
     throw new UnauthorizedError("Account is not active");
   }
 
-  const ok = await verifyPassword(input.password, user.passwordHash);
+  const ok = user.passwordHash
+    ? await verifyPassword(input.password, user.passwordHash)
+    : false;
   if (!ok) {
     const failed = user.failedLoginCount + 1;
     const lockedUntil = failed >= 8 ? new Date(Date.now() + 15 * 60 * 1000) : null;
@@ -158,7 +161,7 @@ export async function logoutAll(userId: string): Promise<void> {
 }
 
 async function issueTokens(
-  user: { id: string; email: string; fullName: string; role: RoleKey },
+  user: { id: string; email: string | null; fullName: string; role: RoleKey },
   ctx: RequestContext,
 ): Promise<AuthResult> {
   const accessToken = signAccessToken({
@@ -189,4 +192,40 @@ async function issueTokens(
   logger.debug({ userId: user.id }, "auth_tokens_issued");
 
   return { user, accessToken, refreshToken };
+}
+
+export async function issueWalletTokens(
+  userId: string,
+  ctx: RequestContext,
+): Promise<AuthResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, fullName: true, role: true },
+  });
+  if (!user) throw new NotFoundError("Wallet identity not found");
+  return issueTokens({ ...user, role: user.role as RoleKey }, ctx);
+}
+
+export async function getCurrentUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      walletAddress: true,
+      walletVerifiedAt: true,
+      fullName: true,
+      phone: true,
+      countryCode: true,
+      avatarUrl: true,
+      role: true,
+      status: true,
+      emailVerifiedAt: true,
+      lastLoginAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  if (!user) throw new NotFoundError("User not found");
+  return user;
 }

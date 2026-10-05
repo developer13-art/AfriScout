@@ -3,6 +3,7 @@ import * as UserService from "../services/users/user.service";
 import * as BusinessService from "../services/users/businessProfile.service";
 import * as StudentService from "../services/users/studentProfile.service";
 import * as ProfessionalService from "../services/users/professionalProfile.service";
+import * as BountyService from "../services/bounties/bounty.service";
 import { asyncHandler } from "../utils/asyncHandler";
 import { UnauthorizedError } from "../utils/errors";
 
@@ -14,6 +15,10 @@ function requireUserId(req: Request): string {
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const user = await UserService.requireUserById(requireUserId(req));
   res.json({ data: user });
+});
+
+export const getPassport = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ data: await BountyService.getPassport(requireUserId(req)) });
 });
 
 export const updateMe = asyncHandler(async (req: Request, res: Response) => {

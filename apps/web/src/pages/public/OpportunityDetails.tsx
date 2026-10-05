@@ -24,6 +24,8 @@ import { useMatches } from "../../hooks/useMatches";
 import { useSaved } from "../../hooks/useSaved";
 import { useWatchlist } from "../../hooks/useWatchlist";
 import { usePipeline } from "../../hooks/usePipeline";
+import { bountyService } from "../../services/bounty.service";
+import { BountyParticipationPanel } from "../../components/opportunities/BountyParticipationPanel";
 import { useAuthStore } from "../../stores/authStore";
 
 export function OpportunityDetails() {
@@ -63,6 +65,12 @@ export function OpportunityDetails() {
     queryKey: ["opportunity", slug, "changes"],
     queryFn: () => opportunityService.changes(query.data?.id ?? ""),
     enabled: Boolean(query.data?.id),
+  });
+
+  const bountyQuery = useQuery({
+    queryKey: ["bounty", "opportunity", slug],
+    queryFn: () => (slug ? bountyService.byOpportunitySlug(slug) : null),
+    enabled: Boolean(slug),
   });
 
   const matches = useMatches();
@@ -265,6 +273,7 @@ export function OpportunityDetails() {
           </div>
 
           <aside className="min-w-0 space-y-4">
+            {bountyQuery.data ? <BountyParticipationPanel bounty={bountyQuery.data} /> : null}
             <div className="rounded-xl border border-neutral-200 bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Overview

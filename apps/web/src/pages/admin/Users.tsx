@@ -19,7 +19,10 @@ export function Users() {
   });
 
   const filtered = (users.data ?? []).filter((u) =>
-    query ? u.email.toLowerCase().includes(query.toLowerCase()) : true,
+    query
+      ? (u.email ?? "").toLowerCase().includes(query.toLowerCase()) ||
+        (u.walletAddress ?? "").toLowerCase().includes(query.toLowerCase())
+      : true,
   );
 
   const columns: DataTableColumn<User>[] = [
@@ -35,7 +38,7 @@ export function Users() {
         </Link>
       ),
     },
-    { key: "email", header: "Email", cell: (user) => user.email },
+    { key: "email", header: "Email / wallet", cell: (user) => user.email ?? user.walletAddress ?? "—" },
     {
       key: "role",
       header: "Role",

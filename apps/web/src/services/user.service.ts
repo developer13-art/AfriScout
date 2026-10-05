@@ -2,9 +2,11 @@ import { http } from "./http";
 import type { User, UserProfile } from "../types/user";
 import type { BusinessProfile } from "../types/business";
 import type { StudentProfile } from "../types/student";
+import type { BountyPassport } from "../types/bounty";
 
 export const userService = {
   me: () => http<User>("/users/me"),
+  passport: () => http<BountyPassport>("/users/me/passport"),
 
   updateMe: (patch: Partial<Pick<User, "fullName" | "phone" | "countryCode" | "avatarUrl">>) =>
     http<User>("/users/me", { method: "PATCH", body: JSON.stringify(patch) }),

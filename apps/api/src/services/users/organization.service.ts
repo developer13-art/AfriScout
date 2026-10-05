@@ -28,8 +28,21 @@ export async function getOrganizationById(id: string) {
   return organization;
 }
 
+export async function listOrganizationsForUser(userId: string) {
+  const memberships = await prisma.organizationMember.findMany({
+    where: { userId },
+    include: { organization: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return memberships.map(({ organization, role }) => ({
+    ...organization,
+    membershipRole: role,
+  }));
+}
+
 export async function createOrganization(input: {
   name: string;
+  userId: string;
   type?: string;
   countryCode?: string;
   website?: string;
@@ -47,12 +60,14 @@ export async function createOrganization(input: {
       countryCode: input.countryCode ?? null,
       website: input.website ?? null,
       description: input.description ?? null,
+      members: { create: { userId: input.userId, role: "OWNER" } },
     },
   });
 }
 
 export async function updateOrganization(
   id: string,
+  userId: string,
   patch: {
     name?: string;
     type?: string;
@@ -63,6 +78,13 @@ export async function updateOrganization(
   },
 ) {
   await getOrganizationById(id);
+  const membership = await prisma.organizationMember.findUnique({
+    where: { organizationId_userId: { organizationId: id, userId } },
+    select: { role: true },
+  });
+  if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+    throw new ConflictError("Only organization owners and admins can update this workspace");
+  }
   return prisma.organization.update({
     where: { id },
     data: {

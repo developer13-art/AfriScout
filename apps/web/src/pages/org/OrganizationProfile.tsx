@@ -17,7 +17,7 @@ import { HttpError } from "../../services/http";
 export function OrganizationProfile() {
   const query = useQuery({
     queryKey: ["organization", "me"],
-    queryFn: () => organizationService.list(1, 1).then((items) => items[0] ?? null),
+    queryFn: () => organizationService.mine().then((items) => items[0] ?? null),
   });
 
   const [name, setName] = useState("");
@@ -27,6 +27,7 @@ export function OrganizationProfile() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (query.data) {
@@ -58,16 +59,50 @@ export function OrganizationProfile() {
     }
   };
 
+  const createOrganization = async () => {
+    setCreating(true);
+    setError(null);
+    try {
+      await organizationService.create({ name, website, description, countryCode });
+      await query.refetch();
+    } catch (err) {
+      setError(err instanceof HttpError ? err.message : "Could not create the organization.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (query.isLoading) return <Loader fullPage label="Loading organization" />;
 
   if (!query.data) {
     return (
       <>
         <SeoHead title="Organization" />
-        <PageHeader title="Organization" />
-        <Alert tone="info">
-          You are not yet part of an organization. Create one in settings.
-        </Alert>
+        <PageHeader
+          title="Organization workspace"
+          description="Create an organization workspace. Your Scout account will be added as its owner."
+        />
+        {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
+        <Card>
+          <CardHeader title="Create organization" />
+          <CardBody>
+            <div className="max-w-2xl space-y-4">
+              <Input label="Organization name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+              <Select
+                label="Country"
+                placeholder="Select a country"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                options={allCountries.map((country) => ({ value: country.code, label: country.name }))}
+              />
+              <Textarea label="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+              <Button onClick={createOrganization} loading={creating} disabled={name.trim().length < 2}>
+                Create organization workspace
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       </>
     );
   }

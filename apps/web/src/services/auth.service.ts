@@ -22,6 +22,18 @@ export interface AuthResponse extends AuthTokens {
   user: User;
 }
 
+export interface WalletChallenge {
+  walletAddress: string;
+  nonce: string;
+  message: string;
+  expiresAt: string;
+}
+
+export interface WalletLinkResult {
+  walletLinked: true;
+  user: Pick<User, "id" | "walletAddress" | "walletVerifiedAt">;
+}
+
 export const authService = {
   login: (payload: LoginPayload) =>
     http<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(payload), auth: false }),
@@ -59,5 +71,22 @@ export const authService = {
       method: "POST",
       body: JSON.stringify({ token }),
       auth: false,
+    }),
+
+  walletChallenge: (walletAddress: string, authenticated = false) =>
+    http<WalletChallenge>("/auth/wallet/challenge", {
+      method: "POST",
+      body: JSON.stringify({ walletAddress }),
+      auth: authenticated,
+    }),
+
+  walletVerify: (
+    payload: { walletAddress: string; nonce: string; signature: string; fullName?: string },
+    authenticated = false,
+  ) =>
+    http<AuthResponse | WalletLinkResult>("/auth/wallet/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      auth: authenticated,
     }),
 };

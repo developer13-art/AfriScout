@@ -77,7 +77,7 @@ export function Profile() {
               <p className="text-sm font-medium text-neutral-900">
                 {user?.fullName}
               </p>
-              <p className="text-xs text-neutral-500">{user?.email}</p>
+              <p className="text-xs text-neutral-500">{user?.email ?? "Add a recovery email in account settings"}</p>
             </div>
           </div>
         </Card>

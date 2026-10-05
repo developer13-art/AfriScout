@@ -38,9 +38,11 @@ enum UserType {
 
 model User {
   id                 String    @id @default(uuid()) @db.Uuid
-  email              String    @unique
+  email              String?   @unique
   emailVerifiedAt    DateTime? @map("email_verified_at")
-  passwordHash       String    @map("password_hash")
+  passwordHash       String?   @map("password_hash")
+  walletAddress      String?   @unique @map("wallet_address")
+  walletVerifiedAt   DateTime? @map("wallet_verified_at")
   fullName           String    @map("full_name")
   phone              String?
   countryCode        String?   @map("country_code") @db.Char(2)
@@ -73,6 +75,12 @@ model User {
   auditLogs          AuditLog[]
   matches            Match[]
   organizationMembers OrganizationMember[]
+  walletChallenges   WalletChallenge[]
+  bountySubmissions  OpportunitySubmission[] @relation("SubmissionParticipant")
+  reviewedSubmissions OpportunitySubmission[] @relation("SubmissionReviewer")
+  createdBounties    Bounty[] @relation("BountyCreator")
+  achievements      VerifiedAchievement[] @relation("AchievementRecipient")
+  issuedAchievements VerifiedAchievement[] @relation("AchievementIssuedByUser")
   createdSources     Source[] @relation("SourceCreatedBy")
   suggestedSources   SourceSuggestion[] @relation("SourceSuggestionSuggestedBy")
   reviewedSources    SourceSuggestion[] @relation("SourceSuggestionReviewedBy")
@@ -169,6 +177,28 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+enum WalletChallengePurpose {
+  LOGIN
+  LINK
+}
+
+model WalletChallenge {
+  id            String                 @id @default(uuid()) @db.Uuid
+  walletAddress String                 @map("wallet_address")
+  userId        String?                @map("user_id") @db.Uuid
+  purpose       WalletChallengePurpose
+  nonce         String                 @unique
+  message       String
+  expiresAt     DateTime               @map("expires_at")
+  consumedAt    DateTime?              @map("consumed_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([walletAddress, expiresAt])
+  @@map("wallet_challenges")
 }
 
 model PasswordReset {
@@ -609,6 +639,8 @@ model Opportunity {
   watchedBy           Watchlist[]
   pipelineItems       PipelineItem[]
   notifications       Notification[]
+  bounty              Bounty?
+  verifiedAchievements VerifiedAchievement[]
 
   @@index([category])
   @@index([opportunityType])
@@ -786,6 +818,8 @@ model Organization {
 
   members      OrganizationMember[]
   opportunities Opportunity[]
+  bounties      Bounty[]
+  issuedAchievements VerifiedAchievement[] @relation("AchievementIssuer")
 
   @@index([countryCode])
   @@map("organizations")
@@ -803,6 +837,102 @@ model OrganizationMember {
 
   @@unique([organizationId, userId])
   @@map("organization_members")
+}
+
+enum BountyStatus {
+  OPEN
+  PAUSED
+  AWARDING
+  COMPLETED
+  CANCELLED
+}
+
+enum BountyFundingStatus {
+  UNFUNDED
+  PENDING
+  FUNDED
+  DISPUTED
+}
+
+enum SubmissionStatus {
+  PARTICIPATING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Bounty {
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String              @map("organization_id") @db.Uuid
+  opportunityId      String              @unique @map("opportunity_id") @db.Uuid
+  createdByUserId    String              @map("created_by_user_id") @db.Uuid
+  rewardAmount       Decimal             @map("reward_amount") @db.Decimal(20, 2)
+  rewardCurrency     String              @map("reward_currency") @db.Char(3)
+  requiredSkills     String[]            @default([]) @map("required_skills")
+  status             BountyStatus        @default(OPEN)
+  fundingStatus      BountyFundingStatus @default(UNFUNDED) @map("funding_status")
+  fundingTxSignature String?             @map("funding_tx_signature")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  opportunity        Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdBy          User                @relation("BountyCreator", fields: [createdByUserId], references: [id])
+  submissions        OpportunitySubmission[]
+
+  @@index([organizationId, status])
+  @@index([fundingStatus])
+  @@map("bounties")
+}
+
+model OpportunitySubmission {
+  id                        String           @id @default(uuid()) @db.Uuid
+  bountyId                  String           @map("bounty_id") @db.Uuid
+  userId                    String           @map("user_id") @db.Uuid
+  walletAddress             String?          @map("wallet_address")
+  participationTxSignature  String?          @unique @map("participation_tx_signature")
+  submissionUrl             String?          @map("submission_url")
+  submissionText            String?          @map("submission_text")
+  status                    SubmissionStatus @default(PARTICIPATING)
+  reviewedByUserId          String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt                DateTime?        @map("reviewed_at")
+  reviewNote                String?          @map("review_note")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+
+  bounty                    Bounty           @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  participant               User             @relation("SubmissionParticipant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer                  User?            @relation("SubmissionReviewer", fields: [reviewedByUserId], references: [id])
+  achievement               VerifiedAchievement?
+
+  @@unique([bountyId, userId])
+  @@index([bountyId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("opportunity_submissions")
+}
+
+model VerifiedAchievement {
+  id              String                @id @default(uuid()) @db.Uuid
+  userId          String                @map("user_id") @db.Uuid
+  issuerUserId    String                @map("issuer_user_id") @db.Uuid
+  organizationId  String                @map("organization_id") @db.Uuid
+  opportunityId   String                @map("opportunity_id") @db.Uuid
+  submissionId    String                @unique @map("submission_id") @db.Uuid
+  title           String
+  description     String?
+  proofHash       String                @map("proof_hash")
+  points          Int                   @default(25)
+  issuedAt        DateTime              @default(now()) @map("issued_at")
+
+  user            User                  @relation("AchievementRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  issuer          User                  @relation("AchievementIssuedByUser", fields: [issuerUserId], references: [id])
+  organization    Organization          @relation("AchievementIssuer", fields: [organizationId], references: [id])
+  opportunity     Opportunity           @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  submission      OpportunitySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, issuedAt(sort: Desc)])
+  @@index([organizationId])
+  @@map("verified_achievements")
 }
 
 // ---------- ai.prisma ----------

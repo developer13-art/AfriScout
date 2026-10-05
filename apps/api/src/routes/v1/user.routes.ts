@@ -15,6 +15,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/me", Controller.getMe);
+router.get("/me/passport", Controller.getPassport);
 router.patch("/me", validate({ body: updateMeSchema }), Controller.updateMe);
 router.get("/me/profile", Controller.getProfile);
 router.patch("/me/profile", validate({ body: updateProfileSchema }), Controller.updateProfile);

@@ -4,6 +4,7 @@ import type { Organization, OrganizationMember } from "../types/organization";
 export const organizationService = {
   list: (page = 1, pageSize = 20) =>
     http<Organization[]>("/organizations", { query: { page, pageSize } }),
+  mine: () => http<Organization[]>("/organizations/mine"),
   get: (id: string) => http<Organization>(`/organizations/${id}`),
   create: (organization: Partial<Organization>) =>
     http<Organization>("/organizations", {

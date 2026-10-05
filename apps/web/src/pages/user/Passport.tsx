@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, BadgeCheck, Building2, Code2, Copy, Fingerprint, Wallet2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SeoHead } from "../../components/common/SeoHead";
@@ -8,17 +9,65 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 import { useAuthStore } from "../../stores/authStore";
+import { authService } from "../../services/auth.service";
+import { HttpError } from "../../services/http";
+import { userService } from "../../services/user.service";
 
 export function Passport() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const wallet = useSolanaWallet();
+  const passport = useQuery({
+    queryKey: ["passport"],
+    queryFn: userService.passport,
+  });
   const [copied, setCopied] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [walletMessage, setWalletMessage] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   const copyAddress = async () => {
-    if (!wallet.address || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(wallet.address);
+    const address = user?.walletAddress ?? wallet.address;
+    if (!address || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(address);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const linkWallet = async () => {
+    setWalletMessage(null);
+    setWalletError(null);
+    setLinking(true);
+    try {
+      const walletAddress = wallet.address ?? await wallet.connect();
+      if (!walletAddress) throw new Error(wallet.error ?? "Connect a Solana wallet first.");
+      if (user?.walletAddress && user.walletAddress !== walletAddress) {
+        throw new Error("This Scout account already has a different wallet linked.");
+      }
+      const challenge = await authService.walletChallenge(walletAddress, true);
+      const signature = await wallet.signMessage(challenge.message);
+      const encodedSignature = btoa(
+        Array.from(signature, (byte) => String.fromCharCode(byte)).join(""),
+      );
+      const result = await authService.walletVerify(
+        { walletAddress, nonce: challenge.nonce, signature: encodedSignature },
+        true,
+      );
+      if (!("walletLinked" in result) || !result.walletLinked) {
+        throw new Error("Scout did not confirm the wallet link.");
+      }
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) setUser({ ...currentUser, ...result.user });
+      setWalletMessage("Wallet ownership verified and linked to your Scout account.");
+    } catch (cause) {
+      setWalletError(
+        cause instanceof HttpError || cause instanceof Error
+          ? cause.message
+          : "Could not verify this wallet.",
+      );
+    } finally {
+      setLinking(false);
+    }
   };
 
   return (
@@ -46,7 +95,9 @@ export function Passport() {
                   <p className="text-xl font-semibold text-neutral-900">
                     {user?.fullName || "Scout member"}
                   </p>
-                  <p className="mt-1 text-sm text-neutral-600">{user?.email}</p>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    {user?.email ?? "Wallet-first Scout identity"}
+                  </p>
                   {user?.countryCode ? (
                     <p className="mt-1 text-xs text-neutral-500">
                       Account country: {user.countryCode}
@@ -65,18 +116,18 @@ export function Passport() {
           <Card>
             <CardHeader
               title="Solana wallet"
-              subtitle="Connect a wallet as an optional profile reference. Connecting does not sign you in or create an on-chain credential."
+              subtitle="Prove ownership by signing a one-time message. This links the public address to your Scout account; it does not authorize a transfer."
               actions={<Wallet2 className="h-5 w-5 text-primary-700" aria-hidden />}
             />
             <CardBody>
-              {wallet.address ? (
+              {user?.walletAddress ? (
                 <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                   <div className="min-w-0">
                     <p className="text-xs font-medium uppercase tracking-wide text-emerald-800">
-                      Connected in this browser · {wallet.walletName}
+                      Verified Scout wallet{wallet.address === user.walletAddress && wallet.walletName ? ` · ${wallet.walletName}` : ""}
                     </p>
                     <p className="mt-1 break-all font-mono text-sm text-neutral-900">
-                      {wallet.address}
+                      {user.walletAddress}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -88,19 +139,33 @@ export function Passport() {
                     >
                       {copied ? "Copied" : "Copy"}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={wallet.disconnect}>
+                    {wallet.address ? <Button variant="outline" size="sm" onClick={wallet.disconnect}>
                       Disconnect
-                    </Button>
+                    </Button> : null}
                   </div>
+                </div>
+              ) : wallet.address ? (
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wide text-amber-900">
+                      Connected · ownership not yet verified
+                    </p>
+                    <p className="mt-1 break-all font-mono text-sm text-neutral-900">
+                      {wallet.address}
+                    </p>
+                  </div>
+                  <Button onClick={linkWallet} loading={linking}>
+                    Sign to verify and link
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                   <div>
                     <p className="text-sm font-medium text-neutral-900">
-                      No wallet connected
+                      No wallet linked to this account
                     </p>
                     <p className="mt-1 text-xs text-neutral-600">
-                      Scout never asks for your recovery phrase or private key.
+                      Connect and sign a verification message; Scout never asks for a recovery phrase or private key.
                     </p>
                   </div>
                   <Button onClick={wallet.connect} loading={wallet.connecting}>
@@ -108,11 +173,12 @@ export function Passport() {
                   </Button>
                 </div>
               )}
-              {wallet.error ? (
+              {wallet.error || walletError ? (
                 <Alert tone="danger" className="mt-3">
-                  {wallet.error}
+                  {walletError ?? wallet.error}
                 </Alert>
               ) : null}
+              {walletMessage ? <Alert tone="success" className="mt-3">{walletMessage}</Alert> : null}
               {!wallet.available && !wallet.address ? (
                 <p className="mt-3 text-xs text-neutral-500">
                   Install a Solana wallet extension such as{" "}
@@ -142,15 +208,26 @@ export function Passport() {
           <Card>
             <CardHeader
               title="Verified history"
-              subtitle="Reputation is earned from verifiable activity, not an editable score."
+              subtitle="Reputation comes only from completed work approved by an organization."
               actions={<BadgeCheck className="h-5 w-5 text-primary-700" aria-hidden />}
             />
             <CardBody>
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "Reputation", value: "Not scored" },
-                  { label: "Verified credentials", value: "None linked" },
-                  { label: "On-chain achievements", value: "None recorded" },
+                  {
+                    label: "Reputation",
+                    value: passport.data?.verifiedAchievementCount
+                      ? `${passport.data.reputationScore} points`
+                      : passport.isError ? "Unavailable" : "Not scored",
+                  },
+                  {
+                    label: "Organization-verified achievements",
+                    value: passport.data ? String(passport.data.verifiedAchievementCount) : passport.isError ? "Unavailable" : "—",
+                  },
+                  {
+                    label: "On-chain participation receipts",
+                    value: passport.data ? String(passport.data.onChainParticipationCount) : passport.isError ? "Unavailable" : "—",
+                  },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -164,10 +241,50 @@ export function Passport() {
                 ))}
               </div>
               <p className="mt-3 text-xs leading-5 text-neutral-500">
-                Scout has not yet issued or anchored credentials for this account.
-                No reputation score is shown until it can be calculated from verified
-                records.
+                Organization approvals are stored as Scout-issued records with a
+                tamper-evident content hash. Participation transactions are independently
+                checked on Solana Devnet; Scout does not call them on-chain credentials.
               </p>
+              {passport.isError ? (
+                <Alert tone="danger" className="mt-3">
+                  Could not load verified history. Refresh the page to try again.
+                </Alert>
+              ) : null}
+              {passport.data?.achievements.length ? (
+                <div className="mt-5 space-y-3">
+                  {passport.data.achievements.map((achievement) => (
+                    <div key={achievement.id} className="rounded-lg border border-neutral-200 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-neutral-900">{achievement.title}</p>
+                          <p className="mt-1 text-xs text-neutral-600">
+                            Issued by {achievement.organization.name} · {achievement.points} reputation points
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">
+                          Organization verified
+                        </span>
+                      </div>
+                      {achievement.description ? (
+                        <p className="mt-2 text-sm text-neutral-700">{achievement.description}</p>
+                      ) : null}
+                      <div className="mt-3 break-all font-mono text-[11px] text-neutral-500">
+                        Proof hash: {achievement.proofHash}
+                      </div>
+                      {achievement.submission.participationTxSignature ? (
+                        <a
+                          className="mt-2 inline-flex text-xs font-medium text-primary-700 underline"
+                          href={`https://explorer.solana.com/tx/${achievement.submission.participationTxSignature}?cluster=devnet`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View Devnet participation receipt
+                        </a>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </CardBody>
           </Card>
         </div>
