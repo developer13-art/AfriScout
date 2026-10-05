@@ -1,0 +1,17 @@
+Get-Service -Name Memurai*
+
+npm run dev:api
+
+npm run dev:worker
+
+npm run dev:web
+
+Confirm Memurai is running (Get-Service Memurai*)
+
+Terminal 1 — API (npm run dev:api)
+
+Terminal 2 — Worker (npm run dev:worker)
+
+Terminal 3 — Web (npm run dev:web)
+
+Open http://localhost:5173
