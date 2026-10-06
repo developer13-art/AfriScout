@@ -1,0 +1,51 @@
+login:
+  post:
+    tags: [Auth]
+    summary: Sign in
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [email, password]
+            properties:
+              email: { type: string, format: email }
+              password: { type: string, minLength: 8 }
+    responses:
+      "200":
+        description: Authenticated
+      "401":
+        description: Invalid credentials
+
+register:
+  post:
+    tags: [Auth]
+    summary: Create an account
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [email, password, fullName]
+            properties:
+              email: { type: string, format: email }
+              password: { type: string, minLength: 8 }
+              fullName: { type: string }
+              countryCode: { type: string, minLength: 2, maxLength: 2 }
+    responses:
+      "201":
+        description: Created
+      "409":
+        description: Conflict
+
+me:
+  get:
+    tags: [Auth]
+    summary: Current authenticated user
+    responses:
+      "200":
+        description: OK
