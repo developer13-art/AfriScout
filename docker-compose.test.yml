@@ -1,0 +1,27 @@
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: afriscout-postgres-test
+    environment:
+      POSTGRES_USER: afriscout_test
+      POSTGRES_PASSWORD: afriscout_test
+      POSTGRES_DB: afriscout_test
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afriscout_test -d afriscout_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis_test:
+    image: redis:7-alpine
+    container_name: afriscout-redis-test
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20

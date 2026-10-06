@@ -1,0 +1,7 @@
+export enum CrawlFrequency {
+  EVERY_6_HOURS = "EVERY_6_HOURS",
+  EVERY_12_HOURS = "EVERY_12_HOURS",
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+  MANUAL = "MANUAL",
+}
