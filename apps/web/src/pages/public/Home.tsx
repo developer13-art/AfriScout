@@ -96,7 +96,7 @@ export function Home() {
           className="pointer-events-none absolute -right-24 -top-28 -z-10 h-[34rem] w-[34rem] rounded-full border border-[#e2dccf]"
         />
         <Container className="py-14 sm:py-20 lg:py-24">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
             <div className="max-w-3xl">
               <p className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.19em] text-[#a44b31]">
                 <span className="h-2 w-2 rounded-full bg-[#d26c46]" />
