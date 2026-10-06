@@ -31,6 +31,21 @@ export const getOpportunityAction = asyncHandler(async (req: Request, res: Respo
   const opportunity = await OpportunityActionService.getOpportunityAction(
     req.params.opportunityId,
   );
+  res.vary("Accept");
+
+  const explicitlyAcceptsHtml = req
+    .get("accept")
+    ?.split(",")
+    .some((mediaType) => mediaType.split(";")[0]?.trim().toLowerCase() === "text/html");
+
+  if (explicitlyAcceptsHtml) {
+    res.redirect(
+      302,
+      `${env.APP_URL.replace(/\/+$/, "")}/blink/${encodeURIComponent(opportunity.slug)}`,
+    );
+    return;
+  }
+
   const root = apiRoot();
   const actions = [
     {

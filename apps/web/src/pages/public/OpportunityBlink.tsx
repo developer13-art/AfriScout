@@ -265,8 +265,8 @@ export function OpportunityBlink() {
                     void copy(
                       opportunityActionService.actionUrl(opportunity.id),
                       bounty
-                        ? "Solana Action link copied. Compatible clients can view or save this opportunity and join its open bounty."
-                        : "Solana Action link copied. Compatible clients can view or save this opportunity to Scout.",
+                        ? "Action link copied. Open it in a browser to view the opportunity card, or use a compatible Solana wallet to save or join its bounty."
+                        : "Action link copied. Open it in a browser to view the opportunity card, or use a compatible Solana wallet to save it to Scout.",
                     )
                   }
                 >
