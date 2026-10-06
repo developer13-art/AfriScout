@@ -1,4 +1,7 @@
+import { env } from "../config/env";
 import { http } from "./http";
+
+const publicAnalyticsUrl = `${env.apiUrl.replace(/\/api\/v\d+\/?$/, "")}/api/public/analytics`;
 
 export interface PublicTotals {
   opportunitiesTotal: number;
@@ -28,6 +31,6 @@ export interface PublicTotalsResponse {
 }
 
 export const publicAnalyticsService = {
-  totals: () => http<PublicTotalsResponse>("/public/analytics/totals", { auth: false }),
-  countries: () => http<CountryCount[]>("/public/analytics/countries", { auth: false }),
+  totals: () => http<PublicTotalsResponse>(`${publicAnalyticsUrl}/totals`, { auth: false }),
+  countries: () => http<CountryCount[]>(`${publicAnalyticsUrl}/countries`, { auth: false }),
 };
