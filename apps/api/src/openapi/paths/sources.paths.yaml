@@ -1,8 +1,0 @@
-list:
-  get:
-    tags: [Sources]
-    summary: List sources
-    security: []
-    responses:
-      "200":
-        description: OK
