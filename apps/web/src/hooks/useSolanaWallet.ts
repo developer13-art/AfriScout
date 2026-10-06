@@ -24,6 +24,10 @@ interface SolanaWalletProvider {
     connection: Connection,
     options?: { preflightCommitment?: "processed" | "confirmed" | "finalized" },
   ) => Promise<string>;
+  signAndSendTransaction?: (
+    transaction: Transaction,
+    options?: { preflightCommitment?: "processed" | "confirmed" | "finalized" },
+  ) => Promise<{ signature: string }>;
   on?: (event: "connect" | "disconnect", listener: () => void) => void;
   off?: (event: "connect" | "disconnect", listener: () => void) => void;
 }
@@ -62,12 +66,16 @@ export function useSolanaWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [walletName, setWalletName] = useState<string | null>(null);
   const [available, setAvailable] = useState(false);
+  const [canSendTransactions, setCanSendTransactions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     const provider = getProvider();
     setAvailable(Boolean(provider));
+    setCanSendTransactions(
+      Boolean(provider?.sendTransaction || provider?.signAndSendTransaction),
+    );
     if (provider) {
       setAddress(addressOf(provider.publicKey));
       if (provider.publicKey) setWalletName(walletLabel(provider));
@@ -76,6 +84,9 @@ export function useSolanaWallet() {
     const onConnect = () => {
       const current = getProvider();
       if (!current) return;
+      setCanSendTransactions(
+        Boolean(current.sendTransaction || current.signAndSendTransaction),
+      );
       setAddress(addressOf(current.publicKey));
       setWalletName(walletLabel(current));
     };
@@ -107,6 +118,9 @@ export function useSolanaWallet() {
       if (!connectedAddress) {
         throw new Error("The wallet connected without returning a public address.");
       }
+      setCanSendTransactions(
+        Boolean(provider.sendTransaction || provider.signAndSendTransaction),
+      );
       setAddress(connectedAddress);
       setWalletName(walletLabel(provider));
       return connectedAddress;
@@ -135,6 +149,15 @@ export function useSolanaWallet() {
   const sendTransaction = useCallback(
     async (transaction: Transaction, connection: Connection): Promise<string> => {
       const provider = getProvider();
+      if (provider?.signAndSendTransaction) {
+        const result = await provider.signAndSendTransaction(transaction, {
+          preflightCommitment: "confirmed",
+        });
+        if (!result.signature) {
+          throw new Error("The wallet did not return a transaction signature.");
+        }
+        return result.signature;
+      }
       if (!provider?.sendTransaction) {
         throw new Error("This wallet cannot send Solana transactions.");
       }
@@ -163,6 +186,7 @@ export function useSolanaWallet() {
     address,
     walletName,
     available,
+    canSendTransactions,
     error,
     connecting,
     connect,

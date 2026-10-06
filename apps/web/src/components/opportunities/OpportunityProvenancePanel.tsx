@@ -260,15 +260,29 @@ export function OpportunityProvenancePanel({
             </p>
             {user ? (
               user.walletAddress ? (
-                <Button
-                  className="mt-3"
-                  size="sm"
-                  onClick={anchorCurrentVersion}
-                  loading={anchoring}
-                  disabled={!fingerprint || fingerprintError}
-                >
-                  Anchor current version on Devnet
-                </Button>
+                <>
+                  {wallet.address && !wallet.canSendTransactions ? (
+                    <Alert tone="warning" className="mt-3">
+                      {wallet.walletName ?? "The connected wallet"} can verify your
+                      identity but cannot submit Solana transactions. Connect a
+                      transaction-capable Phantom, Solflare, or Backpack wallet
+                      to anchor this record.
+                    </Alert>
+                  ) : null}
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    onClick={anchorCurrentVersion}
+                    loading={anchoring}
+                    disabled={
+                      !fingerprint ||
+                      fingerprintError ||
+                      Boolean(wallet.address && !wallet.canSendTransactions)
+                    }
+                  >
+                    Anchor current version on Devnet
+                  </Button>
+                </>
               ) : (
                 <Link to="/passport" className="mt-3 inline-flex text-sm font-medium text-primary-700 underline">
                   Link a verified wallet to anchor this record
