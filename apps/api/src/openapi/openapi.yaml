@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: AfriScout API
+  description: |
+    AfriScout is an AI-powered opportunity intelligence platform for Africa.
+    This specification documents the public and authenticated endpoints exposed
+    by the AfriScout API.
+  version: 0.1.0
+  contact:
+    name: AfriScout Support
+    email: support@afriscout.example
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development
+  - url: https://api.afriscout.example/api/v1
+    description: Production
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: DNA
+  - name: Opportunities
+  - name: Search
+  - name: Matches
+  - name: Radar
+  - name: Watchlist
+  - name: Saved
+  - name: Pipeline
+  - name: Notifications
+  - name: Analytics
+  - name: AI
+  - name: Documents
+  - name: Sources
+  - name: ActorRuns
+  - name: Duplicates
+  - name: Changes
+  - name: Organizations
+  - name: ApiKeys
+  - name: Webhooks
+  - name: AuditLogs
+  - name: Admin
+
+paths:
+  /health:
+    $ref: "./paths/health.paths.yaml"
+  /auth/login:
+    $ref: "./paths/auth.paths.yaml#/login"
+  /auth/register:
+    $ref: "./paths/auth.paths.yaml#/register"
+  /auth/me:
+    $ref: "./paths/auth.paths.yaml#/me"
+  /opportunities:
+    $ref: "./paths/opportunities.paths.yaml#/list"
+  /opportunities/{slug}:
+    $ref: "./paths/opportunities.paths.yaml#/bySlug"
+  /search:
+    $ref: "./paths/search.paths.yaml#/search"
+  /sources:
+    $ref: "./paths/sources.paths.yaml#/list"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+
+  schemas:
+    Error:
+      $ref: "./components/schemas.yaml#/Error"
+    User:
+      $ref: "./components/schemas.yaml#/User"
+    Opportunity:
+      $ref: "./components/schemas.yaml#/Opportunity"
+    Source:
+      $ref: "./components/schemas.yaml#/Source"

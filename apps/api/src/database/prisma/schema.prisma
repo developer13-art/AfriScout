@@ -1,0 +1,1790 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DATABASE_URL_DIRECT")
+  extensions = [pg_trgm]
+}
+
+// ---------- user.prisma ----------
+enum UserRole {
+  SUPER_ADMIN
+  DATA_ADMIN
+  USER
+  API_DEVELOPER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
+}
+
+enum WorkspaceType {
+  PERSONAL
+  ORGANIZATION
+  DEVELOPER
+}
+
+enum UserType {
+  BUSINESS
+  PROFESSIONAL
+  STUDENT
+  RESEARCHER
+  NGO
+  STARTUP
+  OTHER
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+}
+
+model User {
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String?   @unique
+  emailVerifiedAt    DateTime? @map("email_verified_at")
+  passwordHash       String?   @map("password_hash")
+  walletAddress      String?   @unique @map("wallet_address")
+  walletVerifiedAt   DateTime? @map("wallet_verified_at")
+  fullName           String    @map("full_name")
+  phone              String?
+  city               String?
+  countryCode        String?   @map("country_code") @db.Char(2)
+  avatarUrl          String?   @map("avatar_url")
+  role               UserRole  @default(USER)
+  status             UserStatus @default(ACTIVE)
+  lastLoginAt        DateTime? @map("last_login_at")
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  profile            UserProfile?
+  businessProfile    BusinessProfile?
+  studentProfile     StudentProfile?
+  professionalProfile ProfessionalProfile?
+  dnaProfiles        DnaProfile[]
+  sessions           Session[]
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+  apiKeys            ApiKey[]
+  webhookEndpoints   WebhookEndpoint[]
+  notifications      Notification[]
+  notificationPrefs  NotificationPreference[]
+  watchlists         Watchlist[]
+  savedOpportunities SavedOpportunity[]
+  pipelines          Pipeline[]
+  pipelineItems      PipelineItem[] @relation("PipelineItemOwner")
+  pipelineEvents     PipelineEvent[] @relation("PipelineEventActor")
+  auditLogs          AuditLog[]
+  matches            Match[]
+  organizationMembers OrganizationMember[]
+  workspaces         Workspace[]
+  walletChallenges   WalletChallenge[]
+  bountySubmissions  OpportunitySubmission[] @relation("SubmissionParticipant")
+  reviewedSubmissions OpportunitySubmission[] @relation("SubmissionReviewer")
+  createdBounties    Bounty[] @relation("BountyCreator")
+  achievements      VerifiedAchievement[] @relation("AchievementRecipient")
+  issuedAchievements VerifiedAchievement[] @relation("AchievementIssuedByUser")
+  createdSources     Source[] @relation("SourceCreatedBy")
+  suggestedSources   SourceSuggestion[] @relation("SourceSuggestionSuggestedBy")
+  reviewedSources    SourceSuggestion[] @relation("SourceSuggestionReviewedBy")
+  createdRuns        SourceRun[] @relation("SourceRunCreatedBy")
+  communityPosts     CommunityPost[] @relation("CommunityPostAuthor")
+  communityComments  CommunityComment[] @relation("CommunityCommentAuthor")
+  communityReactions CommunityReaction[]
+  communityFollows   CommunityFollow[]
+  communityReports   CommunityReport[] @relation("CommunityReportReporter")
+  communityReportsOf CommunityReport[] @relation("CommunityReportTarget")
+  communityBlocks    CommunityUserAction[] @relation("CommunityActionActor")
+  communityBlockedBy CommunityUserAction[] @relation("CommunityActionTarget")
+  communityRequestsSent CommunityConnection[] @relation("CommunityConnectionRequester")
+  communityRequestsReceived CommunityConnection[] @relation("CommunityConnectionRecipient")
+  profileAnalyses ProfileAnalysis[]
+  opportunityInteractions OpportunityInteraction[]
+  sourceDiscoveryRuns SourceDiscoveryRun[] @relation("SourceDiscoveryRunCreator")
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model UserProfile {
+  id                   String    @id @default(uuid()) @db.Uuid
+  userId               String    @unique @map("user_id") @db.Uuid
+  username             String?   @unique
+  visibility           ProfileVisibility @default(PRIVATE)
+  visibilityRules      Json      @default("{}") @map("visibility_rules")
+  analyzable           Boolean   @default(false)
+  userType             UserType  @map("user_type")
+  workspaceIntent      WorkspaceType @default(PERSONAL) @map("workspace_intent")
+  professionalIdentities String[] @default([]) @map("professional_identities")
+  headline             String?
+  bio                  String?
+  languages            String[]  @default([])
+  industries           String[]  @default([])
+  interests            String[]  @default([])
+  savedInterests       String[]  @default([]) @map("saved_interests")
+  educationHistory     Json      @default("[]") @map("education_history")
+  experienceHistory    Json      @default("[]") @map("experience_history")
+  timezone             String?
+  preferredCurrency    String?   @map("preferred_currency") @db.Char(3)
+  onboardingCompleted  Boolean   @default(false) @map("onboarding_completed")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model BusinessProfile {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @map("user_id") @db.Uuid
+  companyName           String   @map("company_name")
+  registrationNumber    String?  @map("registration_number")
+  industry              String?
+  employeesCount        Int?     @map("employees_count")
+  annualRevenue         Decimal? @map("annual_revenue") @db.Decimal(20, 2)
+  annualRevenueCurrency String?  @map("annual_revenue_currency") @db.Char(3)
+  website               String?
+  description           String?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+model StudentProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  educationLevel  String?  @map("education_level")
+  fieldOfStudy    String?  @map("field_of_study")
+  institution     String?
+  graduationYear  Int?     @map("graduation_year")
+  interests       String[] @default([])
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_profiles")
+}
+
+model ProfessionalProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  profession      String?
+  seniority       String?
+  yearsExperience Int?     @map("years_experience")
+  skills          String[] @default([])
+  certifications  String[] @default([])
+  portfolioUrl    String?  @map("portfolio_url")
+  linkedinUrl     String?  @map("linkedin_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_profiles")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  refreshTokenHash String    @map("refresh_token_hash")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+enum WalletChallengePurpose {
+  LOGIN
+  LINK
+}
+
+model WalletChallenge {
+  id            String                 @id @default(uuid()) @db.Uuid
+  walletAddress String                 @map("wallet_address")
+  userId        String?                @map("user_id") @db.Uuid
+  purpose       WalletChallengePurpose
+  nonce         String                 @unique
+  message       String
+  expiresAt     DateTime               @map("expires_at")
+  consumedAt    DateTime?              @map("consumed_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([walletAddress, expiresAt])
+  @@map("wallet_challenges")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model EmailVerification {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  verifiedAt DateTime? @map("verified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  role         UserRole
+  permissionId String   @map("permission_id") @db.Uuid
+
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+  @@map("role_permissions")
+}
+model Watchlist {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  notifyDeadline  Boolean  @default(true) @map("notify_deadline")
+  notifyChanges   Boolean  @default(true) @map("notify_changes")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@index([userId])
+  @@map("watchlists")
+}
+model SavedOpportunity {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("saved_opportunities")
+}
+
+// ---------- dna.prisma ----------
+enum RemotePreference {
+  ONSITE
+  REMOTE
+  HYBRID
+  ANY
+}
+
+model DnaProfile {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @map("user_id") @db.Uuid
+  version               Int      @default(1)
+  isActive              Boolean  @default(true) @map("is_active")
+  industries            String[] @default([])
+  capabilities          String[] @default([])
+  sectors               String[] @default([])
+  preferredCountries    String[] @default([]) @map("preferred_countries")
+  preferredLocations    String[] @default([]) @map("preferred_locations")
+  remotePreference      RemotePreference? @map("remote_preference")
+  currency              String?  @db.Char(3)
+  minValue              Decimal? @map("min_value") @db.Decimal(20, 2)
+  maxValue              Decimal? @map("max_value") @db.Decimal(20, 2)
+  eligibilityNotes      String?  @map("eligibility_notes")
+  experienceNotes       String?  @map("experience_notes")
+  opportunityTypes      String[] @map("opportunity_types")
+  opportunityCategories String[] @map("opportunity_categories")
+  keywords              String[] @default([])
+  extra                 Json     @default("{}")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  capabilitiesRows      DnaCapability[]
+  matches               Match[]
+
+  @@unique([userId, version])
+  @@index([userId])
+  @@map("dna_profiles")
+}
+
+model DnaCapability {
+  id            String   @id @default(uuid()) @db.Uuid
+  dnaProfileId  String   @map("dna_profile_id") @db.Uuid
+  capability    String
+  strength      Int?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  dnaProfile    DnaProfile @relation(fields: [dnaProfileId], references: [id], onDelete: Cascade)
+
+  @@index([dnaProfileId])
+  @@index([capability])
+  @@map("dna_capabilities")
+}
+
+// ---------- source.prisma ----------
+enum SourceType {
+  GOVERNMENT
+  PROCUREMENT_PORTAL
+  UNIVERSITY
+  NGO
+  FOUNDATION
+  ACCELERATOR
+  GRANT_PORTAL
+  JOB_BOARD
+  SCHOLARSHIP_PORTAL
+  DEVELOPMENT_ORG
+  PRIVATE_COMPANY
+  OTHER
+}
+
+enum SourceHealth {
+  UNKNOWN
+  HEALTHY
+  WARNING
+  FAILED
+  INACTIVE
+}
+
+enum CrawlFrequency {
+  EVERY_6_HOURS
+  EVERY_12_HOURS
+  DAILY
+  WEEKLY
+  MANUAL
+}
+
+enum SuggestionStatus {
+  SUGGESTED
+  REVIEWED
+  VERIFIED
+  ACTIVATED
+  REJECTED
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  ABORTED
+  TIMED_OUT
+}
+
+enum RunTrigger {
+  SCHEDULE
+  MANUAL_ADMIN
+  WEBHOOK
+  RETRY
+}
+
+enum RawStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  SKIPPED
+}
+
+model Source {
+  id                  String   @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String   @unique
+  countryCode         String?  @map("country_code") @db.Char(2)
+  region              String?
+  language            String?
+  currency            String?  @db.Char(3)
+  category            String?
+  sourceType          SourceType @map("source_type")
+  url                 String
+  adapter             String
+  active              Boolean  @default(false)
+  crawlFrequency      CrawlFrequency @default(DAILY) @map("crawl_frequency")
+  attributionRequired Boolean  @default(true) @map("attribution_required")
+  termsUrl            String?  @map("terms_url")
+  notes               String?
+  metadata            Json     @default("{}")
+  health              SourceHealth @default(UNKNOWN)
+  lastSuccessAt       DateTime? @map("last_success_at")
+  lastFailureAt       DateTime? @map("last_failure_at")
+  lastRunAt           DateTime? @map("last_run_at")
+  consecutiveFailures Int      @default(0) @map("consecutive_failures")
+  successCount        Int      @default(0) @map("success_count")
+  failureCount        Int      @default(0) @map("failure_count")
+  itemsTotal          Int      @default(0) @map("items_total")
+  createdBy           String?  @map("created_by") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  createdByUser       User?    @relation("SourceCreatedBy", fields: [createdBy], references: [id])
+  runs                SourceRun[]
+  rawOpportunities    RawOpportunity[]
+  opportunitySources  OpportunitySource[]
+  opportunityDocuments OpportunityDocument[]
+  notifications       Notification[]
+
+  @@index([active])
+  @@index([countryCode])
+  @@index([category])
+  @@index([health])
+  @@map("sources")
+}
+
+model SourceAdapter {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  label       String
+  version     String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("source_adapters")
+}
+
+model SourceRun {
+  id              String     @id @default(uuid()) @db.Uuid
+  sourceId        String     @map("source_id") @db.Uuid
+  actorId         String?    @map("actor_id")
+  apifyRunId      String?    @map("apify_run_id")
+  apifyDatasetId  String?    @map("apify_dataset_id")
+  status          RunStatus
+  trigger         RunTrigger
+  itemsFound      Int        @default(0) @map("items_found")
+  itemsImported   Int        @default(0) @map("items_imported")
+  itemsUpdated    Int        @default(0) @map("items_updated")
+  itemsDuplicate  Int        @default(0) @map("items_duplicate")
+  itemsUnchanged  Int        @default(0) @map("items_unchanged")
+  itemsInvalid    Int        @default(0) @map("items_invalid")
+  startedAt       DateTime?  @map("started_at")
+  finishedAt      DateTime?  @map("finished_at")
+  durationMs      Int?       @map("duration_ms")
+  errorMessage    String?    @map("error_message")
+  errorDetails    Json?      @map("error_details")
+  createdBy       String?    @map("created_by") @db.Uuid
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  source          Source     @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  createdByUser   User?      @relation("SourceRunCreatedBy", fields: [createdBy], references: [id])
+  rawOpportunities RawOpportunity[]
+  versions        OpportunityVersion[]
+
+  @@index([sourceId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([apifyRunId])
+  @@map("source_runs")
+}
+
+model SourceSuggestion {
+  id           String           @id @default(uuid()) @db.Uuid
+  suggestedBy  String?          @map("suggested_by") @db.Uuid
+  name         String
+  url          String
+  countryCode  String?          @map("country_code") @db.Char(2)
+  category     String?
+  notes        String?
+  metadata            Json     @default("{}")
+  normalizedUrl       String?  @unique @map("normalized_url")
+  sourceDiscoveryRunId String? @map("source_discovery_run_id") @db.Uuid
+  status       SuggestionStatus @default(SUGGESTED)
+  reviewedBy   String?          @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime?        @map("reviewed_at")
+  reviewNotes  String?          @map("review_notes")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  suggestedByUser User? @relation("SourceSuggestionSuggestedBy", fields: [suggestedBy], references: [id])
+  reviewedByUser  User? @relation("SourceSuggestionReviewedBy", fields: [reviewedBy], references: [id])
+  discoveryRun    SourceDiscoveryRun? @relation(fields: [sourceDiscoveryRunId], references: [id], onDelete: SetNull)
+
+  @@map("source_suggestions")
+}
+
+model SourceDiscoveryRun {
+  id             String   @id @default(uuid()) @db.Uuid
+  requestedBy    String   @map("requested_by") @db.Uuid
+  apifyRunId     String?  @unique @map("apify_run_id")
+  actorId        String   @map("actor_id")
+  status         String   @default("QUEUED")
+  scope          String   @default("GLOBAL")
+  countries      String[] @default([])
+  categories     String[] @default([])
+  sourceTypes    String[] @default([]) @map("source_types")
+  minimumScore   Int      @default(60) @map("minimum_score")
+  queries        Json     @default("[]")
+  resultCount    Int      @default(0) @map("result_count")
+  processedAt    DateTime? @map("processed_at")
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  creator        User     @relation("SourceDiscoveryRunCreator", fields: [requestedBy], references: [id], onDelete: Cascade)
+  suggestions    SourceSuggestion[]
+  @@index([requestedBy, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("source_discovery_runs")
+}
+
+model RawOpportunity {
+  id                  String    @id @default(uuid()) @db.Uuid
+  sourceId            String    @map("source_id") @db.Uuid
+  sourceRunId         String?   @map("source_run_id") @db.Uuid
+  apifyDatasetItemId  String?   @map("apify_dataset_item_id")
+  payload             Json
+  payloadHash         String    @map("payload_hash")
+  fetchedAt           DateTime  @default(now()) @map("fetched_at")
+  processedAt         DateTime? @map("processed_at")
+  processingStatus    RawStatus @default(PENDING) @map("processing_status")
+  processingError     String?   @map("processing_error")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  source              Source     @relation(fields: [sourceId], references: [id])
+  sourceRun           SourceRun? @relation(fields: [sourceRunId], references: [id])
+  opportunitySources  OpportunitySource[]
+  verificationHistory SourceVerification[]
+
+  @@unique([payloadHash, sourceId])
+  @@index([sourceId])
+  @@index([processingStatus])
+  @@map("raw_opportunities")
+}
+
+// ---------- opportunity.prisma ----------
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+  ARCHIVED
+}
+
+enum SystemLifecycle {
+  DISCOVERED
+  RAW
+  NORMALIZED
+  VALIDATED
+  DEDUPLICATED
+  VERIFIED
+  ANALYZED
+  PUBLISHED
+  MONITORED
+  UPDATED
+  EXPIRED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PARTIAL
+  VERIFIED
+  DISPUTED
+}
+
+enum RequirementKind {
+  DOCUMENT
+  EXPERIENCE
+  CERTIFICATION
+  FINANCIAL
+  TECHNICAL
+  ELIGIBILITY
+  GEOGRAPHIC
+  LEGAL
+  OTHER
+}
+
+enum RequirementSource {
+  SOURCE_FACT
+  AI_INTERPRETATION
+}
+
+enum DocumentStatus {
+  PENDING
+  FETCHING
+  EXTRACTING
+  EXTRACTED
+  FAILED
+  SKIPPED
+}
+
+enum ChangeSeverity {
+  NORMAL
+  IMPORTANT
+  CRITICAL
+}
+
+model Opportunity {
+  id                  String              @id @default(uuid()) @db.Uuid
+  title               String
+  slug                String              @unique
+  organizationId      String?             @map("organization_id") @db.Uuid
+  organizationName    String?             @map("organization_name")
+  category            String
+  subcategory         String?
+  opportunityType     String              @map("opportunity_type")
+  countryCode         String?             @map("country_code") @db.Char(2)
+  region              String?
+  city                String?
+  locationText        String?             @map("location_text")
+  isRemote            Boolean             @default(false) @map("is_remote")
+  description         String?
+  summaryShort        String?             @map("summary_short")
+  valueMin            Decimal?            @map("value_min") @db.Decimal(20, 9)
+  valueMax            Decimal?            @map("value_max") @db.Decimal(20, 9)
+  currency            String?             @db.Char(3)
+  publishedAt         DateTime?           @map("published_at")
+  deadline            DateTime?
+  deadlineConfirmed   Boolean             @default(false) @map("deadline_confirmed")
+  eligibility         String?
+  requirements        String?
+  applicationMethod   String?             @map("application_method")
+  applicationUrl      String?             @map("application_url")
+  referenceNumber     String?             @map("reference_number")
+  status              OpportunityStatus   @default(PUBLISHED)
+  systemState         SystemLifecycle     @default(PUBLISHED) @map("system_state")
+  verificationStatus  VerificationStatus  @default(UNVERIFIED) @map("verification_status")
+  verifiedAt          DateTime?           @map("verified_at")
+  verifiedBy          String?             @map("verified_by") @db.Uuid
+  aiProcessed         Boolean             @default(false) @map("ai_processed")
+  aiProcessedAt       DateTime?           @map("ai_processed_at")
+  extra               Json                @default("{}")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  organization        Organization?       @relation(fields: [organizationId], references: [id])
+  sources             OpportunitySource[]
+  documents           OpportunityDocument[]
+  requirementsList    OpportunityRequirement[]
+  versions            OpportunityVersion[]
+  provenanceProofs    OpportunityProvenanceProof[]
+  changes             OpportunityChange[]
+  aiAnalyses          AiAnalysis[]
+  matches             Match[]
+  savedBy             SavedOpportunity[]
+  watchedBy           Watchlist[]
+  pipelineItems       PipelineItem[]
+  notifications       Notification[]
+  bounty              Bounty?
+  verifiedAchievements VerifiedAchievement[]
+  communityPosts      CommunityPost[]
+  communityReports   CommunityReport[]
+  interactions       OpportunityInteraction[]
+
+  @@index([category])
+  @@index([opportunityType])
+  @@index([countryCode])
+  @@index([deadline])
+  @@index([status])
+  @@index([systemState])
+  @@index([publishedAt(sort: Desc)])
+  @@map("opportunities")
+}
+
+model OpportunitySource {
+  id               String    @id @default(uuid()) @db.Uuid
+  opportunityId    String    @map("opportunity_id") @db.Uuid
+  sourceId         String    @map("source_id") @db.Uuid
+  rawOpportunityId String?   @map("raw_opportunity_id") @db.Uuid
+  sourceUrl        String    @map("source_url")
+  sourceTitle      String?   @map("source_title")
+  publishedAt      DateTime? @map("published_at")
+  deadline         DateTime?
+  isPrimary        Boolean   @default(false) @map("is_primary")
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  opportunity      Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  rawOpportunity   RawOpportunity? @relation(fields: [rawOpportunityId], references: [id])
+
+  @@unique([opportunityId, sourceId, sourceUrl])
+  @@index([opportunityId])
+  @@index([sourceId])
+  @@map("opportunity_sources")
+}
+
+model OpportunityDocument {
+  id               String         @id @default(uuid()) @db.Uuid
+  opportunityId    String         @map("opportunity_id") @db.Uuid
+  sourceId         String?        @map("source_id") @db.Uuid
+  url              String
+  fileName         String?        @map("file_name")
+  mimeType         String?        @map("mime_type")
+  fileSize         BigInt?        @map("file_size")
+  checksum         String?
+  fetchedAt        DateTime?      @map("fetched_at")
+  extractionStatus DocumentStatus @default(PENDING) @map("extraction_status")
+  extractionError  String?        @map("extraction_error")
+  extractedText    String?        @map("extracted_text")
+  extractedFields  Json?          @map("extracted_fields")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  opportunity      Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  source           Source?        @relation(fields: [sourceId], references: [id])
+
+  @@index([opportunityId])
+  @@index([extractionStatus])
+  @@map("opportunity_documents")
+}
+
+model OpportunityRequirement {
+  id             String            @id @default(uuid()) @db.Uuid
+  opportunityId  String            @map("opportunity_id") @db.Uuid
+  kind           RequirementKind
+  label          String
+  description    String?
+  isMandatory    Boolean           @default(true) @map("is_mandatory")
+  source         RequirementSource
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@map("opportunity_requirements")
+}
+
+model OpportunityVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  opportunityId   String   @map("opportunity_id") @db.Uuid
+  version         Int
+  snapshot        Json
+  snapshotHash    String   @map("snapshot_hash")
+  createdByRunId  String?  @map("created_by_run_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdByRun    SourceRun?  @relation(fields: [createdByRunId], references: [id])
+
+  @@unique([opportunityId, version])
+  @@index([opportunityId])
+  @@map("opportunity_versions")
+}
+
+model OpportunityProvenanceProof {
+  id             String      @id @default(uuid()) @db.Uuid
+  opportunityId  String      @map("opportunity_id") @db.Uuid
+  contentHash    String      @map("content_hash")
+  sourceHash     String      @map("source_hash")
+  walletAddress  String      @map("wallet_address")
+  txSignature    String      @unique @map("tx_signature")
+  anchoredAt     DateTime    @default(now()) @map("anchored_at")
+
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, contentHash])
+  @@index([opportunityId, anchoredAt(sort: Desc)])
+  @@map("opportunity_provenance_proofs")
+}
+
+model OpportunityChange {
+  id              String         @id @default(uuid()) @db.Uuid
+  opportunityId   String         @map("opportunity_id") @db.Uuid
+  fromVersion     Int?           @map("from_version")
+  toVersion       Int?           @map("to_version")
+  field           String
+  oldValue        Json?          @map("old_value")
+  newValue        Json?          @map("new_value")
+  severity        ChangeSeverity @default(NORMAL)
+  detectedAt      DateTime       @default(now()) @map("detected_at")
+  notified        Boolean        @default(false)
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  opportunity     Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([detectedAt(sort: Desc)])
+  @@index([notified])
+  @@map("opportunity_changes")
+}
+
+model OpportunityDuplicate {
+  id           String   @id @default(uuid()) @db.Uuid
+  canonicalId  String   @map("canonical_id") @db.Uuid
+  candidateId  String   @map("candidate_id") @db.Uuid
+  similarity   Decimal  @db.Decimal(5, 4)
+  signals      Json
+  status       String   @default("PENDING")
+  reviewedBy   String?  @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([canonicalId])
+  @@index([candidateId])
+  @@index([status])
+  @@map("opportunity_duplicates")
+}
+
+model OpportunityView {
+  id             String   @id @default(uuid()) @db.Uuid
+  opportunityId  String   @map("opportunity_id") @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  viewedAt       DateTime @default(now()) @map("viewed_at")
+  source         String?
+
+  @@index([opportunityId])
+  @@index([userId])
+  @@map("opportunity_views")
+}
+
+// ---------- organization.prisma ----------
+enum OrganizationType {
+  GOVERNMENT
+  PRIVATE
+  NGO
+  FOUNDATION
+  UNIVERSITY
+  DEVELOPMENT
+  ACCELERATOR
+  INCUBATOR
+  OTHER
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Organization {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String           @unique
+  type         OrganizationType?
+  countryCode  String?          @map("country_code") @db.Char(2)
+  website      String?
+  description  String?
+  verified     Boolean          @default(false)
+  verifiedAt   DateTime?        @map("verified_at")
+  logoUrl      String?          @map("logo_url")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  members      OrganizationMember[]
+  workspace    Workspace?
+  opportunities Opportunity[]
+  bounties      Bounty[]
+  issuedAchievements VerifiedAchievement[] @relation("AchievementIssuer")
+  communityPosts CommunityPost[]
+  communityReports CommunityReport[]
+
+  @@index([countryCode])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  role           OrganizationRole
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Workspace {
+  id             String        @id @default(uuid()) @db.Uuid
+  ownerUserId    String        @map("owner_user_id") @db.Uuid
+  type           WorkspaceType
+  name           String
+  description    String?
+  useCase        String?       @map("use_case")
+  organizationId String?       @unique @map("organization_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  owner          User          @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([ownerUserId, type])
+  @@map("workspaces")
+}
+
+enum BountyStatus {
+  OPEN
+  PAUSED
+  AWARDING
+  COMPLETED
+  CANCELLED
+}
+
+enum BountyFundingStatus {
+  UNFUNDED
+  PENDING
+  FUNDED
+  DISPUTED
+}
+
+enum SubmissionStatus {
+  PARTICIPATING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Bounty {
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String              @map("organization_id") @db.Uuid
+  opportunityId      String              @unique @map("opportunity_id") @db.Uuid
+  createdByUserId    String              @map("created_by_user_id") @db.Uuid
+  rewardAmount       Decimal             @map("reward_amount") @db.Decimal(20, 9)
+  rewardCurrency     String              @map("reward_currency") @db.Char(3)
+  requiredSkills     String[]            @default([]) @map("required_skills")
+  status             BountyStatus        @default(OPEN)
+  fundingStatus      BountyFundingStatus @default(UNFUNDED) @map("funding_status")
+  fundingTxSignature String?             @map("funding_tx_signature")
+  payoutReservationId       String?       @map("payout_reservation_id")
+  payoutSubmissionId        String?       @map("payout_submission_id") @db.Uuid
+  payoutReservedByUserId    String?       @map("payout_reserved_by_user_id") @db.Uuid
+  payoutReservedAt          DateTime?     @map("payout_reserved_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  opportunity        Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdBy          User                @relation("BountyCreator", fields: [createdByUserId], references: [id])
+  submissions        OpportunitySubmission[]
+
+  @@index([organizationId, status])
+  @@index([fundingStatus])
+  @@map("bounties")
+}
+
+model OpportunitySubmission {
+  id                        String           @id @default(uuid()) @db.Uuid
+  bountyId                  String           @map("bounty_id") @db.Uuid
+  userId                    String           @map("user_id") @db.Uuid
+  walletAddress             String?          @map("wallet_address")
+  participationTxSignature  String?          @unique @map("participation_tx_signature")
+  submissionProofTxSignature String?         @unique @map("submission_proof_tx_signature")
+  submissionDraftHash       String?          @map("submission_draft_hash")
+  rewardTxSignature         String?          @unique @map("reward_tx_signature")
+  submissionUrl             String?          @map("submission_url")
+  submissionText            String?          @map("submission_text")
+  status                    SubmissionStatus @default(PARTICIPATING)
+  reviewedByUserId          String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt                DateTime?        @map("reviewed_at")
+  reviewNote                String?          @map("review_note")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+
+  bounty                    Bounty           @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  participant               User             @relation("SubmissionParticipant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer                  User?            @relation("SubmissionReviewer", fields: [reviewedByUserId], references: [id])
+  achievement               VerifiedAchievement?
+
+  @@unique([bountyId, userId])
+  @@index([bountyId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("opportunity_submissions")
+}
+
+model VerifiedAchievement {
+  id              String                @id @default(uuid()) @db.Uuid
+  userId          String                @map("user_id") @db.Uuid
+  issuerUserId    String                @map("issuer_user_id") @db.Uuid
+  organizationId  String                @map("organization_id") @db.Uuid
+  opportunityId   String                @map("opportunity_id") @db.Uuid
+  submissionId    String                @unique @map("submission_id") @db.Uuid
+  title           String
+  description     String?
+  proofHash       String                @map("proof_hash")
+  proofTxSignature String?              @unique @map("proof_tx_signature")
+  proofWalletAddress String?             @map("proof_wallet_address")
+  proofAnchoredAt DateTime?              @map("proof_anchored_at")
+  points          Int                   @default(25)
+  issuedAt        DateTime              @default(now()) @map("issued_at")
+
+  user            User                  @relation("AchievementRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  issuer          User                  @relation("AchievementIssuedByUser", fields: [issuerUserId], references: [id])
+  organization    Organization          @relation("AchievementIssuer", fields: [organizationId], references: [id])
+  opportunity     Opportunity           @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  submission      OpportunitySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, issuedAt(sort: Desc)])
+  @@index([organizationId])
+  @@map("verified_achievements")
+}
+
+// ---------- ai.prisma ----------
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  OPENROUTER
+  MOCK
+}
+
+enum AiTaskType {
+  CLASSIFICATION
+  SUMMARY
+  ELIGIBILITY
+  REQUIREMENTS
+  DOCUMENT
+  RISK
+  RECOMMENDATIONS
+  ANALYST
+  SEARCH_INTENT
+  OTHER
+}
+
+enum AiStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  FALLBACK_USED
+}
+
+model AiAnalysis {
+  id                  String     @id @default(uuid()) @db.Uuid
+  opportunityId       String?    @map("opportunity_id") @db.Uuid
+  opportunityVersion  Int?       @map("opportunity_version")
+  taskType            AiTaskType @map("task_type")
+  provider            AiProvider
+  model               String
+  promptVersion       String     @map("prompt_version")
+  inputHash           String     @map("input_hash")
+  output              Json
+  outputText          String?    @map("output_text")
+  confidence          Decimal?   @db.Decimal(4, 3)
+  tokensInput         Int?       @map("tokens_input")
+  tokensOutput        Int?       @map("tokens_output")
+  costUsd             Decimal?   @map("cost_usd") @db.Decimal(10, 6)
+  latencyMs           Int?       @map("latency_ms")
+  status              AiStatus   @default(SUCCEEDED)
+  errorMessage        String?    @map("error_message")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  opportunity         Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([taskType])
+  @@index([provider])
+  @@index([createdAt(sort: Desc)])
+  @@map("ai_analyses")
+}
+
+model AiPrompt {
+  id         String     @id @default(uuid()) @db.Uuid
+  taskType   AiTaskType @map("task_type")
+  version    String
+  template   String
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@unique([taskType, version])
+  @@map("ai_prompts")
+}
+
+model AiUsageDaily {
+  id           String     @id @default(uuid()) @db.Uuid
+  day          DateTime   @db.Date
+  provider     AiProvider
+  taskType     AiTaskType @map("task_type")
+  requests     Int        @default(0)
+  tokensInput  BigInt     @default(0) @map("tokens_input")
+  tokensOutput BigInt     @default(0) @map("tokens_output")
+  costUsd      Decimal    @default(0) @map("cost_usd") @db.Decimal(12, 6)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@unique([day, provider, taskType])
+  @@map("ai_usage_daily")
+}
+
+// ---------- matching.prisma ----------
+enum MatchBand {
+  VERY_STRONG
+  STRONG
+  MODERATE
+  WEAK
+  POOR
+}
+
+model Match {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  dnaProfileId    String    @map("dna_profile_id") @db.Uuid
+  opportunityId   String    @map("opportunity_id") @db.Uuid
+  score           Int
+  band            MatchBand
+  breakdown       Json
+  reasons         Json
+  concerns        Json
+  aiMatchQualification String?   @map("ai_match_qualification")
+  aiMatchReason        String?   @map("ai_match_reason")
+  aiMatchProvider      String?   @map("ai_match_provider")
+  aiMatchError         String?   @map("ai_match_error")
+  aiMatchAnalyzedAt    DateTime? @map("ai_match_analyzed_at")
+  weightsVersion  String    @map("weights_version")
+  computedAt      DateTime  @default(now()) @map("computed_at")
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dnaProfile      DnaProfile @relation(fields: [dnaProfileId], references: [id])
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId, dnaProfileId])
+  @@index([userId, score(sort: Desc)])
+  @@index([opportunityId])
+  @@index([band])
+  @@map("matches")
+}
+
+model MatchWeights {
+  id         String   @id @default(uuid()) @db.Uuid
+  userType   String   @map("user_type")
+  version    String
+  weights    Json
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userType, version])
+  @@map("match_weights")
+}
+
+// ---------- pipeline.prisma ----------
+enum PipelineStage {
+  DISCOVERED
+  REVIEWING
+  QUALIFIED
+  PREPARING
+  SUBMITTED
+  UNDER_REVIEW
+  WON
+  LOST
+  WITHDRAWN
+  DISQUALIFIED
+  EXPIRED
+}
+
+enum OutcomeType {
+  WON
+  LOST
+  WITHDRAWN
+  DISQUALIFIED
+  EXPIRED
+  PENDING
+}
+
+enum PipelineEventType {
+  CREATED
+  STAGE_CHANGED
+  NOTE_ADDED
+  CHECKLIST_UPDATED
+  SUBMISSION_RECORDED
+  OUTCOME_RECORDED
+}
+
+model Pipeline {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @default("Default")
+  isDefault   Boolean  @default(true) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PipelineItem[]
+
+  @@index([userId])
+  @@map("pipelines")
+}
+
+model PipelineItem {
+  id                   String        @id @default(uuid()) @db.Uuid
+  pipelineId           String        @map("pipeline_id") @db.Uuid
+  opportunityId        String        @map("opportunity_id") @db.Uuid
+  stage                PipelineStage @default(REVIEWING)
+  ownerUserId          String?       @map("owner_user_id") @db.Uuid
+  notes                String?
+  submissionDate       DateTime?     @map("submission_date")
+  submissionReference  String?       @map("submission_reference")
+  outcomeType          OutcomeType?  @map("outcome_type")
+  outcomeValue         Decimal?      @map("outcome_value") @db.Decimal(20, 2)
+  outcomeCurrency      String?       @map("outcome_currency") @db.Char(3)
+  outcomeDate          DateTime?     @map("outcome_date")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  pipeline             Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  opportunity          Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  ownerUser            User?         @relation("PipelineItemOwner", fields: [ownerUserId], references: [id])
+  events               PipelineEvent[]
+  checklist            Checklist?
+  notesList            PipelineNote[]
+
+  @@unique([pipelineId, opportunityId])
+  @@index([pipelineId, stage])
+  @@map("pipeline_items")
+}
+
+model PipelineEvent {
+  id              String            @id @default(uuid()) @db.Uuid
+  pipelineItemId  String            @map("pipeline_item_id") @db.Uuid
+  type            PipelineEventType
+  fromStage       PipelineStage?    @map("from_stage")
+  toStage         PipelineStage?    @map("to_stage")
+  actorUserId     String?           @map("actor_user_id") @db.Uuid
+  data            Json?
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  pipelineItem    PipelineItem      @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+  actorUser       User?             @relation("PipelineEventActor", fields: [actorUserId], references: [id])
+
+  @@index([pipelineItemId, createdAt(sort: Desc)])
+  @@map("pipeline_events")
+}
+
+model Checklist {
+  id              String   @id @default(uuid()) @db.Uuid
+  pipelineItemId  String   @unique @map("pipeline_item_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pipelineItem    PipelineItem @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+  items           ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id            String    @id @default(uuid()) @db.Uuid
+  checklistId   String    @map("checklist_id") @db.Uuid
+  label         String
+  description   String?
+  isRequired    Boolean   @default(true) @map("is_required")
+  completed     Boolean   @default(false)
+  completedAt   DateTime? @map("completed_at")
+  orderIndex    Int       @default(0) @map("order_index")
+  source        RequirementSource
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  checklist     Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId, orderIndex])
+  @@map("checklist_items")
+}
+
+model PipelineNote {
+  id              String   @id @default(uuid()) @db.Uuid
+  pipelineItemId  String   @map("pipeline_item_id") @db.Uuid
+  authorUserId    String?  @map("author_user_id") @db.Uuid
+  body            String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pipelineItem    PipelineItem @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+
+  @@index([pipelineItemId, createdAt(sort: Desc)])
+  @@map("pipeline_notes")
+}
+
+// ---------- notification.prisma ----------
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+  WEBHOOK
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum NotificationType {
+  NEW_MATCH
+  DEADLINE_SOON
+  DEADLINE_CHANGED
+  REQUIREMENT_CHANGED
+  OPPORTUNITY_UPDATED
+  OPPORTUNITY_EXPIRED
+  SOURCE_FAILED
+  SOURCE_HEALTH_WARNING
+  PIPELINE_REMINDER
+  SYSTEM
+}
+
+model Notification {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  type           NotificationType
+  title          String
+  body           String?
+  data           Json?
+  opportunityId  String?          @map("opportunity_id") @db.Uuid
+  sourceId       String?          @map("source_id") @db.Uuid
+  readAt         DateTime?        @map("read_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity?     @relation(fields: [opportunityId], references: [id])
+  source         Source?          @relation(fields: [sourceId], references: [id])
+  deliveries     NotificationDelivery[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
+  @@index([type])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id         String              @id @default(uuid()) @db.Uuid
+  userId     String              @map("user_id") @db.Uuid
+  channel    NotificationChannel
+  type       NotificationType
+  enabled    Boolean             @default(true)
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, type])
+  @@map("notification_preferences")
+}
+
+model NotificationDelivery {
+  id              String              @id @default(uuid()) @db.Uuid
+  notificationId  String              @map("notification_id") @db.Uuid
+  channel         NotificationChannel
+  status          DeliveryStatus      @default(PENDING)
+  attempts        Int                 @default(0)
+  lastAttemptAt   DateTime?           @map("last_attempt_at")
+  errorMessage    String?             @map("error_message")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  notification    Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@map("notification_deliveries")
+}
+
+model PushSubscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  endpoint   String
+  keys       Json
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
+}
+
+// ---------- api.prisma ----------
+model ApiKey {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  name             String
+  prefix           String
+  keyHash          String    @unique @map("key_hash")
+  scopes           String[]  @default([])
+  rateLimitPerMin  Int       @default(60) @map("rate_limit_per_min")
+  lastUsedAt       DateTime? @map("last_used_at")
+  expiresAt        DateTime? @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prefix])
+  @@map("api_keys")
+}
+
+model ApiKeyUsageDaily {
+  id         String   @id @default(uuid()) @db.Uuid
+  apiKeyId   String   @map("api_key_id") @db.Uuid
+  day        DateTime @db.Date
+  requests   Int      @default(0)
+  errors     Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([apiKeyId, day])
+  @@map("api_key_usage_daily")
+}
+
+model WebhookEndpoint {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  url         String
+  secretHash  String    @map("secret_hash")
+  events      String[]  @default([])
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([userId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id              String    @id @default(uuid()) @db.Uuid
+  endpointId      String    @map("endpoint_id") @db.Uuid
+  event           String
+  payload         Json
+  status          DeliveryStatus @default(PENDING)
+  attempts        Int       @default(0)
+  responseStatus  Int?      @map("response_status")
+  responseBody    String?   @map("response_body")
+  lastAttemptAt   DateTime? @map("last_attempt_at")
+  nextAttemptAt   DateTime? @map("next_attempt_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  endpoint        WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt(sort: Desc)])
+  @@index([status, nextAttemptAt])
+  @@map("webhook_deliveries")
+}
+
+// ---------- audit.prisma ----------
+model AuditLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  actorUserId     String?  @map("actor_user_id") @db.Uuid
+  actorApiKeyId   String?  @map("actor_api_key_id") @db.Uuid
+  action          String
+  entityType      String?  @map("entity_type")
+  entityId        String?  @map("entity_id")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  data            Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  actorUser       User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// ---------- system.prisma ----------
+model SystemSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+enum JobStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model JobRun {
+  id             String    @id @default(uuid()) @db.Uuid
+  jobName        String    @map("job_name")
+  status         JobStatus
+  startedAt      DateTime  @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  durationMs     Int?      @map("duration_ms")
+  itemsProcessed Int?      @map("items_processed")
+  errorMessage   String?   @map("error_message")
+  data           Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([jobName, startedAt(sort: Desc)])
+  @@index([status])
+  @@map("job_runs")
+}
+
+model SystemHealthSnapshot {
+  id           String   @id @default(uuid()) @db.Uuid
+  capturedAt   DateTime @default(now()) @map("captured_at")
+  dbOk         Boolean  @map("db_ok")
+  redisOk      Boolean  @map("redis_ok")
+  apifyOk      Boolean  @map("apify_ok")
+  aiOk         Boolean  @map("ai_ok")
+  queueDepth   Int?     @map("queue_depth")
+  workerCount  Int?     @map("worker_count")
+  details      Json?
+
+  @@index([capturedAt(sort: Desc)])
+  @@map("system_health_snapshots")
+}
+
+enum CommunityPostKind {
+  GENERAL
+  OPPORTUNITY_DISCUSSION
+  QUESTION
+  ACHIEVEMENT
+  PROJECT_ANNOUNCEMENT
+  EDUCATIONAL
+  INDUSTRY_DISCUSSION
+}
+
+enum CommunityReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum CommunityActionKind {
+  BLOCK
+  MUTE
+}
+
+enum CommunityConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum OpportunityInteractionType {
+  LIKE
+  INTERESTED
+  APPLYING
+  COMPLETED
+  SHARE
+}
+
+model CommunitySpace {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  countryCode String?  @map("country_code") @db.Char(2)
+  topics      String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  posts       CommunityPost[]
+  @@map("community_spaces")
+}
+
+model CommunityPost {
+  id            String             @id @default(uuid()) @db.Uuid
+  authorId      String             @map("author_id") @db.Uuid
+  opportunityId String?            @map("opportunity_id") @db.Uuid
+  organizationId String?           @map("organization_id") @db.Uuid
+  communitySlug String?            @map("community_slug")
+  topics        String[]           @default([])
+  industries    String[]           @default([])
+  kind          CommunityPostKind  @default(GENERAL)
+  content       String             @db.VarChar(5000)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  author        User               @relation("CommunityPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity?       @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  organization  Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  community     CommunitySpace?    @relation(fields: [communitySlug], references: [slug], onDelete: SetNull)
+  comments      CommunityComment[]
+  reactions     CommunityReaction[]
+  reports       CommunityReport[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([opportunityId, createdAt(sort: Desc)])
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String            @id @default(uuid()) @db.Uuid
+  postId    String            @map("post_id") @db.Uuid
+  authorId  String            @map("author_id") @db.Uuid
+  content   String            @db.VarChar(2000)
+  createdAt DateTime          @default(now()) @map("created_at")
+  post      CommunityPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User              @relation("CommunityCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reports   CommunityReport[]
+
+  @@index([postId, createdAt])
+  @@map("community_comments")
+}
+
+model CommunityReaction {
+  id        String        @id @default(uuid()) @db.Uuid
+  postId    String        @map("post_id") @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at")
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("community_reactions")
+}
+
+model CommunityFollow {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  targetType String   @map("target_type") @db.VarChar(24)
+  targetKey  String   @map("target_key") @db.VarChar(160)
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetKey])
+  @@index([targetType, targetKey])
+  @@map("community_follows")
+}
+
+model CommunityReport {
+  id             String                @id @default(uuid()) @db.Uuid
+  reporterId     String                @map("reporter_id") @db.Uuid
+  postId         String?               @map("post_id") @db.Uuid
+  commentId      String?               @map("comment_id") @db.Uuid
+  reportedUserId String?               @map("reported_user_id") @db.Uuid
+  opportunityId String?                @map("opportunity_id") @db.Uuid
+  organizationId String?               @map("organization_id") @db.Uuid
+  reason         String                @db.VarChar(80)
+  details        String?               @db.VarChar(1000)
+  status         CommunityReportStatus @default(OPEN)
+  createdAt      DateTime              @default(now()) @map("created_at")
+  reporter       User                  @relation("CommunityReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post           CommunityPost?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment        CommunityComment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reportedUser   User?                 @relation("CommunityReportTarget", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  opportunity   Opportunity?           @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  organization  Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reporterId, createdAt])
+  @@map("community_reports")
+}
+
+model CommunityConnection {
+  id          String                   @id @default(uuid()) @db.Uuid
+  requesterId String                   @map("requester_id") @db.Uuid
+  recipientId String                   @map("recipient_id") @db.Uuid
+  status      CommunityConnectionStatus @default(PENDING)
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  respondedAt DateTime?                @map("responded_at")
+  requester   User                     @relation("CommunityConnectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient   User                     @relation("CommunityConnectionRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@unique([requesterId, recipientId])
+  @@index([recipientId, status, createdAt(sort: Desc)])
+  @@index([requesterId, status, createdAt(sort: Desc)])
+  @@map("community_connections")
+}
+
+model ProfileAnalysis {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  profileHash String   @map("profile_hash")
+  result      Json
+  provider    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("profile_analyses")
+}
+
+model OpportunityInteraction {
+  id             String                     @id @default(uuid()) @db.Uuid
+  userId         String                     @map("user_id") @db.Uuid
+  opportunityId  String                     @map("opportunity_id") @db.Uuid
+  kind           OpportunityInteractionType
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity                @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  @@unique([userId, opportunityId, kind])
+  @@index([opportunityId, kind])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("opportunity_interactions")
+}
+
+model SourceVerification {
+  id            String   @id @default(uuid()) @db.Uuid
+  sourceId      String   @map("source_id") @db.Uuid
+  version       Int
+  snapshot      Json
+  fingerprint   String
+  status        String   @default("PENDING")
+  walletAddress String?  @map("wallet_address")
+  txSignature   String?  @unique @map("tx_signature")
+  anchoredAt    DateTime? @map("anchored_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  source        Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  @@unique([sourceId, version])
+  @@index([sourceId, createdAt(sort: Desc)])
+  @@map("source_verifications")
+}
+
+model CommunityUserAction {
+  id         String              @id @default(uuid()) @db.Uuid
+  actorId    String              @map("actor_id") @db.Uuid
+  targetId   String              @map("target_id") @db.Uuid
+  kind       CommunityActionKind
+  createdAt  DateTime            @default(now()) @map("created_at")
+  actor      User                @relation("CommunityActionActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target     User                @relation("CommunityActionTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, targetId, kind])
+  @@index([targetId, kind])
+  @@map("community_user_actions")
+}
