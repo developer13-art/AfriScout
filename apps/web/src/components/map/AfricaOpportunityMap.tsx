@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 
 export interface MapCountryData {
   countryCode: string;
@@ -12,15 +12,11 @@ export interface GlobalOpportunityMapProps {
   height?: number;
   onSelectCountry?: (countryCode: string) => void;
   compact?: boolean;
+  interactive?: boolean;
+  showLegend?: boolean;
 }
 
-const SCALE = [
-  "#E2E8F0",
-  "#A7F3D0",
-  "#34D399",
-  "#0D9488",
-  "#047857",
-];
+const SCALE = ["#E2E8F0", "#A7F3D0", "#34D399", "#0D9488", "#047857"];
 
 const REGION_NAMES = new Intl.DisplayNames(["en"], { type: "region" });
 
@@ -69,9 +65,7 @@ function normalizeCountryName(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-  return (COUNTRY_NAME_ALIASES[normalized] ?? normalized)
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
+  return (COUNTRY_NAME_ALIASES[normalized] ?? normalized).replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function colorForCount(count: number, max: number): string {
@@ -101,6 +95,8 @@ export function GlobalOpportunityMap({
   height = 420,
   onSelectCountry,
   compact = false,
+  interactive = false,
+  showLegend = true,
 }: GlobalOpportunityMapProps) {
   const [tooltip, setTooltip] = useState<{
     label: string;
@@ -115,9 +111,7 @@ export function GlobalOpportunityMap({
     let cancelled = false;
 
     fetch("/world-110m.json")
-      .then((res) =>
-        res.ok ? res.json() : Promise.reject(res.status),
-      )
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
       .then((json) => {
         if (!cancelled) {
           setTopology(json);
@@ -125,10 +119,7 @@ export function GlobalOpportunityMap({
       })
       .catch((err) => {
         // eslint-disable-next-line no-console
-        console.error(
-          "Failed to load world map topology",
-          err,
-        );
+        console.error("Failed to load world map topology", err);
       });
 
     return () => {
@@ -140,24 +131,17 @@ export function GlobalOpportunityMap({
     const map = new Map<string, MapCountryData>();
 
     for (const row of data) {
+      const mappedName =
+        row.countryName?.toUpperCase() === row.countryCode.toUpperCase() ? null : row.countryName;
       const countryName =
-        row.countryName ??
-        REGION_NAMES.of(row.countryCode.toUpperCase()) ??
-        row.countryCode;
+        mappedName ?? REGION_NAMES.of(row.countryCode.toUpperCase()) ?? row.countryCode;
       map.set(normalizeCountryName(countryName), { ...row, countryName });
     }
 
     return map;
   }, [data]);
 
-  const max = useMemo(
-    () =>
-      data.reduce(
-        (acc, row) => Math.max(acc, row.count),
-        0,
-      ),
-    [data],
-  );
+  const max = useMemo(() => data.reduce((acc, row) => Math.max(acc, row.count), 0), [data]);
 
   const legendItems = [
     {
@@ -168,26 +152,17 @@ export function GlobalOpportunityMap({
     {
       label: "Low",
       color: SCALE[1]!,
-      range: `1-${Math.max(
-        1,
-        Math.ceil(max * 0.1),
-      )}`,
+      range: `1-${Math.max(1, Math.ceil(max * 0.1))}`,
     },
     {
       label: "Medium",
       color: SCALE[2]!,
-      range: `${Math.ceil(max * 0.1) + 1}-${Math.max(
-        1,
-        Math.ceil(max * 0.3),
-      )}`,
+      range: `${Math.ceil(max * 0.1) + 1}-${Math.max(1, Math.ceil(max * 0.3))}`,
     },
     {
       label: "High",
       color: SCALE[3]!,
-      range: `${Math.ceil(max * 0.3) + 1}-${Math.max(
-        1,
-        Math.ceil(max * 0.7),
-      )}`,
+      range: `${Math.ceil(max * 0.3) + 1}-${Math.max(1, Math.ceil(max * 0.7))}`,
     },
     {
       label: "Very high",
@@ -196,6 +171,56 @@ export function GlobalOpportunityMap({
     },
   ];
 
+  const renderedGeographies = topology ? (
+    <Geographies geography={topology as never}>
+      {({ geographies }) =>
+        geographies.map((geo) => {
+          const geoName = String(geo.properties?.name ?? "");
+          const row = byCountryName.get(normalizeCountryName(geoName));
+          const count = row?.count ?? 0;
+
+          const fill = colorForCount(count, max);
+
+          return (
+            <g key={geo.rsmKey}>
+              <Geography
+                geography={geo}
+                fill={row ? fill : "#F8FAFC"}
+                stroke={row ? "#FFFFFF" : "#CBD5E1"}
+                strokeWidth={0.45}
+                onMouseMove={(event) => {
+                  const target = event.currentTarget as SVGPathElement;
+                  const rect = target.ownerSVGElement?.getBoundingClientRect();
+
+                  const x = rect ? event.clientX - rect.left : event.clientX;
+                  const y = rect ? event.clientY - rect.top : event.clientY;
+
+                  setTooltip({
+                    label: row?.countryName ?? geoName,
+                    value: `${new Intl.NumberFormat("en").format(count)} ${
+                      count === 1 ? "opportunity" : "opportunities"
+                    }`,
+                    x,
+                    y,
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+                onClick={() => {
+                  if (row) onSelectCountry?.(row.countryCode);
+                }}
+                className={
+                  onSelectCountry && row
+                    ? "cursor-pointer outline-none transition-all duration-150 hover:opacity-75"
+                    : "outline-none"
+                }
+              />
+            </g>
+          );
+        })
+      }
+    </Geographies>
+  ) : null;
+
   return (
     <div className="relative w-full">
       {!topology ? (
@@ -203,9 +228,7 @@ export function GlobalOpportunityMap({
           className="flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50"
           style={{ height }}
         >
-          <span className="text-xs text-neutral-500">
-            Loading map
-          </span>
+          <span className="text-xs text-neutral-500">Loading map</span>
         </div>
       ) : (
         <ComposableMap
@@ -221,70 +244,13 @@ export function GlobalOpportunityMap({
             height: "auto",
           }}
         >
-          <Geographies geography={topology as never}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const geoName = String(geo.properties?.name ?? "");
-                const row = byCountryName.get(normalizeCountryName(geoName));
-                const count = row?.count ?? 0;
-
-                const fill = colorForCount(
-                  count,
-                  max,
-                );
-
-                return (
-                  <g key={geo.rsmKey}>
-                    <Geography
-                      geography={geo}
-                      fill={row ? fill : "#F8FAFC"}
-                      stroke={row ? "#FFFFFF" : "#CBD5E1"}
-                      strokeWidth={0.45}
-                      onMouseMove={(event) => {
-                        const target =
-                          event.currentTarget as SVGPathElement;
-
-                        const rect =
-                          target.ownerSVGElement?.getBoundingClientRect();
-
-                        const x = rect
-                          ? event.clientX - rect.left
-                          : event.clientX;
-
-                        const y = rect
-                          ? event.clientY - rect.top
-                          : event.clientY;
-
-                        setTooltip({
-                          label:
-                            row?.countryName ??
-                            geoName,
-                          value: `${count} ${
-                            count === 1
-                              ? "opportunity"
-                              : "opportunities"
-                          }`,
-                          x,
-                          y,
-                        });
-                      }}
-                      onMouseLeave={() =>
-                        setTooltip(null)
-                      }
-                      onClick={() => {
-                        if (row) onSelectCountry?.(row.countryCode);
-                      }}
-                      className={
-                        onSelectCountry && row
-                          ? "cursor-pointer outline-none transition-all duration-150 hover:opacity-75"
-                          : "outline-none"
-                      }
-                    />
-                  </g>
-                );
-              })
-            }
-          </Geographies>
+          {interactive ? (
+            <ZoomableGroup minZoom={1} maxZoom={8}>
+              {renderedGeographies}
+            </ZoomableGroup>
+          ) : (
+            renderedGeographies
+          )}
         </ComposableMap>
       )}
 
@@ -297,46 +263,37 @@ export function GlobalOpportunityMap({
             top: tooltip.y,
           }}
         >
-          <p className="font-semibold">
-            {tooltip.label}
-          </p>
+          <p className="font-semibold">{tooltip.label}</p>
 
-          <p className="mt-0.5 text-white/80">
-            {tooltip.value}
-          </p>
+          <p className="mt-0.5 text-white/80">{tooltip.value}</p>
         </div>
       ) : null}
 
-      <div className="mt-3 rounded-lg border border-neutral-200 bg-white/95 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Opportunities by country
-        </p>
+      {showLegend ? (
+        <div className="mt-3 rounded-lg border border-neutral-200 bg-white/95 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Opportunities by country
+          </p>
 
-        <ul className="mt-2 space-y-1">
-          {legendItems.map((item) => (
-            <li
-              key={item.label}
-              className="flex items-center gap-2 text-xs"
-            >
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-sm"
-                style={{
-                  backgroundColor: item.color,
-                }}
-                aria-hidden
-              />
+          <ul className="mt-2 space-y-1">
+            {legendItems.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-xs">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm"
+                  style={{
+                    backgroundColor: item.color,
+                  }}
+                  aria-hidden
+                />
 
-              <span className="text-neutral-700">
-                {item.label}
-              </span>
+                <span className="text-neutral-700">{item.label}</span>
 
-              <span className="ml-auto text-neutral-500">
-                {item.range}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+                <span className="ml-auto text-neutral-500">{item.range}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
