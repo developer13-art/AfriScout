@@ -18,6 +18,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: APP_URL
+        value: https://afriscout-b6fq.onrender.com
+      - key: API_URL
+        value: https://afriscout-api.onrender.com
       - key: API_PORT
         value: 10000
       - key: API_HOST

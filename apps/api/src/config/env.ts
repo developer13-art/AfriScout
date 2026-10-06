@@ -15,8 +15,8 @@ const booleanFromEnv = z
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_NAME: z.string().default("AfriScout"),
-  APP_URL: z.string().url().default("http://localhost:5173"),
-  API_URL: z.string().url().default("http://localhost:4000"),
+  APP_URL: z.string().url().default("https://afriscout-b6fq.onrender.com/"),
+  API_URL: z.string().url().default("https://afriscout-api.onrender.com"),
   API_PORT: z.coerce.number().int().positive().default(4000),
   API_HOST: z.string().default("0.0.0.0"),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
@@ -84,7 +84,7 @@ const EnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().default(""),
   OPENROUTER_MODEL: z.string().default("openrouter/free"),
   OPENROUTER_BASE_URL: z.string().url().default("https://openrouter.ai/api/v1"),
-  OPENROUTER_HTTP_REFERER: z.string().default("https://afriscout.online"),
+  OPENROUTER_HTTP_REFERER: z.string().default("https://afriscout-b6fq.onrender.com/"),
   OPENROUTER_APP_TITLE: z.string().default("AfriScout"),
 
   SMTP_ENABLED: booleanFromEnv.default(false),
