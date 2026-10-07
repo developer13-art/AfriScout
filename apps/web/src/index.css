@@ -1,0 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/utilities.css";
+@import "./styles/animations.css";
+@import "./styles/product-theme.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

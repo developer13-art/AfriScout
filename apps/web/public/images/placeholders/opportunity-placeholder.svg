@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" role="img" aria-label="Opportunity">
+  <rect width="320" height="180" fill="#F1F5F9"/>
+  <rect x="24" y="24" width="120" height="14" rx="4" fill="#CBD5E1"/>
+  <rect x="24" y="52" width="200" height="10" rx="4" fill="#E2E8F0"/>
+  <rect x="24" y="70" width="160" height="10" rx="4" fill="#E2E8F0"/>
+  <rect x="24" y="88" width="180" height="10" rx="4" fill="#E2E8F0"/>
+  <rect x="24" y="120" width="80" height="24" rx="6" fill="#E2E8F0"/>
+  <rect x="116" y="120" width="80" height="24" rx="6" fill="#E2E8F0"/>
+</svg>
