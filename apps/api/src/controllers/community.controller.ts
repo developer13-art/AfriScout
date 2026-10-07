@@ -27,14 +27,67 @@ function cleanText(value: unknown, max: number) {
   return text;
 }
 
+function isMissingSchemaError(error: unknown): boolean {
+  const candidate = error as { code?: string; meta?: { table?: string; column?: string; modelName?: string } };
+  if (!candidate || typeof candidate !== "object") return false;
+  if (candidate.code !== "P2021" && candidate.code !== "P2022") return false;
+  const details = `${candidate.meta?.table ?? ""} ${candidate.meta?.column ?? ""} ${candidate.meta?.modelName ?? ""}`.toLowerCase();
+  return details.includes("community_user_actions") || details.includes("user_profiles") || details.includes("visibility");
+}
+
+async function withMissingSchemaFallback<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (isMissingSchemaError(error)) return fallback;
+    throw error;
+  }
+}
+
+async function loadCommunityUserActions(where: Prisma.CommunityUserActionWhereInput) {
+  return withMissingSchemaFallback(
+    () => prisma.communityUserAction.findMany({
+      where,
+      include: { target: { select: { id: true, fullName: true, avatarUrl: true } } },
+    }),
+    [],
+  ) as Promise<any[]>;
+}
+
+async function loadUserProfile(userId: string) {
+  return withMissingSchemaFallback(
+    () => prisma.userProfile.findUnique({
+      where: { userId },
+      select: { visibility: true, analyzable: true, visibilityRules: true },
+    }),
+    null,
+  ) as Promise<any>;
+}
+
+async function loadUserWithProfile(userId: string) {
+  return withMissingSchemaFallback(
+    async () => prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
+    }),
+    (await prisma.user.findUnique({
+      where: { id: userId },
+      include: { professionalProfile: true, studentProfile: true, businessProfile: true },
+    })) as any,
+  ) as Promise<any>;
+}
+
 export const feed = asyncHandler(async (req: Request, res: Response) => {
   const viewer = userId(req);
   const tab = typeof req.query.tab === "string" ? req.query.tab : "for-you";
   const communitySlug = typeof req.query.group === "string" ? req.query.group.trim().slice(0, 120) : "";
-  const actions = await prisma.communityUserAction.findMany({
-    where: { OR: [{ actorId: viewer }, { targetId: viewer }] },
-    select: { actorId: true, targetId: true, kind: true },
-  });
+  const actions = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findMany({
+      where: { OR: [{ actorId: viewer }, { targetId: viewer }] },
+      select: { actorId: true, targetId: true, kind: true },
+    }),
+    [],
+  );
   const hiddenAuthors = [...new Set(actions
     .filter((item) => item.actorId === viewer || item.kind === "BLOCK")
     .map((item) => item.actorId === viewer ? item.targetId : item.actorId))];
@@ -181,12 +234,15 @@ export const react = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params.id;
   const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true } });
   if (!post) throw new NotFoundError("Post not found");
-  const blocked = await prisma.communityUserAction.findFirst({
-    where: {
-      kind: "BLOCK",
-      OR: [{ actorId: viewer, targetId: post.authorId }, { actorId: post.authorId, targetId: viewer }],
-    },
-  });
+  const blocked = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findFirst({
+      where: {
+        kind: "BLOCK",
+        OR: [{ actorId: viewer, targetId: post.authorId }, { actorId: post.authorId, targetId: viewer }],
+      },
+    }),
+    null,
+  );
   if (blocked) throw new NotFoundError("Post not found");
   const existing = await prisma.communityReaction.findUnique({
     where: { postId_userId: { postId, userId: viewer } },
@@ -205,12 +261,15 @@ export const comment = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params.id;
   const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true } });
   if (!post) throw new NotFoundError("Post not found");
-  const blocked = await prisma.communityUserAction.findFirst({
-    where: {
-      kind: "BLOCK",
-      OR: [{ actorId: authorId, targetId: post.authorId }, { actorId: post.authorId, targetId: authorId }],
-    },
-  });
+  const blocked = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findFirst({
+      where: {
+        kind: "BLOCK",
+        OR: [{ actorId: authorId, targetId: post.authorId }, { actorId: post.authorId, targetId: authorId }],
+      },
+    }),
+    null,
+  );
   if (blocked) throw new BadRequestError("You cannot comment on this post");
   const comment = await prisma.communityComment.create({
     data: { postId, authorId, content: cleanText(req.body?.content, 2000) },
@@ -226,12 +285,15 @@ export const comments = asyncHandler(async (req: Request, res: Response) => {
     select: { id: true, authorId: true },
   });
   if (!post) throw new NotFoundError("Post not found");
-  const blocked = await prisma.communityUserAction.findFirst({
-    where: {
-      kind: "BLOCK",
-      OR: [{ actorId: viewer, targetId: post.authorId }, { actorId: post.authorId, targetId: viewer }],
-    },
-  });
+  const blocked = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findFirst({
+      where: {
+        kind: "BLOCK",
+        OR: [{ actorId: viewer, targetId: post.authorId }, { actorId: post.authorId, targetId: viewer }],
+      },
+    }),
+    null,
+  );
   if (blocked) throw new NotFoundError("Discussion not found");
   res.json({ data: await prisma.communityComment.findMany({
     orderBy: { createdAt: "asc" },
@@ -287,40 +349,54 @@ export const followTarget = asyncHandler(async (req: Request, res: Response) => 
 
 export const connections = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
-  const viewer = await prisma.user.findUnique({
-    where: { id: viewerId },
-    include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
-  });
+  const viewer: any = await loadUserWithProfile(viewerId);
   if (!viewer) throw new UnauthorizedError();
-  const actions = await prisma.communityUserAction.findMany({
-    where: { OR: [{ actorId: viewerId }, { targetId: viewerId }] },
-  });
+  const actions = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findMany({
+      where: { OR: [{ actorId: viewerId }, { targetId: viewerId }] },
+    }),
+    [],
+  );
   const ignored = new Set(actions.map((item) => item.actorId === viewerId ? item.targetId : item.actorId));
   const alreadyFollowing = new Set((await prisma.communityFollow.findMany({
     where: { userId: viewerId, targetType: "USER" }, select: { targetKey: true },
   })).map((item) => item.targetKey));
-  const users = await prisma.user.findMany({
-    where: {
-      id: { notIn: [viewerId, ...ignored, ...alreadyFollowing] },
-      status: "ACTIVE",
-      role: "USER",
-      profile: { is: { visibility: "PUBLIC", analyzable: true } },
-    },
-    include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
-    take: 80,
-  });
+  let users: any[];
+  try {
+    users = await prisma.user.findMany({
+      where: {
+        id: { notIn: [viewerId, ...ignored, ...alreadyFollowing] },
+        status: "ACTIVE",
+        role: "USER",
+        profile: { is: { visibility: "PUBLIC", analyzable: true } },
+      },
+      include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
+      take: 80,
+    });
+  } catch (error) {
+    if (!isMissingSchemaError(error)) throw error;
+    users = await prisma.user.findMany({
+      where: {
+        id: { notIn: [viewerId, ...ignored, ...alreadyFollowing] },
+        status: "ACTIVE",
+        role: "USER",
+      },
+      include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
+      take: 80,
+    });
+  }
   const own = [
     ...(viewer.professionalProfile?.skills ?? []),
     ...(viewer.studentProfile?.interests ?? []),
-    ...(viewer.profile?.professionalIdentities ?? []),
+    ...((viewer as any).profile?.professionalIdentities ?? []),
     viewer.businessProfile?.industry ?? "",
-  ].map((item) => item.toLowerCase()).filter(Boolean);
+  ].map((item) => String(item).toLowerCase()).filter(Boolean);
   const ownSet = new Set(own);
-  const people = users.map((person) => {
+  const people = users.map((person: any) => {
     const skills = [
       ...(person.professionalProfile?.skills ?? []),
       ...(person.studentProfile?.interests ?? []),
-      ...(person.profile?.professionalIdentities ?? []),
+      ...((person as any).profile?.professionalIdentities ?? []),
       person.businessProfile?.industry ?? "",
     ].filter(Boolean);
     const shared = [...new Set(skills.filter((skill) => ownSet.has(skill.toLowerCase())))];
@@ -332,8 +408,8 @@ export const connections = asyncHandler(async (req: Request, res: Response) => {
       fullName: person.fullName,
       avatarUrl: person.avatarUrl,
       countryCode: person.countryCode,
-      username: person.profile?.username,
-      headline: person.profile?.headline ?? person.professionalProfile?.profession,
+      username: (person as any).profile?.username,
+      headline: (person as any).profile?.headline ?? person.professionalProfile?.profession,
       shared,
       score,
       category,
@@ -364,7 +440,6 @@ export const members = asyncHandler(async (req: Request, res: Response) => {
     id: { not: viewerId },
     role: "USER",
     status: "ACTIVE",
-    profile: { is: { visibility: { in: ["PUBLIC", "FOLLOWERS"] } } },
   };
   if (query) {
     where.OR = [
@@ -377,18 +452,32 @@ export const members = asyncHandler(async (req: Request, res: Response) => {
       { profile: { is: { industries: { has: query } } } },
     ];
   }
-  const people = await prisma.user.findMany({
-    where,
-    include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  let people;
+  try {
+    people = await prisma.user.findMany({
+      where: {
+        ...where,
+        profile: { is: { visibility: { in: ["PUBLIC", "FOLLOWERS"] } } },
+      },
+      include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+  } catch (error) {
+    if (!isMissingSchemaError(error)) throw error;
+    people = await prisma.user.findMany({
+      where,
+      include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+  }
   res.json({ data: people
-    .filter((person) =>
-      person.profile?.visibility === "PUBLIC" ||
-      (person.profile?.visibility === "FOLLOWERS" && followerIds.has(person.id)),
-    )
-    .map((person) => ({
+    .filter((person: any) => {
+      const visibility = person.profile?.visibility ?? "PUBLIC";
+      return visibility === "PUBLIC" || (visibility === "FOLLOWERS" && followerIds.has(person.id));
+    })
+    .map((person: any) => ({
       id: person.id,
       fullName: person.fullName,
       avatarUrl: person.avatarUrl,
@@ -491,12 +580,15 @@ export const requestConnection = asyncHandler(async (req: Request, res: Response
   const requesterId = userId(req);
   const recipientId = req.params.userId;
   if (requesterId === recipientId) throw new BadRequestError("You cannot connect with yourself");
-  const recipient = await prisma.user.findUnique({
-    where: { id: recipientId },
-    select: { id: true, status: true, profile: { select: { visibility: true, visibilityRules: true } } },
-  });
+  const recipient = await withMissingSchemaFallback(
+    () => prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { id: true, status: true, profile: { select: { visibility: true, visibilityRules: true } } },
+    }),
+    null,
+  );
   if (!recipient || recipient.status !== "ACTIVE") throw new NotFoundError("User not found");
-  if (recipient.profile?.visibility === "PRIVATE") throw new NotFoundError("User not found");
+  if ((recipient.profile?.visibility ?? "PUBLIC") === "PRIVATE") throw new NotFoundError("User not found");
   const visibilityRules = recipient.profile?.visibilityRules && typeof recipient.profile.visibilityRules === "object" && !Array.isArray(recipient.profile.visibilityRules)
     ? recipient.profile.visibilityRules as Record<string, unknown>
     : {};
@@ -541,37 +633,46 @@ export const respondToConnection = asyncHandler(async (req: Request, res: Respon
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
   if (!Object.keys(req.body ?? {}).length) throw new BadRequestError("Provide at least one setting to update");
-  const existing = await prisma.userProfile.findUnique({
-    where: { userId: viewerId },
-    select: { visibilityRules: true },
-  });
+  const existing = await loadUserProfile(viewerId);
   const rules = existing?.visibilityRules && typeof existing.visibilityRules === "object" && !Array.isArray(existing.visibilityRules)
     ? existing.visibilityRules as Record<string, unknown>
     : {};
   const visibilityRules = req.body.connectionPolicy
     ? { ...rules, connectionPolicy: req.body.connectionPolicy }
     : rules;
-  const profile = await prisma.userProfile.upsert({
-    where: { userId: viewerId },
-    create: {
-      userId: viewerId,
-      userType: "OTHER",
-      visibility: req.body.visibility ?? "PRIVATE",
-      analyzable: req.body.analyzable ?? false,
-      visibilityRules: req.body.connectionPolicy ? { connectionPolicy: req.body.connectionPolicy } : {},
-    },
-    update: {
-      ...(req.body.visibility ? { visibility: req.body.visibility } : {}),
-      ...(typeof req.body.analyzable === "boolean" ? { analyzable: req.body.analyzable } : {}),
-      ...(req.body.connectionPolicy ? { visibilityRules: visibilityRules as Prisma.InputJsonValue } : {}),
-    },
-    select: { visibility: true, analyzable: true, visibilityRules: true },
-  });
-  const actions = await prisma.communityUserAction.findMany({
-    where: { actorId: viewerId },
-    include: { target: { select: { id: true, fullName: true, avatarUrl: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  let profile: any = {
+    visibility: "PRIVATE",
+    analyzable: false,
+    visibilityRules: {},
+  };
+  try {
+    profile = await prisma.userProfile.upsert({
+      where: { userId: viewerId },
+      create: {
+        userId: viewerId,
+        userType: "OTHER",
+        visibility: req.body.visibility ?? "PRIVATE",
+        analyzable: req.body.analyzable ?? false,
+        visibilityRules: req.body.connectionPolicy ? { connectionPolicy: req.body.connectionPolicy } : {},
+      },
+      update: {
+        ...(req.body.visibility ? { visibility: req.body.visibility } : {}),
+        ...(typeof req.body.analyzable === "boolean" ? { analyzable: req.body.analyzable } : {}),
+        ...(req.body.connectionPolicy ? { visibilityRules: visibilityRules as Prisma.InputJsonValue } : {}),
+      },
+      select: { visibility: true, analyzable: true, visibilityRules: true },
+    });
+  } catch (error) {
+    if (!isMissingSchemaError(error)) throw error;
+  }
+  const actions = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findMany({
+      where: { actorId: viewerId },
+      include: { target: { select: { id: true, fullName: true, avatarUrl: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    [],
+  );
   const storedRules = profile.visibilityRules && typeof profile.visibilityRules === "object" && !Array.isArray(profile.visibilityRules)
     ? profile.visibilityRules as Record<string, unknown>
     : {};
@@ -587,12 +688,15 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
 export const settings = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
   const [profile, actions] = await Promise.all([
-    prisma.userProfile.findUnique({ where: { userId: viewerId } }),
-    prisma.communityUserAction.findMany({
-      where: { actorId: viewerId },
-      include: { target: { select: { id: true, fullName: true, avatarUrl: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
+    loadUserProfile(viewerId),
+    withMissingSchemaFallback(
+      () => prisma.communityUserAction.findMany({
+        where: { actorId: viewerId },
+        include: { target: { select: { id: true, fullName: true, avatarUrl: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      [],
+    ),
   ]);
   const rules = profile?.visibilityRules && typeof profile.visibilityRules === "object" && !Array.isArray(profile.visibilityRules)
     ? profile.visibilityRules as Record<string, unknown>
@@ -608,18 +712,16 @@ export const settings = asyncHandler(async (req: Request, res: Response) => {
 
 export const analyzeProfile = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
-  const user = await prisma.user.findUnique({
-    where: { id: viewerId },
-    include: { profile: true, professionalProfile: true, studentProfile: true, businessProfile: true },
-  });
+  const user = await loadUserWithProfile(viewerId);
   if (!user) throw new UnauthorizedError();
-  if (!user.profile?.analyzable) throw new BadRequestError("Enable profile analysis in your community settings first");
+  const profileSettings = (user as any).profile ?? { analyzable: false, headline: null, bio: null, industries: [], interests: [] };
+  if (!profileSettings.analyzable) throw new BadRequestError("Enable profile analysis in your community settings first");
   const profileSignals = {
-    headline: user.profile.headline,
-    bio: user.profile.bio,
+    headline: profileSettings.headline,
+    bio: profileSettings.bio,
     countryCode: user.countryCode,
-    industries: user.profile.industries,
-    interests: user.profile.interests,
+    industries: profileSettings.industries,
+    interests: profileSettings.interests,
     skills: user.professionalProfile?.skills ?? [],
     profession: user.professionalProfile?.profession ?? null,
     certifications: user.professionalProfile?.certifications ?? [],
@@ -664,12 +766,10 @@ export const analyzeProfile = asyncHandler(async (req: Request, res: Response) =
 export const profile = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
   const targetId = req.params.userId;
-  const person = await prisma.user.findUnique({
-    where: { id: targetId },
-    include: { profile: true, professionalProfile: true, studentProfile: true },
-  });
+  const person: any = await loadUserWithProfile(targetId);
   if (!person || person.status !== "ACTIVE") throw new NotFoundError("Profile not found");
-  if (targetId !== viewerId && person.profile?.visibility !== "PUBLIC") {
+  const profileVisibility = person.profile?.visibility ?? "PUBLIC";
+  if (targetId !== viewerId && profileVisibility !== "PUBLIC") {
     const [follows, connection] = await Promise.all([
       prisma.communityFollow.findUnique({
         where: { userId_targetType_targetKey: { userId: viewerId, targetType: "USER", targetKey: targetId } },
@@ -686,7 +786,7 @@ export const profile = asyncHandler(async (req: Request, res: Response) => {
         select: { id: true },
       }),
     ]);
-    if (person.profile?.visibility !== "FOLLOWERS" || (!follows && !connection)) {
+    if (profileVisibility !== "FOLLOWERS" || (!follows && !connection)) {
       throw new NotFoundError("Profile not found");
     }
   }
@@ -751,12 +851,21 @@ export const userAction = asyncHandler(async (req: Request, res: Response) => {
   if (actorId === targetId) throw new BadRequestError("You cannot apply this action to yourself");
   if (!(await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } }))) throw new NotFoundError("User not found");
   const where = { actorId_targetId_kind: { actorId, targetId, kind } };
-  const existing = await prisma.communityUserAction.findUnique({ where });
+  const existing = await withMissingSchemaFallback(
+    () => prisma.communityUserAction.findUnique({ where }),
+    null,
+  );
   if (existing) {
-    await prisma.communityUserAction.delete({ where: { id: existing.id } });
+    await withMissingSchemaFallback(
+      () => prisma.communityUserAction.delete({ where: { id: existing.id } }),
+      undefined,
+    );
     res.json({ data: { active: false } });
   } else {
-    await prisma.communityUserAction.create({ data: { actorId, targetId, kind } });
+    await withMissingSchemaFallback(
+      () => prisma.communityUserAction.create({ data: { actorId, targetId, kind } }),
+      undefined,
+    );
     res.json({ data: { active: true } });
   }
 });
