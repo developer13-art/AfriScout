@@ -675,24 +675,120 @@
 }
 
 @media (max-width: 639px) {
+  .scout-social-shell main {
+    padding: 0.75rem 0.65rem 1.25rem;
+  }
+
   .scout-social-shell .scout-community-hero {
     min-height: 170px;
     align-items: flex-start;
     flex-direction: column;
     gap: 0.9rem;
-    padding: 1.2rem;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+  }
+
+  .scout-social-shell .scout-community-hero p {
+    max-width: 18rem;
+    font-size: 0.7rem;
   }
 
   .scout-social-shell .scout-community-hero-art {
-    right: 1rem;
-    opacity: 0.3;
+    right: 0.25rem;
+    opacity: 0.22;
   }
 
   .scout-social-shell .scout-community-hero > button {
     min-height: 2.1rem;
   }
 
+  .scout-social-shell .scout-community-subnav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    overflow: visible;
+    margin-bottom: 0.75rem;
+    border-bottom: 0;
+  }
+
+  .scout-social-shell .scout-community-subnav-link {
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .scout-social-shell .scout-community-subnav-link.is-active {
+    border-color: #175a56;
+    background: #0b302f;
+  }
+
+  .scout-social-shell .scout-community-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+    overflow: visible;
+    margin-bottom: 0.65rem;
+  }
+
+  .scout-social-shell .scout-community-actions button {
+    min-width: 0;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.35rem;
+    font-size: 0.61rem;
+    white-space: nowrap;
+  }
+
   .scout-social-shell .scout-community-rail {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scout-social-shell .scout-community-main > .scout-community-feed-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.1rem;
+    overflow: visible;
+    padding: 0.25rem;
+    border-radius: 0.65rem;
+  }
+
+  .scout-social-shell .scout-community-feed-tabs button {
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: 0.45rem;
+    padding: 0.5rem 0.2rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+
+  .scout-social-shell .scout-community-feed-tabs button.border-primary-600 {
+    border-color: #175a56;
+    border-bottom-color: #175a56;
+    border-radius: 0.45rem;
+    background: #0b302f;
+  }
+
+  .scout-social-shell .scout-community-composer {
+    min-height: 3.1rem;
+    gap: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.66rem;
+  }
+
+  .scout-social-shell .scout-community-composer-submit {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.65rem;
+  }
+
+  .scout-social-shell .scout-community-layout,
+  .scout-social-shell .scout-community-main,
+  .scout-social-shell .scout-community-rail {
+    min-width: 0;
+  }
+
+  .scout-social-shell .scout-community-main > * {
+    max-width: 100%;
   }
 }
