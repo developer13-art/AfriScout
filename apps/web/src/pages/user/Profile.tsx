@@ -16,6 +16,7 @@ import { allCountries } from "../../config/countries";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
 import { communityService } from "../../services/community.service";
+import { ImageUploadField } from "../../components/community/ImageUploadField";
 
 function analysisList(result: Record<string, unknown> | undefined, key: string): string[] {
   const value = result?.[key];
@@ -259,6 +260,16 @@ export function Profile() {
                   <textarea value={interests} onChange={(event) => setInterests(event.target.value)} placeholder="Scholarships, AI, community health" rows={2} maxLength={4000} className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100" />
                 </label>
                 <Select label="Country" placeholder="Select a country" value={countryCode} onChange={(event) => setCountryCode(event.target.value)} options={allCountries.map((country) => ({ value: country.code, label: country.name }))} />
+                <div className="md:col-span-2">
+                  <ImageUploadField
+                    label="Profile photo"
+                    value={user?.avatarUrl ?? null}
+                    onChange={async (avatarUrl) => {
+                      const updatedUser = await userService.updateMe({ avatarUrl });
+                      useAuthStore.getState().setUser(updatedUser);
+                    }}
+                  />
+                </div>
               </div>
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4">
                 <p className="text-xs text-neutral-500">Profile completeness: {completionPercent}%</p>

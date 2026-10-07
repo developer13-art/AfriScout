@@ -10,6 +10,7 @@ import { Loader } from "../../components/ui/Loader";
 import { SeoHead } from "../../components/common/SeoHead";
 import { communityService, type CommunityKind } from "../../services/community.service";
 import { CommunitySubnav } from "../../components/community/CommunitySubnav";
+import { ImageUploadField } from "../../components/community/ImageUploadField";
 import { PostCard } from "./Community";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -43,6 +44,7 @@ export function CommunityGroup() {
   const [inviteApproval, setInviteApproval] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [editGroup, setEditGroup] = useState(false);
+  const [groupImages, setGroupImages] = useState({ profileImageUrl: "", coverImageUrl: "" });
   const [copied, setCopied] = useState(false);
   const group = useQuery({
     queryKey: ["community-space", slug],
@@ -276,8 +278,8 @@ export function CommunityGroup() {
       purpose: String(data.get("purpose") ?? ""),
       countryCode: String(data.get("countryCode") ?? "").trim().toUpperCase() || null,
       language: String(data.get("language") ?? "").trim(),
-      profileImageUrl: String(data.get("profileImageUrl") ?? "").trim() || null,
-      coverImageUrl: String(data.get("coverImageUrl") ?? "").trim() || null,
+      profileImageUrl: groupImages.profileImageUrl || null,
+      coverImageUrl: groupImages.coverImageUrl || null,
       topics: String(data.get("topics") ?? "").split(",").map((item) => item.trim()).filter(Boolean).slice(0, 12),
     };
     const visibility = data.get("visibility");
@@ -661,7 +663,14 @@ export function CommunityGroup() {
               <Card><CardBody className="p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="scout-group-section-title">About {space.name}</h2>
-                  {canModerateMembers ? <Button size="sm" variant="outline" onClick={() => setEditGroup((value) => !value)}>{editGroup ? "Cancel editing" : "Edit group"}</Button> : null}
+                  {canModerateMembers ? <Button size="sm" variant="outline" onClick={() => {
+                    if (editGroup) {
+                      setEditGroup(false);
+                    } else {
+                      setGroupImages({ profileImageUrl: space.profileImageUrl ?? "", coverImageUrl: space.coverImageUrl ?? "" });
+                      setEditGroup(true);
+                    }
+                  }}>{editGroup ? "Cancel editing" : "Edit group"}</Button> : null}
                 </div>
                 {editGroup ? (
                   <form className="mt-4 space-y-3" onSubmit={submitGroupUpdate}>
@@ -673,8 +682,8 @@ export function CommunityGroup() {
                       {canManageRoles ? <label className="scout-group-field">Visibility<select name="visibility" defaultValue={space.visibility}><option value="PUBLIC">Public</option><option value="PRIVATE">Private</option><option value="HIDDEN">Hidden</option></select></label> : null}
                       <label className="scout-group-field">Country code<input name="countryCode" maxLength={2} defaultValue={space.countryCode ?? ""} /></label>
                       <label className="scout-group-field">Language<input name="language" required minLength={2} maxLength={40} defaultValue={space.language} /></label>
-                      <label className="scout-group-field">Profile image URL<input name="profileImageUrl" type="url" defaultValue={space.profileImageUrl ?? ""} /></label>
-                      <label className="scout-group-field">Cover image URL<input name="coverImageUrl" type="url" defaultValue={space.coverImageUrl ?? ""} /></label>
+                      <ImageUploadField label="Group profile image" value={groupImages.profileImageUrl || null} onChange={(value) => setGroupImages((images) => ({ ...images, profileImageUrl: value ?? "" }))} />
+                      <ImageUploadField label="Group cover image" value={groupImages.coverImageUrl || null} onChange={(value) => setGroupImages((images) => ({ ...images, coverImageUrl: value ?? "" }))} />
                     </div>
                     <label className="scout-group-field">Topics<input name="topics" defaultValue={space.topics.join(", ")} /><small>Comma-separated, up to 12.</small></label>
                     {canManageRoles ? <label className="scout-group-field">Private-group join questions<textarea name="joinQuestions" rows={3} defaultValue={(space.joinQuestions ?? []).join("\n")} /><small>One question per line, up to five.</small></label> : null}

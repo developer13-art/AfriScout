@@ -85,6 +85,7 @@ model User {
   communitySpaceProjectsCreated CommunitySpaceProject[] @relation("CommunitySpaceProjectCreator")
   communitySpaceProjectMemberships CommunitySpaceProjectMember[] @relation("CommunitySpaceProjectParticipant")
   communitySpaceInvitesCreated CommunitySpaceInvite[] @relation("CommunitySpaceInviteCreator")
+  mediaImages        MediaImage[]
   profileAnalyses ProfileAnalysis[]
   opportunityInteractions OpportunityInteraction[]
   sourceDiscoveryRuns SourceDiscoveryRun[] @relation("SourceDiscoveryRunCreator")

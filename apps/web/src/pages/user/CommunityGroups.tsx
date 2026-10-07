@@ -9,6 +9,7 @@ import { Dialog } from "../../components/ui/Dialog";
 import { Loader } from "../../components/ui/Loader";
 import { SeoHead } from "../../components/common/SeoHead";
 import { CommunitySubnav } from "../../components/community/CommunitySubnav";
+import { ImageUploadField } from "../../components/community/ImageUploadField";
 import { communityService, type CommunitySpace } from "../../services/community.service";
 
 const categories = ["All groups", "Trending", "Recommended", "Technology", "Web3", "AI", "Business", "Education", "Jobs", "Grants", "Hackathons", "Countries", "Universities", "Industries", "Organizations", "Projects", "Research"];
@@ -100,6 +101,7 @@ export function CommunityGroups() {
   const [form, setForm] = useState<CreateForm>(initialForm);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [step, setStep] = useState(0);
+  const [pendingImageUploads, setPendingImageUploads] = useState(0);
   const groups = useQuery({ queryKey: ["community-spaces"], queryFn: communityService.spaces });
   const recommended = useQuery({ queryKey: ["community-groups-recommended"], queryFn: communityService.recommendedSpaces });
   const create = useMutation({
@@ -270,12 +272,10 @@ export function CommunityGroups() {
               <label className="scout-group-field">Language
                 <input required minLength={2} maxLength={40} value={form.language} onChange={(event) => updateForm("language", event.target.value)} />
               </label>
-              <label className="scout-group-field">Group image URL
-                <input type="url" value={form.profileImageUrl} onChange={(event) => updateForm("profileImageUrl", event.target.value)} placeholder="https://…" />
-              </label>
-              <label className="scout-group-field sm:col-span-2">Cover image URL
-                <input type="url" value={form.coverImageUrl} onChange={(event) => updateForm("coverImageUrl", event.target.value)} placeholder="https://…" />
-              </label>
+              <ImageUploadField label="Group profile image" value={form.profileImageUrl || null} onChange={(value) => updateForm("profileImageUrl", value ?? "")} onUploadingChange={(uploading) => setPendingImageUploads((count) => count + (uploading ? 1 : -1))} />
+              <div className="sm:col-span-2">
+                <ImageUploadField label="Group cover image" value={form.coverImageUrl || null} onChange={(value) => updateForm("coverImageUrl", value ?? "")} onUploadingChange={(uploading) => setPendingImageUploads((count) => count + (uploading ? 1 : -1))} />
+              </div>
             </div>
           ) : null}
           {step === 1 ? (
@@ -322,7 +322,7 @@ export function CommunityGroups() {
           {create.isError ? <p role="alert" className="text-sm text-red-400">Group could not be created. Check the group username and try again.</p> : null}
           <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
             <Button type="button" variant="outline" onClick={() => step ? setStep((current) => current - 1) : setCreateOpen(false)}> {step ? "Back" : "Cancel"} </Button>
-            <Button type="submit" loading={create.isPending} disabled={step === 0 && (!form.name.trim() || !form.slug.trim() || form.description.trim().length < 20)}>
+            <Button type="submit" loading={create.isPending} disabled={pendingImageUploads > 0 || (step === 0 && (!form.name.trim() || !form.slug.trim() || form.description.trim().length < 20))}>
               {step === 3 ? "Create group" : "Next"}
             </Button>
           </div>

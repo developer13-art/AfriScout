@@ -115,6 +115,7 @@ model User {
   communitySpaceProjectsCreated CommunitySpaceProject[] @relation("CommunitySpaceProjectCreator")
   communitySpaceProjectMemberships CommunitySpaceProjectMember[] @relation("CommunitySpaceProjectParticipant")
   communitySpaceInvitesCreated CommunitySpaceInvite[] @relation("CommunitySpaceInviteCreator")
+  mediaImages        MediaImage[]
   profileAnalyses ProfileAnalysis[]
   opportunityInteractions OpportunityInteraction[]
   sourceDiscoveryRuns SourceDiscoveryRun[] @relation("SourceDiscoveryRunCreator")
@@ -1660,6 +1661,18 @@ enum CommunitySpaceProjectStatus {
   IN_PROGRESS
   COMPLETED
   ARCHIVED
+}
+
+model MediaImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  mimeType  String   @map("mime_type") @db.VarChar(32)
+  data      Bytes    @db.ByteA
+  createdAt DateTime @default(now()) @map("created_at")
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@map("media_images")
 }
 
 model CommunitySpace {

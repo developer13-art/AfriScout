@@ -18,7 +18,7 @@ export const updateMeSchema = z.object({
   phone: z.string().trim().max(40).optional(),
   city: z.string().trim().max(120).optional(),
   countryCode: z.string().trim().length(2).optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
 });
 
 export const updateProfileSchema = z.object({

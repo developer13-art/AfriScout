@@ -27,6 +27,7 @@ import bountyRoutes from "./bounty.routes";
 import workspaceRoutes from "./workspace.routes";
 import graphRoutes from "./graph.routes";
 import communityRoutes from "./community.routes";
+import mediaRoutes from "./media.routes";
 
 const router = Router();
 
@@ -53,6 +54,7 @@ router.use("/organizations", organizationRoutes);
 router.use("/workspaces", workspaceRoutes);
 router.use("/graph", graphRoutes);
 router.use("/community", communityRoutes);
+router.use("/media", mediaRoutes);
 router.use("/bounties", bountyRoutes);
 router.use("/api-keys", apiKeyRoutes);
 router.use("/webhooks", webhookRoutes);
