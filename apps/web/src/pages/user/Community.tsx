@@ -51,7 +51,7 @@ const kindLabels: Record<CommunityKind, string> = {
   INDUSTRY_DISCUSSION: "Industry discussion",
 };
 
-function PostCard({
+export function PostCard({
   post,
   onRefresh,
 }: {
@@ -341,7 +341,7 @@ export function Community() {
     },
   });
   const followGroup = useMutation({
-    mutationFn: communityService.followSpace,
+    mutationFn: communityService.joinSpace,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-spaces"] }),
   });
   const refresh = () => {
@@ -491,7 +491,7 @@ export function Community() {
                   <div key={group.id} className="scout-community-group-row">
                     <span className="scout-community-group-icon"><UsersRound aria-hidden className="h-4 w-4" /></span>
                     <div className="min-w-0 flex-1">
-                      <Link to={`/community?group=${encodeURIComponent(group.slug)}`} className="block truncate text-xs font-semibold text-neutral-900">{group.name}</Link>
+                      <Link to={`/community/groups/${encodeURIComponent(group.slug)}`} className="block truncate text-xs font-semibold text-neutral-900">{group.name}</Link>
                       <p className="text-[11px] text-neutral-500">{group.memberCount} members</p>
                     </div>
                     <button

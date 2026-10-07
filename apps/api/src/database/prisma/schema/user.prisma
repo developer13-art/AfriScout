@@ -79,6 +79,7 @@ model User {
   communityBlockedBy CommunityUserAction[] @relation("CommunityActionTarget")
   communityRequestsSent CommunityConnection[] @relation("CommunityConnectionRequester")
   communityRequestsReceived CommunityConnection[] @relation("CommunityConnectionRecipient")
+  communitySpaceMemberships CommunitySpaceMember[]
   profileAnalyses ProfileAnalysis[]
   opportunityInteractions OpportunityInteraction[]
   sourceDiscoveryRuns SourceDiscoveryRun[] @relation("SourceDiscoveryRunCreator")

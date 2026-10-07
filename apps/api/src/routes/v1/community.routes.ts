@@ -16,7 +16,31 @@ router.post("/opportunities/:id/interactions", validate({
 }), Controller.interactWithOpportunity);
 router.get("/connections", Controller.connections);
 router.get("/members", Controller.members);
+router.post("/spaces", validate({ body: z.object({
+  name: z.string().trim().min(3).max(80),
+  slug: z.string().trim().min(3).max(64),
+  description: z.string().trim().min(20).max(1000),
+  category: z.string().trim().min(1).max(80),
+  purpose: z.enum(["LEARNING", "NETWORKING", "COLLABORATION", "OPPORTUNITIES", "JOBS", "HACKATHONS", "GRANTS", "WEB3", "INDUSTRY", "LOCATION", "ORGANIZATION", "PROJECT", "RESEARCH", "GENERAL"]),
+  visibility: z.enum(["PUBLIC", "PRIVATE", "HIDDEN"]),
+  countryCode: z.string().length(2).optional().nullable(),
+  language: z.string().trim().min(2).max(40),
+  profileImageUrl: z.string().url().max(500).optional().nullable(),
+  coverImageUrl: z.string().url().max(500).optional().nullable(),
+  topics: z.array(z.string().trim().min(1).max(40)).max(12),
+}) }), Controller.createSpace);
 router.get("/spaces", Controller.spaces);
+router.get("/spaces/:slug", validate({ params: z.object({ slug: z.string().min(1).max(64) }) }), Controller.space);
+router.get("/spaces/:slug/members", validate({
+  params: z.object({ slug: z.string().min(1).max(64) }),
+  query: z.object({ q: z.string().trim().max(100).optional(), status: z.enum(["ACTIVE", "PENDING"]).optional() }),
+}), Controller.spaceMembers);
+router.patch("/spaces/:slug/members/:userId", validate({
+  params: z.object({ slug: z.string().min(1).max(64), userId: uuid }),
+  body: z.object({ action: z.enum(["APPROVE", "REJECT", "SUSPEND", "BAN", "PROMOTE_MODERATOR", "DEMOTE_MODERATOR"]) }),
+}), Controller.moderateSpaceMember);
+router.post("/spaces/:slug/join", validate({ params: z.object({ slug: z.string().min(1).max(64) }) }), Controller.joinSpace);
+router.delete("/spaces/:slug/join", validate({ params: z.object({ slug: z.string().min(1).max(64) }) }), Controller.leaveSpace);
 router.get("/connection-requests", Controller.connectionRequests);
 router.get("/connections/list", Controller.acceptedConnections);
 router.post("/connections/:userId", validate({ params: z.object({ userId: uuid }) }), Controller.requestConnection);
@@ -24,7 +48,6 @@ router.patch("/connection-requests/:id", validate({
   params: z.object({ id: uuid }),
   body: z.object({ status: z.enum(["ACCEPTED", "DECLINED"]) }),
 }), Controller.respondToConnection);
-router.post("/spaces/:slug/follow", validate({ params: z.object({ slug: z.string().min(1).max(120) }) }), Controller.followSpace);
 router.get("/settings", Controller.settings);
 router.patch("/settings", validate({ body: z.object({
   visibility: z.enum(["PUBLIC", "FOLLOWERS", "PRIVATE"]).optional(),
@@ -37,6 +60,7 @@ router.post("/posts", validate({ body: z.object({
   content: z.string().trim().min(1).max(5000),
   kind: z.string().optional(),
   opportunityId: uuid.optional(),
+  communitySlug: z.string().trim().min(1).max(64).optional(),
 }) }), Controller.createPost);
 router.post("/posts/:id/reaction", validate({ params: z.object({ id: uuid }) }), Controller.react);
 router.get("/posts/:id/comments", validate({ params: z.object({ id: uuid }) }), Controller.comments);

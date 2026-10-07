@@ -40,11 +40,32 @@ export interface CommunitySpace {
   name: string;
   slug: string;
   description: string | null;
+  category: string;
+  purpose: string;
+  visibility: "PUBLIC" | "PRIVATE" | "HIDDEN";
   countryCode: string | null;
+  language: string;
+  profileImageUrl: string | null;
+  coverImageUrl: string | null;
   topics: string[];
   postCount: number;
   memberCount: number;
   following: boolean;
+  membershipStatus: "ACTIVE" | "PENDING" | "SUSPENDED" | "BANNED" | null;
+  createdAt?: string;
+}
+
+export interface CommunitySpaceDetail extends CommunitySpace {
+  id: string;
+  createdAt: string;
+  role: "OWNER" | "ADMIN" | "MODERATOR" | "CONTRIBUTOR" | "MEMBER" | null;
+  members: Array<{ id: string; fullName: string; avatarUrl: string | null }>;
+  posts: CommunityPost[];
+}
+
+export interface CommunitySpaceMember extends CommunityAuthor {
+  role: "OWNER" | "ADMIN" | "MODERATOR" | "CONTRIBUTOR" | "MEMBER";
+  status: "ACTIVE" | "PENDING" | "SUSPENDED" | "BANNED";
 }
 
 export interface CommunitySettings {
@@ -115,7 +136,21 @@ export const communityService = {
     http<{ active: boolean }>(`/community/opportunities/${id}/interactions`, { method: "POST", body: JSON.stringify({ kind }) }),
   members: (q = "") => http<CommunityMember[]>("/community/members", { query: { q: q || undefined } }),
   spaces: () => http<CommunitySpace[]>("/community/spaces"),
-  followSpace: (slug: string) => http<{ following: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/follow`, { method: "POST" }),
+  space: (slug: string) => http<CommunitySpaceDetail>(`/community/spaces/${encodeURIComponent(slug)}`),
+  spaceMembers: (slug: string, q = "", status?: "ACTIVE" | "PENDING") =>
+    http<CommunitySpaceMember[]>(`/community/spaces/${encodeURIComponent(slug)}/members`, { query: { q: q || undefined, status } }),
+  moderateSpaceMember: (slug: string, userId: string, action: "APPROVE" | "REJECT" | "SUSPEND" | "BAN" | "PROMOTE_MODERATOR" | "DEMOTE_MODERATOR") =>
+    http<{ updated: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/members/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    }),
+  createSpace: (input: {
+    name: string; slug: string; description: string; category: string; purpose: string;
+    visibility: "PUBLIC" | "PRIVATE" | "HIDDEN"; countryCode?: string; language: string;
+    profileImageUrl?: string; coverImageUrl?: string; topics: string[];
+  }) => http<{ id: string; name: string; slug: string }>("/community/spaces", { method: "POST", body: JSON.stringify(input) }),
+  joinSpace: (slug: string) => http<{ status: "ACTIVE" | "PENDING" }>(`/community/spaces/${encodeURIComponent(slug)}/join`, { method: "POST" }),
+  leaveSpace: (slug: string) => http<{ status: null }>(`/community/spaces/${encodeURIComponent(slug)}/join`, { method: "DELETE" }),
   connectionRequests: () => http<CommunityConnectionRequest[]>("/community/connection-requests"),
   acceptedConnections: () => http<Array<{ id: string; connectedAt: string; person: CommunityAuthor }>>("/community/connections/list"),
   requestConnection: (userId: string) => http<{ id: string; status: string }>(`/community/connections/${userId}`, { method: "POST" }),
@@ -129,8 +164,8 @@ export const communityService = {
   comments: (postId: string) =>
     http<CommunityPost["comments"]>(`/community/posts/${postId}/comments`),
   connections: () => http<CommunityPerson[]>("/community/connections"),
-  createPost: (content: string, kind: CommunityKind, opportunityId?: string) =>
-    http<CommunityPost>("/community/posts", { method: "POST", body: JSON.stringify({ content, kind, opportunityId }) }),
+  createPost: (content: string, kind: CommunityKind, opportunityId?: string, communitySlug?: string) =>
+    http<CommunityPost>("/community/posts", { method: "POST", body: JSON.stringify({ content, kind, opportunityId, communitySlug }) }),
   react: (postId: string) =>
     http<{ liked: boolean }>(`/community/posts/${postId}/reaction`, { method: "POST" }),
   comment: (postId: string, content: string) =>

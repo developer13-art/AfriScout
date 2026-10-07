@@ -34,16 +34,62 @@ enum OpportunityInteractionType {
   SHARE
 }
 
+enum CommunitySpaceVisibility {
+  PUBLIC
+  PRIVATE
+  HIDDEN
+}
+
+enum CommunitySpaceMemberRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  CONTRIBUTOR
+  MEMBER
+}
+
+enum CommunitySpaceMemberStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  BANNED
+}
+
 model CommunitySpace {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  slug        String   @unique
-  description String?
-  countryCode String?  @map("country_code") @db.Char(2)
-  topics      String[] @default([])
-  createdAt   DateTime @default(now()) @map("created_at")
-  posts       CommunityPost[]
+  id             String                   @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String                   @unique
+  description    String?
+  category       String                   @default("General Community")
+  purpose        String                   @default("GENERAL")
+  visibility     CommunitySpaceVisibility @default(PUBLIC)
+  countryCode    String?                  @map("country_code") @db.Char(2)
+  language       String                   @default("English")
+  profileImageUrl String?                 @map("profile_image_url")
+  coverImageUrl  String?                  @map("cover_image_url")
+  topics         String[]                 @default([])
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  posts          CommunityPost[]
+  memberships    CommunitySpaceMember[]
+
+  @@index([visibility, category])
   @@map("community_spaces")
+}
+
+model CommunitySpaceMember {
+  id        String                     @id @default(uuid()) @db.Uuid
+  spaceId   String                     @map("space_id") @db.Uuid
+  userId    String                     @map("user_id") @db.Uuid
+  role      CommunitySpaceMemberRole   @default(MEMBER)
+  status    CommunitySpaceMemberStatus @default(ACTIVE)
+  createdAt DateTime                   @default(now()) @map("created_at")
+  space     CommunitySpace             @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([userId, status])
+  @@index([spaceId, status, createdAt])
+  @@map("community_space_members")
 }
 
 model CommunityPost {

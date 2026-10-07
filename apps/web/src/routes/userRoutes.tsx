@@ -21,6 +21,7 @@ import {
   CommunitySettingsPage,
   CommunityMembers,
   CommunityGroups,
+  CommunityGroup,
 } from "../pages";
 
 export const userRoutes: RouteObject[] = [
@@ -35,6 +36,7 @@ export const userRoutes: RouteObject[] = [
       { path: "/community", element: <Community /> },
       { path: "/community/members", element: <CommunityMembers /> },
       { path: "/community/groups", element: <CommunityGroups /> },
+      { path: "/community/groups/:slug", element: <CommunityGroup /> },
       { path: "/community/settings", element: <CommunitySettingsPage /> },
       { path: "/profile", element: <Profile /> },
       { path: "/passport", element: <Passport /> },
