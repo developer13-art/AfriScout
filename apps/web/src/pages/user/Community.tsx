@@ -516,7 +516,6 @@ export function Community() {
           </Card>
         </aside>
       </div>
-        </div>
       </div>
       <Dialog
         open={composeOpen}
