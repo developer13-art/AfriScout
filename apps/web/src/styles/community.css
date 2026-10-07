@@ -1405,3 +1405,210 @@
     font-size: 0.54rem;
   }
 }
+
+.scout-group-dialog {
+  width: min(100%, 46rem);
+}
+
+.scout-group-dialog .scout-group-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.scout-group-dialog .scout-group-steps button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.4rem;
+  color: var(--scout-muted);
+  background: transparent;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.scout-group-dialog .scout-group-steps button span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #315064;
+  border-radius: 50%;
+}
+
+.scout-group-dialog .scout-group-steps button.is-current {
+  color: #57e2ce;
+}
+
+.scout-group-dialog .scout-group-steps button.is-current span {
+  border-color: #168e80;
+  background: #0c3935;
+}
+
+.scout-group-dialog .scout-group-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+  color: #d9e6ec;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.scout-group-dialog .scout-group-field input,
+.scout-group-dialog .scout-group-field textarea,
+.scout-group-dialog .scout-group-field select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--scout-border);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.75rem;
+  color: var(--scout-text);
+  background: #081a28;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.scout-group-dialog .scout-group-field textarea {
+  resize: vertical;
+}
+
+.scout-group-dialog .scout-group-field small {
+  color: var(--scout-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.scout-group-dialog .scout-group-slug {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--scout-border);
+  border-radius: 0.55rem;
+  background: #081a28;
+}
+
+.scout-group-dialog .scout-group-slug > span {
+  flex: 0 0 auto;
+  padding-left: 0.75rem;
+  color: var(--scout-muted);
+  font-size: 0.75rem;
+}
+
+.scout-group-dialog .scout-group-slug input {
+  min-width: 0;
+  border: 0;
+}
+
+.scout-group-dialog .scout-group-visibility {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--scout-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #081a28;
+}
+
+.scout-group-dialog .scout-group-visibility.is-selected {
+  border-color: #168e80;
+  background: #0b292d;
+}
+
+.scout-group-dialog .scout-group-visibility > span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.scout-group-dialog .scout-group-visibility strong {
+  color: var(--scout-text);
+  font-size: 0.875rem;
+}
+
+.scout-group-dialog .scout-group-visibility small {
+  color: var(--scout-muted);
+  font-size: 0.8rem;
+}
+
+.scout-group-dialog .scout-group-purpose-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border: 1px solid #18544f;
+  border-radius: 0.65rem;
+  padding: 0.8rem;
+  color: #8bdaca;
+  background: #0a292b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.scout-group-dialog .scout-group-purpose-note svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+
+.scout-group-dialog .scout-group-review-cover {
+  display: flex;
+  height: 7rem;
+  align-items: flex-end;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  color: #4de0c8;
+  background: linear-gradient(130deg, #0b2132, #0d6053);
+  background-position: center;
+  background-size: cover;
+}
+
+.scout-group-dialog .scout-group-review-cover img,
+.scout-group-dialog .scout-group-review-cover svg {
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid #0b1d2c;
+  border-radius: 0.65rem;
+  background: #0a2430;
+}
+
+.scout-group-dialog .scout-group-review h2 {
+  margin-top: 0.8rem;
+  color: var(--scout-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.scout-group-dialog .scout-group-review > p {
+  margin-top: 0.35rem;
+  color: var(--scout-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 639px) {
+  .scout-group-dialog {
+    width: 100%;
+  }
+
+  .scout-group-dialog .scout-group-steps {
+    gap: 0.15rem;
+  }
+
+  .scout-group-dialog .scout-group-steps button {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding: 0.25rem 0.1rem;
+    font-size: 0.65rem;
+  }
+
+  .scout-group-dialog .scout-group-steps button span {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}
