@@ -35,6 +35,7 @@ export { CommunitySettingsPage } from "./user/CommunitySettings";
 export { CommunityMembers } from "./user/CommunityMembers";
 export { CommunityGroups } from "./user/CommunityGroups";
 export { CommunityGroup } from "./user/CommunityGroup";
+export { CommunityInvite } from "./user/CommunityInvite";
 export { Passport } from "./user/Passport";
 export { DNA } from "./user/DNA";
 export { Matches } from "./user/Matches";

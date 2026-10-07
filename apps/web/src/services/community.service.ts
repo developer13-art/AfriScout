@@ -2,6 +2,7 @@ import { http } from "./http";
 
 export type CommunityKind =
   | "GENERAL"
+  | "ANNOUNCEMENT"
   | "OPPORTUNITY_DISCUSSION"
   | "QUESTION"
   | "ACHIEVEMENT"
@@ -48,10 +49,11 @@ export interface CommunitySpace {
   profileImageUrl: string | null;
   coverImageUrl: string | null;
   topics: string[];
+  joinQuestions?: string[];
   postCount: number;
   memberCount: number;
   following: boolean;
-  membershipStatus: "ACTIVE" | "PENDING" | "SUSPENDED" | "BANNED" | null;
+  membershipStatus: "ACTIVE" | "PENDING" | "MUTED" | "SUSPENDED" | "BANNED" | null;
   createdAt?: string;
 }
 
@@ -63,9 +65,73 @@ export interface CommunitySpaceDetail extends CommunitySpace {
   posts: CommunityPost[];
 }
 
+export interface CommunitySpaceEvent {
+  id: string;
+  title: string;
+  description: string;
+  kind: string;
+  startsAt: string;
+  endsAt: string | null;
+  timezone: string;
+  location: string | null;
+  meetingUrl: string | null;
+  capacity: number | null;
+  status: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+  going: number;
+  interested: number;
+  myRsvp: "GOING" | "INTERESTED" | null;
+  creator: Pick<CommunityAuthor, "id" | "fullName" | "avatarUrl">;
+}
+
+export interface CommunitySpaceProject {
+  id: string;
+  title: string;
+  description: string;
+  status: "OPEN" | "IN_PROGRESS" | "COMPLETED" | "ARCHIVED";
+  skillsNeeded: string[];
+  memberCount: number;
+  joined: boolean;
+  creatorId: string;
+  creator: Pick<CommunityAuthor, "id" | "fullName" | "avatarUrl">;
+  members: Array<{ id: string; userId: string; role: string; user?: Pick<CommunityAuthor, "id" | "fullName" | "avatarUrl"> }>;
+}
+
+export interface CommunitySpaceInvite {
+  id: string;
+  expiresAt: string | null;
+  maxUses: number | null;
+  useCount: number;
+  approvalRequired: boolean;
+  createdAt: string;
+}
+
+export interface CommunitySpaceReport {
+  id: string;
+  reason: string;
+  details: string | null;
+  createdAt: string;
+  reporter: Pick<CommunityAuthor, "id" | "fullName" | "avatarUrl">;
+  post: { id: string; content: string; removedAt: string | null; lockedAt: string | null; author: { id: string; fullName: string } } | null;
+  comment: { id: string; content: string; removedAt: string | null; postId: string; author: { id: string; fullName: string } } | null;
+}
+
+export interface CommunityGroupAchievement {
+  id: string;
+  title: string;
+  description: string | null;
+  issuedAt: string;
+  points: number;
+  user: Pick<CommunityAuthor, "id" | "fullName" | "avatarUrl">;
+  opportunity: { id: string; slug: string; title: string };
+  organization: { id: string; name: string };
+}
+
 export interface CommunitySpaceMember extends CommunityAuthor {
   role: "OWNER" | "ADMIN" | "MODERATOR" | "CONTRIBUTOR" | "MEMBER";
-  status: "ACTIVE" | "PENDING" | "SUSPENDED" | "BANNED";
+  status: "ACTIVE" | "PENDING" | "MUTED" | "SUSPENDED" | "BANNED";
+  joinAnswers?: string[] | null;
+  professionalProfile?: { profession: string | null; skills: string[] };
+  profile?: { username: string | null; headline: string | null; interests: string[]; industries: string[] };
 }
 
 export interface CommunitySettings {
@@ -136,10 +202,53 @@ export const communityService = {
     http<{ active: boolean }>(`/community/opportunities/${id}/interactions`, { method: "POST", body: JSON.stringify({ kind }) }),
   members: (q = "") => http<CommunityMember[]>("/community/members", { query: { q: q || undefined } }),
   spaces: () => http<CommunitySpace[]>("/community/spaces"),
+  recommendedSpaces: () => http<Array<CommunitySpace & { relevance: number; reasons: string[] }>>("/community/groups/recommended"),
   space: (slug: string) => http<CommunitySpaceDetail>(`/community/spaces/${encodeURIComponent(slug)}`),
-  spaceMembers: (slug: string, q = "", status?: "ACTIVE" | "PENDING") =>
-    http<CommunitySpaceMember[]>(`/community/spaces/${encodeURIComponent(slug)}/members`, { query: { q: q || undefined, status } }),
-  moderateSpaceMember: (slug: string, userId: string, action: "APPROVE" | "REJECT" | "SUSPEND" | "BAN" | "PROMOTE_MODERATOR" | "DEMOTE_MODERATOR") =>
+  updateSpace: (slug: string, input: Partial<Pick<CommunitySpace, "name" | "description" | "category" | "purpose" | "visibility" | "countryCode" | "language" | "profileImageUrl" | "coverImageUrl" | "topics" | "joinQuestions">>) =>
+    http<{ id: string; name: string; slug: string }>(`/community/spaces/${encodeURIComponent(slug)}`, { method: "PATCH", body: JSON.stringify(input) }),
+  deleteSpace: (slug: string) =>
+    http<void>(`/community/spaces/${encodeURIComponent(slug)}`, { method: "DELETE" }),
+  transferSpaceOwnership: (slug: string, userId: string) =>
+    http<{ transferred: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/transfer-ownership`, { method: "POST", body: JSON.stringify({ userId }) }),
+  createSpaceInvite: (slug: string, input: { expiresInDays?: number; maxUses?: number; approvalRequired?: boolean }) =>
+    http<{ id: string; token: string; expiresAt: string | null; maxUses: number | null; approvalRequired: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/invites`, { method: "POST", body: JSON.stringify(input) }),
+  spaceInvites: (slug: string) =>
+    http<CommunitySpaceInvite[]>(`/community/spaces/${encodeURIComponent(slug)}/invites`),
+  revokeSpaceInvite: (slug: string, inviteId: string) =>
+    http<{ revoked: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/invites/${inviteId}`, { method: "DELETE" }),
+  spaceReports: (slug: string) =>
+    http<CommunitySpaceReport[]>(`/community/spaces/${encodeURIComponent(slug)}/reports`),
+  moderateSpaceReport: (slug: string, reportId: string, action: "RESOLVE" | "DISMISS" | "LOCK_POST" | "UNLOCK_POST" | "REMOVE_CONTENT", note?: string) =>
+    http<{ updated: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/reports/${reportId}`, { method: "PATCH", body: JSON.stringify({ action, note }) }),
+  acceptSpaceInvite: (token: string, answers: string[] = []) =>
+    http<{ status: "ACTIVE" | "PENDING"; slug: string }>(`/community/invites/${token}/accept`, { method: "POST", body: JSON.stringify({ answers }) }),
+  previewSpaceInvite: (token: string) =>
+    http<{ name: string; slug: string; description: string; profileImageUrl: string | null; joinQuestions: string[]; approvalRequired: boolean }>(`/community/invites/${token}`),
+  spaceEvents: (slug: string) =>
+    http<CommunitySpaceEvent[]>(`/community/spaces/${encodeURIComponent(slug)}/events`),
+  createSpaceEvent: (slug: string, input: {
+    title: string; description: string; kind: string; startsAt: string; endsAt?: string | null;
+    timezone: string; location?: string; meetingUrl?: string; capacity?: number;
+  }) => http<CommunitySpaceEvent>(`/community/spaces/${encodeURIComponent(slug)}/events`, { method: "POST", body: JSON.stringify(input) }),
+  updateSpaceEvent: (slug: string, eventId: string, input: Partial<Pick<CommunitySpaceEvent, "title" | "description" | "kind" | "startsAt" | "endsAt" | "location" | "meetingUrl" | "capacity" | "status">>) =>
+    http<CommunitySpaceEvent>(`/community/spaces/${encodeURIComponent(slug)}/events/${eventId}`, { method: "PATCH", body: JSON.stringify(input) }),
+  rsvpSpaceEvent: (slug: string, eventId: string, status: "GOING" | "INTERESTED" | null) =>
+    http<{ status: "GOING" | "INTERESTED" | null }>(`/community/spaces/${encodeURIComponent(slug)}/events/${eventId}/rsvp`, { method: "POST", body: JSON.stringify({ status }) }),
+  spaceProjects: (slug: string) =>
+    http<CommunitySpaceProject[]>(`/community/spaces/${encodeURIComponent(slug)}/projects`),
+  spaceAchievements: (slug: string) =>
+    http<CommunityGroupAchievement[]>(`/community/spaces/${encodeURIComponent(slug)}/achievements`),
+  createSpaceProject: (slug: string, input: { title: string; description: string; skillsNeeded: string[] }) =>
+    http<CommunitySpaceProject>(`/community/spaces/${encodeURIComponent(slug)}/projects`, { method: "POST", body: JSON.stringify(input) }),
+  updateSpaceProject: (slug: string, projectId: string, input: Partial<Pick<CommunitySpaceProject, "title" | "description" | "skillsNeeded" | "status">>) =>
+    http<CommunitySpaceProject>(`/community/spaces/${encodeURIComponent(slug)}/projects/${projectId}`, { method: "PATCH", body: JSON.stringify(input) }),
+  joinSpaceProject: (slug: string, projectId: string, role: string) =>
+    http<{ joined: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/projects/${projectId}/join`, { method: "POST", body: JSON.stringify({ role }) }),
+  leaveSpaceProject: (slug: string, projectId: string) =>
+    http<{ joined: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/projects/${projectId}/join`, { method: "DELETE" }),
+  spaceMembers: (slug: string, q = "", status?: "ACTIVE" | "PENDING" | "MUTED" | "SUSPENDED" | "BANNED", type?: "DEVELOPERS" | "FOUNDERS" | "STUDENTS" | "RESEARCHERS" | "ORGANIZATIONS" | "CONTRIBUTORS") =>
+    http<CommunitySpaceMember[]>(`/community/spaces/${encodeURIComponent(slug)}/members`, { query: { q: q || undefined, status, type } }),
+  moderateSpaceMember: (slug: string, userId: string, action: "APPROVE" | "REJECT" | "MUTE" | "UNMUTE" | "SUSPEND" | "UNSUSPEND" | "BAN" | "UNBAN" | "PROMOTE_MODERATOR" | "DEMOTE_MODERATOR" | "PROMOTE_ADMIN" | "DEMOTE_ADMIN" | "PROMOTE_CONTRIBUTOR" | "DEMOTE_CONTRIBUTOR") =>
     http<{ updated: boolean }>(`/community/spaces/${encodeURIComponent(slug)}/members/${userId}`, {
       method: "PATCH",
       body: JSON.stringify({ action }),
@@ -147,9 +256,9 @@ export const communityService = {
   createSpace: (input: {
     name: string; slug: string; description: string; category: string; purpose: string;
     visibility: "PUBLIC" | "PRIVATE" | "HIDDEN"; countryCode?: string; language: string;
-    profileImageUrl?: string; coverImageUrl?: string; topics: string[];
+    profileImageUrl?: string; coverImageUrl?: string; topics: string[]; joinQuestions?: string[];
   }) => http<{ id: string; name: string; slug: string }>("/community/spaces", { method: "POST", body: JSON.stringify(input) }),
-  joinSpace: (slug: string) => http<{ status: "ACTIVE" | "PENDING" }>(`/community/spaces/${encodeURIComponent(slug)}/join`, { method: "POST" }),
+  joinSpace: (slug: string, answers: string[] = []) => http<{ status: "ACTIVE" | "PENDING" }>(`/community/spaces/${encodeURIComponent(slug)}/join`, { method: "POST", body: JSON.stringify({ answers }) }),
   leaveSpace: (slug: string) => http<{ status: null }>(`/community/spaces/${encodeURIComponent(slug)}/join`, { method: "DELETE" }),
   connectionRequests: () => http<CommunityConnectionRequest[]>("/community/connection-requests"),
   acceptedConnections: () => http<Array<{ id: string; connectedAt: string; person: CommunityAuthor }>>("/community/connections/list"),

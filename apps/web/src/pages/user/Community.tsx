@@ -43,6 +43,7 @@ const tabs = [
 
 const kindLabels: Record<CommunityKind, string> = {
   GENERAL: "Community post",
+  ANNOUNCEMENT: "Official announcement",
   OPPORTUNITY_DISCUSSION: "Opportunity discussion",
   QUESTION: "Question",
   ACHIEVEMENT: "Achievement",
@@ -341,7 +342,7 @@ export function Community() {
     },
   });
   const followGroup = useMutation({
-    mutationFn: communityService.joinSpace,
+    mutationFn: (slug: string) => communityService.joinSpace(slug),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-spaces"] }),
   });
   const refresh = () => {
@@ -494,11 +495,11 @@ export function Community() {
                       <Link to={`/community/groups/${encodeURIComponent(group.slug)}`} className="block truncate text-xs font-semibold text-neutral-900">{group.name}</Link>
                       <p className="text-[11px] text-neutral-500">{group.memberCount} members</p>
                     </div>
-                    <button
-                      type="button"
-                      disabled={followGroup.isPending}
-                      onClick={() => followGroup.mutate(group.slug)}
-                    >{group.following ? "Joined" : "Join"}</button>
+                    {group.membershipStatus === "ACTIVE" || group.membershipStatus === "MUTED" ? <span className="text-xs text-primary-700">{group.membershipStatus === "MUTED" ? "Muted" : "Joined"}</span> : group.membershipStatus === "PENDING" ? <span className="text-xs text-neutral-500">Request pending</span> : group.visibility === "PRIVATE" && group.joinQuestions?.length ? (
+                      <Link to={`/community/groups/${encodeURIComponent(group.slug)}`} className="text-xs font-semibold text-primary-700">Request</Link>
+                    ) : (
+                      <button type="button" disabled={followGroup.isPending} onClick={() => followGroup.mutate(group.slug)}>{group.visibility === "PRIVATE" ? "Request" : "Join"}</button>
+                    )}
                   </div>
                 ))}
                 {!groups.isLoading && !groups.isError && groups.data?.length === 0 ? <p className="text-xs text-neutral-500">New groups will appear here.</p> : null}

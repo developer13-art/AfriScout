@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { Prisma } from "@prisma/client";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "../config/database";
 import { runAi } from "../services/ai/ai.service";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -18,6 +18,29 @@ const authorSelect = {
 function userId(req: Request) {
   if (!req.user?.id) throw new UnauthorizedError();
   return req.user.id;
+}
+
+async function requireSpaceMembership(spaceId: string, memberId: string) {
+  const membership = await prisma.communitySpaceMember.findUnique({
+    where: { spaceId_userId: { spaceId, userId: memberId } },
+    select: { role: true, status: true },
+  });
+  if (membership?.status !== "ACTIVE" && membership?.status !== "MUTED") throw new NotFoundError("Community not found");
+  return membership;
+}
+
+async function requireActiveSpaceMember(spaceId: string, memberId: string) {
+  const membership = await requireSpaceMembership(spaceId, memberId);
+  if (membership.status !== "ACTIVE") throw new BadRequestError("Muted members cannot publish group content");
+  return membership;
+}
+
+async function requireSpaceModerator(spaceId: string, memberId: string) {
+  const membership = await requireSpaceMembership(spaceId, memberId);
+  if (!["OWNER", "ADMIN", "MODERATOR"].includes(membership.role)) {
+    throw new NotFoundError("Community not found");
+  }
+  return membership;
 }
 
 function cleanText(value: unknown, max: number) {
@@ -96,7 +119,7 @@ export const feed = asyncHandler(async (req: Request, res: Response) => {
     select: { targetType: true, targetKey: true },
   });
   const followingIds = following.filter((item) => item.targetType === "USER").map((item) => item.targetKey);
-  const where: Prisma.CommunityPostWhereInput = { authorId: { notIn: hiddenAuthors } };
+  const where: Prisma.CommunityPostWhereInput = { authorId: { notIn: hiddenAuthors }, removedAt: null };
   where.author = { is: { status: "ACTIVE" } };
   if (communitySlug) {
     const space = await prisma.communitySpace.findUnique({
@@ -109,7 +132,7 @@ export const feed = asyncHandler(async (req: Request, res: Response) => {
         where: { spaceId_userId: { spaceId: space.id, userId: viewer } },
         select: { status: true },
       });
-      if (membership?.status !== "ACTIVE") throw new NotFoundError("Community not found");
+      if (membership?.status !== "ACTIVE" && membership?.status !== "MUTED") throw new NotFoundError("Community not found");
     }
     where.communitySlug = communitySlug;
   }
@@ -125,7 +148,7 @@ export const feed = asyncHandler(async (req: Request, res: Response) => {
       comments: {
         take: 2,
         orderBy: { createdAt: "desc" },
-        where: { author: { status: "ACTIVE" } },
+        where: { author: { status: "ACTIVE" }, removedAt: null },
         include: { author: { select: authorSelect } },
       },
       reactions: { where: { userId: viewer }, select: { id: true } },
@@ -158,7 +181,7 @@ export const feed = asyncHandler(async (req: Request, res: Response) => {
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
   const authorId = userId(req);
   const content = cleanText(req.body?.content, 5000);
-  const allowedKinds = ["GENERAL", "OPPORTUNITY_DISCUSSION", "QUESTION", "ACHIEVEMENT", "PROJECT_ANNOUNCEMENT", "EDUCATIONAL", "INDUSTRY_DISCUSSION"];
+  const allowedKinds = ["GENERAL", "ANNOUNCEMENT", "OPPORTUNITY_DISCUSSION", "QUESTION", "ACHIEVEMENT", "PROJECT_ANNOUNCEMENT", "EDUCATIONAL", "INDUSTRY_DISCUSSION"];
   const kind = allowedKinds.includes(req.body?.kind) ? req.body.kind : "GENERAL";
   const opportunityId = typeof req.body?.opportunityId === "string" ? req.body.opportunityId : null;
   if (opportunityId && !(await prisma.opportunity.findUnique({ where: { id: opportunityId }, select: { id: true } }))) {
@@ -173,9 +196,14 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     if (!space) throw new NotFoundError("Community not found");
     const membership = await prisma.communitySpaceMember.findUnique({
       where: { spaceId_userId: { spaceId: space.id, userId: authorId } },
-      select: { status: true },
+      select: { status: true, role: true },
     });
     if (membership?.status !== "ACTIVE") throw new NotFoundError("Community not found");
+    if (kind === "ANNOUNCEMENT" && !["OWNER", "ADMIN", "MODERATOR"].includes(membership.role)) {
+      throw new BadRequestError("Only group moderators can publish announcements");
+    }
+  } else if (kind === "ANNOUNCEMENT") {
+    throw new BadRequestError("Official announcements must belong to a group");
   }
   const post = await prisma.communityPost.create({
     data: { authorId, content, kind, opportunityId, communitySlug },
@@ -255,8 +283,13 @@ export const interactWithOpportunity = asyncHandler(async (req: Request, res: Re
 export const react = asyncHandler(async (req: Request, res: Response) => {
   const viewer = userId(req);
   const postId = req.params.id;
-  const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true } });
-  if (!post) throw new NotFoundError("Post not found");
+  const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true, communitySlug: true, removedAt: true } });
+  if (!post || post.removedAt) throw new NotFoundError("Post not found");
+  if (post.communitySlug) {
+    const group = await prisma.communitySpace.findUnique({ where: { slug: post.communitySlug }, select: { id: true } });
+    if (!group) throw new NotFoundError("Post not found");
+    await requireActiveSpaceMember(group.id, viewer);
+  }
   const blocked = await withMissingSchemaFallback(
     () => prisma.communityUserAction.findFirst({
       where: {
@@ -282,8 +315,14 @@ export const react = asyncHandler(async (req: Request, res: Response) => {
 export const comment = asyncHandler(async (req: Request, res: Response) => {
   const authorId = userId(req);
   const postId = req.params.id;
-  const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true } });
-  if (!post) throw new NotFoundError("Post not found");
+  const post = await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true, authorId: true, communitySlug: true, lockedAt: true, removedAt: true } });
+  if (!post || post.removedAt) throw new NotFoundError("Post not found");
+  if (post.lockedAt) throw new BadRequestError("This discussion is locked by a group moderator");
+  if (post.communitySlug) {
+    const group = await prisma.communitySpace.findUnique({ where: { slug: post.communitySlug }, select: { id: true } });
+    if (!group) throw new NotFoundError("Post not found");
+    await requireActiveSpaceMember(group.id, authorId);
+  }
   const blocked = await withMissingSchemaFallback(
     () => prisma.communityUserAction.findFirst({
       where: {
@@ -305,9 +344,14 @@ export const comments = asyncHandler(async (req: Request, res: Response) => {
   const viewer = userId(req);
   const post = await prisma.communityPost.findUnique({
     where: { id: req.params.id },
-    select: { id: true, authorId: true },
+    select: { id: true, authorId: true, communitySlug: true, removedAt: true },
   });
-  if (!post) throw new NotFoundError("Post not found");
+  if (!post || post.removedAt) throw new NotFoundError("Post not found");
+  if (post.communitySlug) {
+    const group = await prisma.communitySpace.findUnique({ where: { slug: post.communitySlug }, select: { id: true, visibility: true } });
+    if (!group) throw new NotFoundError("Post not found");
+    if (group.visibility !== "PUBLIC") await requireSpaceMembership(group.id, viewer);
+  }
   const blocked = await withMissingSchemaFallback(
     () => prisma.communityUserAction.findFirst({
       where: {
@@ -321,7 +365,7 @@ export const comments = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data: await prisma.communityComment.findMany({
     orderBy: { createdAt: "asc" },
     take: 100,
-    where: { postId: post.id, author: { is: { status: "ACTIVE" } } },
+    where: { postId: post.id, removedAt: null, author: { is: { status: "ACTIVE" } } },
     include: { author: { select: authorSelect } },
   }) });
 });
@@ -516,7 +560,7 @@ export const members = asyncHandler(async (req: Request, res: Response) => {
 
 export const createSpace = asyncHandler(async (req: Request, res: Response) => {
   const actorId = userId(req);
-  const { name, slug, description, category, purpose, visibility, countryCode, language, profileImageUrl, coverImageUrl, topics } = req.body;
+  const { name, slug, description, category, purpose, visibility, countryCode, language, profileImageUrl, coverImageUrl, topics, joinQuestions } = req.body;
   const normalizedSlug = slug.trim().toLowerCase();
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)) {
     throw new BadRequestError("Group username can contain lowercase letters, numbers, and hyphens");
@@ -539,6 +583,7 @@ export const createSpace = asyncHandler(async (req: Request, res: Response) => {
         profileImageUrl: profileImageUrl || null,
         coverImageUrl: coverImageUrl || null,
         topics,
+        joinQuestions: joinQuestions ?? [],
         memberships: { create: { userId: actorId, role: "OWNER", status: "ACTIVE" } },
       },
       select: { id: true, name: true, slug: true },
@@ -585,9 +630,10 @@ export const spaces = asyncHandler(async (req: Request, res: Response) => {
     profileImageUrl: space.profileImageUrl,
     coverImageUrl: space.coverImageUrl,
     topics: space.topics,
+    joinQuestions: space.joinQuestions,
     postCount: space._count.posts,
     memberCount: await prisma.communitySpaceMember.count({
-      where: { spaceId: space.id, status: "ACTIVE" },
+      where: { spaceId: space.id, status: { in: ["ACTIVE", "MUTED"] } },
     }),
     membershipStatus: membershipBySlug.get(space.slug) ?? null,
     following: membershipBySlug.get(space.slug) === "ACTIVE",
@@ -601,15 +647,15 @@ export const space = asyncHandler(async (req: Request, res: Response) => {
   const group = await prisma.communitySpace.findUnique({
     where: { slug },
     include: {
-      _count: { select: { posts: true, memberships: { where: { status: "ACTIVE" } } } },
+      _count: { select: { posts: true, memberships: { where: { status: { in: ["ACTIVE", "MUTED"] } } } } },
       memberships: {
-        where: { status: "ACTIVE" },
+        where: { status: { in: ["ACTIVE", "MUTED"] } },
         orderBy: { createdAt: "asc" },
         take: 8,
         include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
       },
       posts: {
-        where: { author: { status: "ACTIVE" } },
+        where: { author: { status: "ACTIVE" }, removedAt: null },
         orderBy: { createdAt: "desc" },
         take: 5,
         include: {
@@ -625,13 +671,14 @@ export const space = asyncHandler(async (req: Request, res: Response) => {
     where: { spaceId_userId: { spaceId: group.id, userId: viewerId } },
     select: { status: true, role: true },
   });
-  if (group.visibility === "HIDDEN" && membership?.status !== "ACTIVE") throw new NotFoundError("Community not found");
-  if (group.visibility !== "PUBLIC" && membership?.status !== "ACTIVE" && membership?.role !== "OWNER") {
+  const hasContentAccess = membership?.status === "ACTIVE" || membership?.status === "MUTED";
+  if (group.visibility === "HIDDEN" && !hasContentAccess) throw new NotFoundError("Community not found");
+  if (group.visibility !== "PUBLIC" && !hasContentAccess && membership?.role !== "OWNER") {
     return res.json({ data: {
       id: group.id, name: group.name, slug: group.slug, description: group.description,
       category: group.category, purpose: group.purpose, visibility: group.visibility,
       countryCode: group.countryCode, language: group.language, profileImageUrl: group.profileImageUrl,
-      coverImageUrl: group.coverImageUrl, topics: group.topics, memberCount: group._count.memberships,
+      coverImageUrl: group.coverImageUrl, topics: group.topics, joinQuestions: group.joinQuestions, memberCount: group._count.memberships,
       postCount: group._count.posts, createdAt: group.createdAt, membershipStatus: membership?.status ?? null,
       role: membership?.role ?? null, members: [], posts: [],
     } });
@@ -640,7 +687,7 @@ export const space = asyncHandler(async (req: Request, res: Response) => {
     id: group.id, name: group.name, slug: group.slug, description: group.description,
     category: group.category, purpose: group.purpose, visibility: group.visibility,
     countryCode: group.countryCode, language: group.language, profileImageUrl: group.profileImageUrl,
-    coverImageUrl: group.coverImageUrl, topics: group.topics, memberCount: group._count.memberships,
+    coverImageUrl: group.coverImageUrl, topics: group.topics, joinQuestions: group.joinQuestions, memberCount: group._count.memberships,
     postCount: group._count.posts, createdAt: group.createdAt, membershipStatus: membership?.status ?? null,
     role: membership?.role ?? null,
     members: group.memberships.map(({ user }) => user),
@@ -648,11 +695,528 @@ export const space = asyncHandler(async (req: Request, res: Response) => {
   } });
 });
 
+export const recommendedSpaces = asyncHandler(async (req: Request, res: Response) => {
+  const viewerId = userId(req);
+  const [profile, memberships] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: viewerId },
+      select: {
+        countryCode: true,
+        profile: { select: { interests: true, industries: true, professionalIdentities: true } },
+        professionalProfile: { select: { skills: true } },
+      },
+    }),
+    prisma.communitySpaceMember.findMany({
+      where: { userId: viewerId },
+      select: { spaceId: true, status: true },
+    }),
+  ]);
+  const memberSpaceIds = new Set(memberships.filter((membership) => membership.status === "ACTIVE" || membership.status === "MUTED").map((membership) => membership.spaceId));
+  const interests = new Set([
+    ...(profile?.profile?.interests ?? []),
+    ...(profile?.profile?.industries ?? []),
+    ...(profile?.profile?.professionalIdentities ?? []),
+    ...(profile?.professionalProfile?.skills ?? []),
+  ].map((item) => item.trim().toLowerCase()).filter(Boolean));
+  const groups = await prisma.communitySpace.findMany({
+    where: { visibility: "PUBLIC", id: { notIn: [...memberSpaceIds] } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: { _count: { select: {
+      posts: true,
+      memberships: { where: { status: { in: ["ACTIVE", "MUTED"] } } },
+    } } },
+  });
+  const recommendations = groups.map((group) => {
+    const shared = group.topics.filter((topic) => interests.has(topic.trim().toLowerCase()));
+    const sameRegion = Boolean(profile?.countryCode && group.countryCode === profile.countryCode);
+    const score = Math.min(99, Math.round((shared.length / Math.max(1, Math.min(5, interests.size))) * 80 + (sameRegion ? 14 : 0) + (group.purpose.toLowerCase() === "opportunities" && interests.has("opportunities") ? 5 : 0)));
+    return {
+      id: group.id, name: group.name, slug: group.slug, description: group.description,
+      category: group.category, purpose: group.purpose, visibility: group.visibility,
+      countryCode: group.countryCode, language: group.language, profileImageUrl: group.profileImageUrl,
+      coverImageUrl: group.coverImageUrl, topics: group.topics, memberCount: group._count.memberships,
+      postCount: group._count.posts, membershipStatus: memberships.find((membership) => membership.spaceId === group.id)?.status ?? null,
+      following: false, relevance: score,
+      reasons: [
+        ...(shared.length ? [`Shared interests: ${shared.slice(0, 4).join(", ")}`] : []),
+        ...(sameRegion ? [`Same region: ${group.countryCode}`] : []),
+      ],
+    };
+  }).filter((group) => group.relevance > 0).sort((a, b) => b.relevance - a.relevance).slice(0, 20);
+  res.json({ data: recommendations });
+});
+
+export const updateSpace = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  const actor = await requireSpaceModerator(group.id, actorId);
+  if (req.body.visibility !== undefined && actor.role === "MODERATOR") {
+    throw new BadRequestError("Only owners and admins can change group visibility");
+  }
+  const updated = await prisma.communitySpace.update({
+    where: { id: group.id },
+    data: {
+      ...(req.body.name !== undefined ? { name: req.body.name.trim() } : {}),
+      ...(req.body.description !== undefined ? { description: req.body.description.trim() } : {}),
+      ...(req.body.category !== undefined ? { category: req.body.category.trim() } : {}),
+      ...(req.body.purpose !== undefined ? { purpose: req.body.purpose } : {}),
+      ...(req.body.visibility !== undefined ? { visibility: req.body.visibility } : {}),
+      ...(req.body.countryCode !== undefined ? { countryCode: req.body.countryCode || null } : {}),
+      ...(req.body.language !== undefined ? { language: req.body.language.trim() } : {}),
+      ...(req.body.profileImageUrl !== undefined ? { profileImageUrl: req.body.profileImageUrl || null } : {}),
+      ...(req.body.coverImageUrl !== undefined ? { coverImageUrl: req.body.coverImageUrl || null } : {}),
+      ...(req.body.topics !== undefined ? { topics: req.body.topics } : {}),
+      ...(req.body.joinQuestions !== undefined ? { joinQuestions: req.body.joinQuestions } : {}),
+    },
+    select: { id: true, name: true, slug: true },
+  });
+  res.json({ data: updated });
+});
+
+export const spaceReports = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireSpaceModerator(group.id, actorId);
+  const reports = await prisma.communityReport.findMany({
+    where: {
+      status: "OPEN",
+      OR: [
+        { post: { is: { communitySlug: req.params.slug } } },
+        { comment: { is: { post: { is: { communitySlug: req.params.slug } } } } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    include: {
+      reporter: { select: { id: true, fullName: true, avatarUrl: true } },
+      post: { select: { id: true, content: true, removedAt: true, lockedAt: true, author: { select: { id: true, fullName: true } } } },
+      comment: { select: { id: true, content: true, removedAt: true, postId: true, author: { select: { id: true, fullName: true } } } },
+    },
+  });
+  res.json({ data: reports.map((report) => ({
+    id: report.id, reason: report.reason, details: report.details, createdAt: report.createdAt,
+    reporter: report.reporter, post: report.post, comment: report.comment,
+  })) });
+});
+
+export const moderateSpaceReport = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireSpaceModerator(group.id, actorId);
+  const report = await prisma.communityReport.findFirst({
+    where: {
+      id: req.params.reportId,
+      status: "OPEN",
+      OR: [
+        { post: { is: { communitySlug: req.params.slug } } },
+        { comment: { is: { post: { is: { communitySlug: req.params.slug } } } } },
+      ],
+    },
+    select: { id: true, postId: true, commentId: true },
+  });
+  if (!report) throw new NotFoundError("Report not found");
+  const { action, note } = req.body;
+  if (action === "LOCK_POST" || action === "UNLOCK_POST") {
+    if (!report.postId) throw new BadRequestError("This report does not refer to a post");
+    await prisma.$transaction([
+      prisma.communityPost.update({
+        where: { id: report.postId },
+        data: { lockedAt: action === "LOCK_POST" ? new Date() : null, moderationNote: note || null },
+      }),
+      prisma.communityReport.update({ where: { id: report.id }, data: { status: "REVIEWED" } }),
+    ]);
+  } else if (action === "REMOVE_CONTENT") {
+    await prisma.$transaction(async (tx) => {
+      if (report.postId) {
+        await tx.communityPost.update({
+          where: { id: report.postId },
+          data: { removedAt: new Date(), moderationNote: note || "Removed by group moderation" },
+        });
+      } else if (report.commentId) {
+        await tx.communityComment.update({ where: { id: report.commentId }, data: { removedAt: new Date() } });
+      }
+      await tx.communityReport.update({ where: { id: report.id }, data: { status: "RESOLVED" } });
+    });
+  } else {
+    await prisma.communityReport.update({
+      where: { id: report.id },
+      data: { status: action === "DISMISS" ? "DISMISSED" : "RESOLVED" },
+    });
+  }
+  res.json({ data: { updated: true } });
+});
+
+export const deleteSpace = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({
+    where: { slug: req.params.slug },
+    select: { id: true, memberships: { where: { userId: actorId }, select: { role: true } } },
+  });
+  if (!group || group.memberships[0]?.role !== "OWNER") throw new NotFoundError("Community not found");
+  await prisma.communitySpace.delete({ where: { id: group.id } });
+  res.status(204).end();
+});
+
+export const transferSpaceOwnership = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  const owner = await prisma.communitySpaceMember.findUnique({
+    where: { spaceId_userId: { spaceId: group.id, userId: actorId } },
+    select: { role: true, status: true },
+  });
+  if (owner?.role !== "OWNER" || owner.status !== "ACTIVE") throw new NotFoundError("Community not found");
+  const newOwner = await prisma.communitySpaceMember.findUnique({
+    where: { spaceId_userId: { spaceId: group.id, userId: req.body.userId } },
+    select: { id: true, status: true },
+  });
+  if (!newOwner || newOwner.status !== "ACTIVE" || req.body.userId === actorId) {
+    throw new BadRequestError("Choose another active group member");
+  }
+  await prisma.$transaction([
+    prisma.communitySpaceMember.update({ where: { spaceId_userId: { spaceId: group.id, userId: req.body.userId } }, data: { role: "OWNER" } }),
+    prisma.communitySpaceMember.update({ where: { spaceId_userId: { spaceId: group.id, userId: actorId } }, data: { role: "ADMIN" } }),
+  ]);
+  res.json({ data: { transferred: true } });
+});
+
+export const createSpaceInvite = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireSpaceModerator(group.id, actorId);
+  const token = randomBytes(32).toString("hex");
+  const invite = await prisma.communitySpaceInvite.create({
+    data: {
+      spaceId: group.id,
+      createdById: actorId,
+      tokenHash: createHash("sha256").update(token).digest("hex"),
+      expiresAt: req.body.expiresInDays ? new Date(Date.now() + req.body.expiresInDays * 86_400_000) : null,
+      maxUses: req.body.maxUses ?? null,
+      approvalRequired: req.body.approvalRequired ?? false,
+    },
+    select: { id: true, expiresAt: true, maxUses: true, approvalRequired: true },
+  });
+  res.status(201).json({ data: { ...invite, token } });
+});
+
+export const spaceInvites = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireSpaceModerator(group.id, actorId);
+  const invites = await prisma.communitySpaceInvite.findMany({
+    where: { spaceId: group.id, revokedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, expiresAt: true, maxUses: true, useCount: true, approvalRequired: true, createdAt: true },
+  });
+  res.json({ data: invites });
+});
+
+export const revokeSpaceInvite = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireSpaceModerator(group.id, actorId);
+  const result = await prisma.communitySpaceInvite.updateMany({
+    where: { id: req.params.inviteId, spaceId: group.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (!result.count) throw new NotFoundError("Invite not found");
+  res.json({ data: { revoked: true } });
+});
+
+export const acceptSpaceInvite = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const tokenHash = createHash("sha256").update(req.params.token).digest("hex");
+  const invite = await prisma.communitySpaceInvite.findUnique({
+    where: { tokenHash },
+    select: { id: true, spaceId: true, expiresAt: true, maxUses: true, useCount: true, approvalRequired: true, revokedAt: true, space: { select: { slug: true, visibility: true, joinQuestions: true } } },
+  });
+  if (!invite || invite.revokedAt || (invite.expiresAt && invite.expiresAt <= new Date()) || (invite.maxUses !== null && invite.useCount >= invite.maxUses)) {
+    throw new NotFoundError("This invite is invalid or has expired");
+  }
+  const membership = await prisma.communitySpaceMember.findUnique({
+    where: { spaceId_userId: { spaceId: invite.spaceId, userId: actorId } },
+    select: { status: true },
+  });
+  if (membership?.status === "BANNED" || membership?.status === "SUSPENDED") throw new BadRequestError("You cannot join this group");
+  const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  if ((invite.space.visibility === "PRIVATE" || invite.approvalRequired) && invite.space.joinQuestions.length && (
+    answers.length !== invite.space.joinQuestions.length || answers.some((answer: unknown) => typeof answer !== "string" || !answer.trim())
+  )) {
+    throw new BadRequestError("Please answer all group membership questions");
+  }
+  const nextStatus = invite.approvalRequired || invite.space.visibility === "PRIVATE" ? "PENDING" : "ACTIVE";
+  const result = await prisma.$transaction(async (tx) => {
+    const used = await tx.communitySpaceInvite.updateMany({
+      where: {
+        id: invite.id,
+        revokedAt: null,
+        ...(invite.maxUses !== null ? { useCount: { lt: invite.maxUses } } : {}),
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      data: { useCount: { increment: 1 } },
+    });
+    if (!used.count) throw new ConflictError("This invite has reached its use limit");
+    await tx.communitySpaceMember.upsert({
+      where: { spaceId_userId: { spaceId: invite.spaceId, userId: actorId } },
+      create: { spaceId: invite.spaceId, userId: actorId, status: nextStatus, joinAnswers: answers.length ? answers : undefined },
+      update: { status: nextStatus, joinAnswers: answers.length ? answers : undefined },
+    });
+    return { status: nextStatus, slug: invite.space.slug };
+  });
+  res.json({ data: result });
+});
+
+export const previewSpaceInvite = asyncHandler(async (req: Request, res: Response) => {
+  const tokenHash = createHash("sha256").update(req.params.token).digest("hex");
+  const invite = await prisma.communitySpaceInvite.findUnique({
+    where: { tokenHash },
+    select: {
+      expiresAt: true, maxUses: true, useCount: true, approvalRequired: true, revokedAt: true,
+      space: { select: { name: true, slug: true, description: true, profileImageUrl: true, visibility: true, joinQuestions: true } },
+    },
+  });
+  if (!invite || invite.revokedAt || (invite.expiresAt && invite.expiresAt <= new Date()) || (invite.maxUses !== null && invite.useCount >= invite.maxUses)) {
+    throw new NotFoundError("This invite is invalid or has expired");
+  }
+  res.json({ data: {
+    ...invite.space,
+    approvalRequired: invite.approvalRequired || invite.space.visibility === "PRIVATE",
+    joinQuestions: invite.approvalRequired || invite.space.visibility === "PRIVATE" ? invite.space.joinQuestions : [],
+  } });
+});
+
+export const listSpaceEvents = asyncHandler(async (req: Request, res: Response) => {
+  const viewerId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true, visibility: true } });
+  if (!group || group.visibility !== "PUBLIC") {
+    if (!group) throw new NotFoundError("Community not found");
+    await requireSpaceMembership(group.id, viewerId);
+  }
+  const events = await prisma.communitySpaceEvent.findMany({
+    where: { spaceId: group.id },
+    orderBy: { startsAt: "asc" },
+    take: 100,
+    include: {
+      creator: { select: { id: true, fullName: true, avatarUrl: true } },
+      attendees: { where: { userId: viewerId }, select: { status: true } },
+    },
+  });
+  const eventIds = events.map((event) => event.id);
+  const rsvpCounts = eventIds.length ? await prisma.communitySpaceEventRsvp.groupBy({
+    by: ["eventId", "status"],
+    where: { eventId: { in: eventIds } },
+    _count: { _all: true },
+  }) : [];
+  const countsByEvent = new Map<string, { going: number; interested: number }>();
+  for (const count of rsvpCounts) {
+    const current = countsByEvent.get(count.eventId) ?? { going: 0, interested: 0 };
+    if (count.status === "GOING") current.going = count._count._all;
+    else current.interested = count._count._all;
+    countsByEvent.set(count.eventId, current);
+  }
+  res.json({ data: events.map(({ attendees, ...event }) => ({
+    ...event, ...(countsByEvent.get(event.id) ?? { going: 0, interested: 0 }),
+    myRsvp: attendees[0]?.status ?? null,
+  })) });
+});
+
+export const createSpaceEvent = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireActiveSpaceMember(group.id, actorId);
+  const event = await prisma.communitySpaceEvent.create({
+    data: {
+      spaceId: group.id, creatorId: actorId, title: req.body.title, description: req.body.description,
+      kind: req.body.kind, startsAt: new Date(req.body.startsAt), endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null,
+      timezone: req.body.timezone, location: req.body.location || null, meetingUrl: req.body.meetingUrl || null,
+      capacity: req.body.capacity ?? null,
+    },
+  });
+  res.status(201).json({ data: { ...event, going: 0, interested: 0, myRsvp: null } });
+});
+
+export const rsvpSpaceEvent = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const event = await prisma.communitySpaceEvent.findUnique({
+    where: { id: req.params.eventId },
+    select: { id: true, spaceId: true, capacity: true, status: true, space: { select: { slug: true } } },
+  });
+  if (!event || event.space.slug !== req.params.slug) throw new NotFoundError("Event not found");
+  await requireSpaceMembership(event.spaceId, actorId);
+  if (req.body.status && event.status !== "SCHEDULED") throw new BadRequestError("This event is not accepting RSVPs");
+  const rsvpStatus = await prisma.$transaction(async (tx) => {
+    const previous = await tx.communitySpaceEventRsvp.findUnique({
+      where: { eventId_userId: { eventId: event.id, userId: actorId } },
+      select: { status: true },
+    });
+    if (req.body.status === "GOING" && previous?.status !== "GOING" && event.capacity) {
+      const attendeeCount = await tx.communitySpaceEventRsvp.count({ where: { eventId: event.id, status: "GOING" } });
+      if (attendeeCount >= event.capacity) throw new ConflictError("This event is full");
+    }
+    if (!req.body.status) {
+      await tx.communitySpaceEventRsvp.deleteMany({ where: { eventId: event.id, userId: actorId } });
+      return null;
+    }
+    const rsvp = await tx.communitySpaceEventRsvp.upsert({
+      where: { eventId_userId: { eventId: event.id, userId: actorId } },
+      create: { eventId: event.id, userId: actorId, status: req.body.status },
+      update: { status: req.body.status },
+    });
+    return rsvp.status;
+  }, { isolationLevel: "Serializable" });
+  res.json({ data: { status: rsvpStatus } });
+});
+
+export const updateSpaceEvent = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const event = await prisma.communitySpaceEvent.findUnique({
+    where: { id: req.params.eventId }, select: { id: true, spaceId: true, creatorId: true, startsAt: true, endsAt: true, space: { select: { slug: true } } },
+  });
+  if (!event || event.space.slug !== req.params.slug) throw new NotFoundError("Event not found");
+  const membership = await requireActiveSpaceMember(event.spaceId, actorId);
+  if (event.creatorId !== actorId && !["OWNER", "ADMIN", "MODERATOR"].includes(membership.role)) throw new NotFoundError("Event not found");
+  const nextStart = req.body.startsAt ? new Date(req.body.startsAt) : event.startsAt;
+  const nextEnd = req.body.endsAt !== undefined ? (req.body.endsAt ? new Date(req.body.endsAt) : null) : event.endsAt;
+  if (nextEnd && nextEnd <= nextStart) throw new BadRequestError("Event end time must be after its start time");
+  const updated = await prisma.communitySpaceEvent.update({
+    where: { id: event.id },
+    data: {
+      ...(req.body.title !== undefined ? { title: req.body.title } : {}),
+      ...(req.body.description !== undefined ? { description: req.body.description } : {}),
+      ...(req.body.kind !== undefined ? { kind: req.body.kind } : {}),
+      ...(req.body.startsAt !== undefined ? { startsAt: new Date(req.body.startsAt) } : {}),
+      ...(req.body.endsAt !== undefined ? { endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null } : {}),
+      ...(req.body.location !== undefined ? { location: req.body.location || null } : {}),
+      ...(req.body.meetingUrl !== undefined ? { meetingUrl: req.body.meetingUrl || null } : {}),
+      ...(req.body.capacity !== undefined ? { capacity: req.body.capacity } : {}),
+      ...(req.body.status !== undefined ? { status: req.body.status } : {}),
+    },
+  });
+  res.json({ data: updated });
+});
+
+export const listSpaceProjects = asyncHandler(async (req: Request, res: Response) => {
+  const viewerId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true, visibility: true } });
+  if (!group || group.visibility !== "PUBLIC") {
+    if (!group) throw new NotFoundError("Community not found");
+    await requireSpaceMembership(group.id, viewerId);
+  }
+  const projects = await prisma.communitySpaceProject.findMany({
+    where: { spaceId: group.id },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      creator: { select: { id: true, fullName: true, avatarUrl: true } },
+      members: { include: { user: { select: { id: true, fullName: true, avatarUrl: true } } } },
+    },
+  });
+  res.json({ data: projects.map((project) => ({
+    ...project, memberCount: project.members.length,
+    joined: project.members.some((member) => member.userId === viewerId),
+  })) });
+});
+
+export const listSpaceAchievements = asyncHandler(async (req: Request, res: Response) => {
+  const viewerId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true, visibility: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  if (group.visibility !== "PUBLIC") await requireSpaceMembership(group.id, viewerId);
+  const memberships = await prisma.communitySpaceMember.findMany({
+    where: { spaceId: group.id, status: { in: ["ACTIVE", "MUTED"] } },
+    select: { userId: true },
+  });
+  const achievements = await prisma.verifiedAchievement.findMany({
+    where: { userId: { in: memberships.map((membership) => membership.userId) } },
+    orderBy: { issuedAt: "desc" },
+    take: 100,
+    select: {
+      id: true, title: true, description: true, issuedAt: true, points: true,
+      user: { select: { id: true, fullName: true, avatarUrl: true } },
+      opportunity: { select: { id: true, slug: true, title: true } },
+      organization: { select: { id: true, name: true } },
+    },
+  });
+  res.json({ data: achievements });
+});
+
+export const createSpaceProject = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const group = await prisma.communitySpace.findUnique({ where: { slug: req.params.slug }, select: { id: true } });
+  if (!group) throw new NotFoundError("Community not found");
+  await requireActiveSpaceMember(group.id, actorId);
+  const project = await prisma.communitySpaceProject.create({
+    data: {
+      spaceId: group.id, creatorId: actorId, title: req.body.title, description: req.body.description,
+      skillsNeeded: req.body.skillsNeeded,
+      members: { create: { userId: actorId, role: "FOUNDER" } },
+    },
+    include: { creator: { select: { id: true, fullName: true, avatarUrl: true } }, members: true },
+  });
+  res.status(201).json({ data: { ...project, memberCount: project.members.length, joined: true } });
+});
+
+export const joinSpaceProject = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const project = await prisma.communitySpaceProject.findUnique({
+    where: { id: req.params.projectId }, select: { id: true, spaceId: true, status: true, space: { select: { slug: true } } },
+  });
+  if (!project || project.space.slug !== req.params.slug || project.status === "ARCHIVED") throw new NotFoundError("Project not found");
+  await requireActiveSpaceMember(project.spaceId, actorId);
+  if (project.status !== "OPEN") throw new BadRequestError("This project is not accepting collaborators");
+  await prisma.communitySpaceProjectMember.upsert({
+    where: { projectId_userId: { projectId: project.id, userId: actorId } },
+    create: { projectId: project.id, userId: actorId, role: req.body.role },
+    update: { role: req.body.role },
+  });
+  res.json({ data: { joined: true } });
+});
+
+export const updateSpaceProject = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const project = await prisma.communitySpaceProject.findUnique({
+    where: { id: req.params.projectId }, select: { id: true, creatorId: true, spaceId: true, space: { select: { slug: true } } },
+  });
+  if (!project || project.space.slug !== req.params.slug) throw new NotFoundError("Project not found");
+  const membership = await requireActiveSpaceMember(project.spaceId, actorId);
+  if (project.creatorId !== actorId && !["OWNER", "ADMIN", "MODERATOR"].includes(membership.role)) throw new NotFoundError("Project not found");
+  const updated = await prisma.communitySpaceProject.update({
+    where: { id: project.id },
+    data: {
+      ...(req.body.title !== undefined ? { title: req.body.title } : {}),
+      ...(req.body.description !== undefined ? { description: req.body.description } : {}),
+      ...(req.body.skillsNeeded !== undefined ? { skillsNeeded: req.body.skillsNeeded } : {}),
+      ...(req.body.status !== undefined ? { status: req.body.status } : {}),
+    },
+  });
+  res.json({ data: updated });
+});
+
+export const leaveSpaceProject = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = userId(req);
+  const project = await prisma.communitySpaceProject.findUnique({
+    where: { id: req.params.projectId }, select: { id: true, creatorId: true, spaceId: true, space: { select: { slug: true } } },
+  });
+  if (!project || project.space.slug !== req.params.slug) throw new NotFoundError("Project not found");
+  await requireSpaceMembership(project.spaceId, actorId);
+  if (project.creatorId === actorId) throw new BadRequestError("Project founders cannot leave their project");
+  await prisma.communitySpaceProjectMember.deleteMany({ where: { projectId: project.id, userId: actorId } });
+  res.json({ data: { joined: false } });
+});
+
 export const joinSpace = asyncHandler(async (req: Request, res: Response) => {
   const viewerId = userId(req);
   const group = await prisma.communitySpace.findUnique({
     where: { slug: req.params.slug },
-    select: { id: true, visibility: true },
+    select: { id: true, visibility: true, joinQuestions: true },
   });
   if (!group || group.visibility === "HIDDEN") throw new NotFoundError("Community not found");
   const currentMembership = await prisma.communitySpaceMember.findUnique({
@@ -662,11 +1226,17 @@ export const joinSpace = asyncHandler(async (req: Request, res: Response) => {
   if (currentMembership?.status === "BANNED" || currentMembership?.status === "SUSPENDED") {
     throw new BadRequestError("You cannot join this group");
   }
+  const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  if (group.visibility === "PRIVATE" && group.joinQuestions.length && (
+    answers.length !== group.joinQuestions.length || answers.some((answer: unknown) => typeof answer !== "string" || !answer.trim())
+  )) {
+    throw new BadRequestError("Please answer all group membership questions");
+  }
   const status = group.visibility === "PRIVATE" ? "PENDING" : "ACTIVE";
   await prisma.communitySpaceMember.upsert({
     where: { spaceId_userId: { spaceId: group.id, userId: viewerId } },
-    create: { spaceId: group.id, userId: viewerId, status },
-    update: { status },
+    create: { spaceId: group.id, userId: viewerId, status, joinAnswers: answers.length ? answers : undefined },
+    update: { status, joinAnswers: answers.length ? answers : undefined },
   });
   res.status(status === "PENDING" ? 202 : 200).json({ data: { status } });
 });
@@ -682,23 +1252,42 @@ export const spaceMembers = asyncHandler(async (req: Request, res: Response) => 
     where: { spaceId_userId: { spaceId: space.id, userId: viewerId } },
     select: { status: true, role: true },
   });
-  if (space.visibility !== "PUBLIC" && ownMembership?.status !== "ACTIVE") {
+  if (space.visibility !== "PUBLIC" && ownMembership?.status !== "ACTIVE" && ownMembership?.status !== "MUTED") {
     throw new NotFoundError("Community not found");
   }
   const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 100) : "";
-  const includePending = req.query.status === "PENDING";
-  if (includePending && !["OWNER", "ADMIN", "MODERATOR"].includes(ownMembership?.role ?? "")) {
+  const memberType = req.query.type;
+  const memberStatuses = ["ACTIVE", "PENDING", "MUTED", "SUSPENDED", "BANNED"] as const;
+  const memberStatus = memberStatuses.find((status) => status === req.query.status) ?? "ACTIVE";
+  const userFilters: Prisma.UserWhereInput[] = [];
+  if (query) userFilters.push({ OR: [
+    { fullName: { contains: query, mode: "insensitive" } },
+    { countryCode: { contains: query, mode: "insensitive" } },
+    { profile: { is: { headline: { contains: query, mode: "insensitive" } } } },
+    { profile: { is: { username: { contains: query, mode: "insensitive" } } } },
+    { profile: { is: { interests: { has: query } } } },
+    { profile: { is: { industries: { has: query } } } },
+    { professionalProfile: { is: { profession: { contains: query, mode: "insensitive" } } } },
+    { professionalProfile: { is: { skills: { has: query } } } },
+    { businessProfile: { is: { industry: { contains: query, mode: "insensitive" } } } },
+  ] });
+  if (memberType === "DEVELOPERS") userFilters.push({ OR: [
+    { professionalProfile: { is: { profession: { contains: "developer", mode: "insensitive" } } } },
+    { profile: { is: { professionalIdentities: { has: "Developer" } } } },
+  ] });
+  if (memberType === "FOUNDERS") userFilters.push({ businessProfile: { isNot: null } });
+  if (memberType === "STUDENTS") userFilters.push({ profile: { is: { userType: "STUDENT" } } });
+  if (memberType === "RESEARCHERS") userFilters.push({ profile: { is: { userType: "RESEARCHER" } } });
+  if (memberType === "ORGANIZATIONS") userFilters.push({ organizationMembers: { some: {} } });
+  if (memberStatus !== "ACTIVE" && !["OWNER", "ADMIN", "MODERATOR"].includes(ownMembership?.role ?? "")) {
     throw new NotFoundError("Community not found");
   }
   const members = await prisma.communitySpaceMember.findMany({
     where: {
       spaceId: space.id,
-      status: includePending ? "PENDING" : "ACTIVE",
-      ...(query ? { user: { OR: [
-        { fullName: { contains: query, mode: "insensitive" } },
-        { profile: { is: { headline: { contains: query, mode: "insensitive" } } } },
-        { professionalProfile: { is: { profession: { contains: query, mode: "insensitive" } } } },
-      ] } } : {}),
+      status: memberStatus,
+      ...(memberType === "CONTRIBUTORS" ? { role: "CONTRIBUTOR" as const } : {}),
+      ...(userFilters.length ? { user: { is: { AND: userFilters } } } : {}),
     },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     take: 100,
@@ -706,13 +1295,13 @@ export const spaceMembers = asyncHandler(async (req: Request, res: Response) => 
       user: {
         select: {
           id: true, fullName: true, avatarUrl: true, countryCode: true,
-          profile: { select: { username: true, headline: true } },
+          profile: { select: { username: true, headline: true, interests: true, industries: true } },
           professionalProfile: { select: { profession: true, skills: true } },
         },
       },
     },
   });
-  res.json({ data: members.map(({ user, role, status }) => ({ ...user, role, status })) });
+  res.json({ data: members.map(({ user, role, status, joinAnswers }) => ({ ...user, role, status, ...(status === "PENDING" ? { joinAnswers } : {}) })) });
 });
 
 export const moderateSpaceMember = asyncHandler(async (req: Request, res: Response) => {
@@ -749,13 +1338,29 @@ export const moderateSpaceMember = asyncHandler(async (req: Request, res: Respon
     await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "ACTIVE" } });
   } else if (action === "REJECT" && target.status === "PENDING") {
     await prisma.communitySpaceMember.delete({ where: { id: target.id } });
-  } else if (action === "SUSPEND" && target.status === "ACTIVE" && actor.role !== "MODERATOR") {
+  } else if (action === "MUTE" && target.status === "ACTIVE") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "MUTED" } });
+  } else if (action === "UNMUTE" && target.status === "MUTED") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "ACTIVE" } });
+  } else if (action === "SUSPEND" && ["ACTIVE", "MUTED"].includes(target.status) && actor.role !== "MODERATOR") {
     await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "SUSPENDED" } });
-  } else if (action === "BAN" && actor.role !== "MODERATOR") {
+  } else if (action === "UNSUSPEND" && target.status === "SUSPENDED" && actor.role !== "MODERATOR") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "ACTIVE" } });
+  } else if (action === "BAN" && target.status !== "BANNED" && actor.role !== "MODERATOR") {
     await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "BANNED" } });
+  } else if (action === "UNBAN" && target.status === "BANNED" && actor.role !== "MODERATOR") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { status: "ACTIVE" } });
   } else if (action === "PROMOTE_MODERATOR" && actor.role !== "MODERATOR" && target.role === "MEMBER") {
     await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "MODERATOR" } });
   } else if (action === "DEMOTE_MODERATOR" && actor.role !== "MODERATOR" && target.role === "MODERATOR") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "MEMBER" } });
+  } else if (action === "PROMOTE_ADMIN" && actor.role === "OWNER" && ["MEMBER", "CONTRIBUTOR", "MODERATOR"].includes(target.role)) {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "ADMIN" } });
+  } else if (action === "DEMOTE_ADMIN" && actor.role === "OWNER" && target.role === "ADMIN") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "MEMBER" } });
+  } else if (action === "PROMOTE_CONTRIBUTOR" && actor.role !== "MODERATOR" && target.role === "MEMBER") {
+    await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "CONTRIBUTOR" } });
+  } else if (action === "DEMOTE_CONTRIBUTOR" && actor.role !== "MODERATOR" && target.role === "CONTRIBUTOR") {
     await prisma.communitySpaceMember.update({ where: { id: target.id }, data: { role: "MEMBER" } });
   } else {
     throw new BadRequestError("That member action is not allowed for their current status");
@@ -1032,12 +1637,12 @@ export const profile = asyncHandler(async (req: Request, res: Response) => {
     }
   }
   const [posts, followers, following, completed, recentPosts] = await Promise.all([
-    prisma.communityPost.count({ where: { authorId: targetId } }),
+    prisma.communityPost.count({ where: { authorId: targetId, removedAt: null } }),
     prisma.communityFollow.count({ where: { targetType: "USER", targetKey: targetId } }),
     prisma.communityFollow.count({ where: { userId: targetId, targetType: "USER" } }),
     prisma.opportunityInteraction.count({ where: { userId: targetId, kind: "COMPLETED" } }),
     prisma.communityPost.findMany({
-      where: { authorId: targetId },
+      where: { authorId: targetId, removedAt: null },
       orderBy: { createdAt: "desc" },
       take: 3,
       select: {

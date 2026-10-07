@@ -11,7 +11,7 @@ import { SeoHead } from "../../components/common/SeoHead";
 import { CommunitySubnav } from "../../components/community/CommunitySubnav";
 import { communityService, type CommunitySpace } from "../../services/community.service";
 
-const categories = ["All groups", "Technology", "Web3", "AI", "Business", "Education", "Jobs", "Grants", "Hackathons", "Countries", "Universities", "Industries"];
+const categories = ["All groups", "Trending", "Recommended", "Technology", "Web3", "AI", "Business", "Education", "Jobs", "Grants", "Hackathons", "Countries", "Universities", "Industries", "Organizations", "Projects", "Research"];
 const purposes = [
   ["LEARNING", "Learning"], ["NETWORKING", "Networking"], ["COLLABORATION", "Collaboration"],
   ["OPPORTUNITIES", "Opportunities"], ["JOBS", "Jobs"], ["HACKATHONS", "Hackathons"],
@@ -38,12 +38,13 @@ type CreateForm = {
   profileImageUrl: string;
   coverImageUrl: string;
   topicsText: string;
+  questionsText: string;
 };
 
 const initialForm: CreateForm = {
   name: "", slug: "", description: "", category: "Technology", purpose: "LEARNING",
   visibility: "PUBLIC", countryCode: "", language: "English", profileImageUrl: "",
-  coverImageUrl: "", topicsText: "",
+  coverImageUrl: "", topicsText: "", questionsText: "",
 };
 
 const slugify = (text: string) => text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -77,7 +78,9 @@ function GroupCard({ group, onJoin, joining }: { group: CommunitySpace; onJoin: 
           <Link to={`/community/groups/${encodeURIComponent(group.slug)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700">
             Open group <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-          {group.membershipStatus === "ACTIVE" ? <Badge tone="success">Joined</Badge> : group.membershipStatus === "PENDING" ? <Badge tone="neutral">Request pending</Badge> : (
+          {group.membershipStatus === "ACTIVE" || group.membershipStatus === "MUTED" ? <Badge tone="success">{group.membershipStatus === "MUTED" ? "Muted" : "Joined"}</Badge> : group.membershipStatus === "PENDING" ? <Badge tone="neutral">Request pending</Badge> : group.visibility === "PRIVATE" && group.joinQuestions?.length ? (
+            <Link to={`/community/groups/${encodeURIComponent(group.slug)}`} className="rounded-lg bg-primary-600 px-3 py-2 text-[11px] font-semibold text-white">Request to join</Link>
+          ) : (
             <Button size="sm" onClick={() => onJoin(group.slug)} loading={joining}>
               {group.visibility === "PRIVATE" ? "Request to join" : "Join"}
             </Button>
@@ -98,6 +101,7 @@ export function CommunityGroups() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [step, setStep] = useState(0);
   const groups = useQuery({ queryKey: ["community-spaces"], queryFn: communityService.spaces });
+  const recommended = useQuery({ queryKey: ["community-groups-recommended"], queryFn: communityService.recommendedSpaces });
   const create = useMutation({
     mutationFn: () => communityService.createSpace({
       name: form.name.trim(),
@@ -111,9 +115,13 @@ export function CommunityGroups() {
       profileImageUrl: form.profileImageUrl.trim() || undefined,
       coverImageUrl: form.coverImageUrl.trim() || undefined,
       topics: [...new Set(form.topicsText.split(",").map((topic) => topic.trim()).filter(Boolean))],
+      joinQuestions: form.questionsText.split("\n").map((question) => question.trim()).filter(Boolean).slice(0, 5),
     }),
     onSuccess: async (group) => {
-      await client.invalidateQueries({ queryKey: ["community-spaces"] });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["community-spaces"] }),
+        client.invalidateQueries({ queryKey: ["community-groups-recommended"] }),
+      ]);
       setCreateOpen(false);
       setForm(initialForm);
       setStep(0);
@@ -121,15 +129,30 @@ export function CommunityGroups() {
     },
   });
   const join = useMutation({
-    mutationFn: communityService.joinSpace,
-    onSuccess: () => client.invalidateQueries({ queryKey: ["community-spaces"] }),
+    mutationFn: (slug: string) => communityService.joinSpace(slug),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["community-spaces"] }),
+        client.invalidateQueries({ queryKey: ["community-groups-recommended"] }),
+      ]);
+    },
   });
-  const visibleGroups = useMemo(() => (groups.data ?? []).filter((group) => {
-    const matchesCategory = category === "All groups" || group.category.toLowerCase().includes(category.toLowerCase()) ||
-      group.purpose.toLowerCase().includes(category.toLowerCase()) || group.topics.some((topic) => topic.toLowerCase().includes(category.toLowerCase()));
-    const text = `${group.name} ${group.description ?? ""} ${group.category} ${group.topics.join(" ")}`.toLowerCase();
-    return matchesCategory && text.includes(search.trim().toLowerCase());
-  }), [groups.data, category, search]);
+  const visibleGroups = useMemo(() => {
+    const recommendedIds = new Set((recommended.data ?? []).map((group) => group.id));
+    const filtered = (groups.data ?? []).filter((group) => {
+      const matchesCategory = category === "All groups"
+        || (category === "Trending" && group.postCount > 0)
+        || (category === "Recommended" && recommendedIds.has(group.id))
+        || (category !== "Trending" && category !== "Recommended" && (
+          group.category.toLowerCase().includes(category.toLowerCase())
+          || group.purpose.toLowerCase().includes(category.toLowerCase())
+          || group.topics.some((topic) => topic.toLowerCase().includes(category.toLowerCase()))
+        ));
+      const text = `${group.name} ${group.description ?? ""} ${group.category} ${group.topics.join(" ")}`.toLowerCase();
+      return matchesCategory && text.includes(search.trim().toLowerCase());
+    });
+    return category === "Trending" ? filtered.sort((a, b) => b.postCount - a.postCount || b.memberCount - a.memberCount) : filtered;
+  }, [groups.data, recommended.data, category, search]);
 
   const updateForm = <K extends keyof CreateForm>(key: K, value: CreateForm[K]) => {
     setForm((current) => ({
@@ -159,6 +182,21 @@ export function CommunityGroups() {
         </div>
         <Button onClick={() => setCreateOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>Create group</Button>
       </section>
+      {recommended.isLoading ? <Loader label="Finding groups for you" /> : null}
+      {recommended.isError ? <Card><CardBody className="text-xs text-red-500">Personalized group recommendations could not be loaded.</CardBody></Card> : null}
+      {recommended.data?.length ? (
+        <section className="mb-6">
+          <div className="scout-group-discovery-heading"><div><h2>Recommended for you</h2><p>Matches are based on profile interests and region.</p></div><Sparkles className="h-5 w-5 text-primary-700" /></div>
+          <div className="scout-groups-grid">
+            {recommended.data.slice(0, 3).map((group) => (
+              <div key={group.id}>
+                <div className="mb-2 flex items-center justify-between text-xs"><strong className="text-primary-700">{group.relevance}% match</strong><span className="text-neutral-500">{group.reasons.join(" · ")}</span></div>
+                <GroupCard group={group} onJoin={(slug) => join.mutate(slug)} joining={join.isPending} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="scout-group-discovery">
         <div className="scout-group-discovery-heading">
           <div>
@@ -261,6 +299,12 @@ export function CommunityGroups() {
                 <input value={form.topicsText} onChange={(event) => updateForm("topicsText", event.target.value)} placeholder="Solana, Rust, Web3, Hackathons" />
                 <small>Separate topics with commas. Add up to 12.</small>
               </label>
+              {form.visibility === "PRIVATE" ? (
+                <label className="scout-group-field">Optional join questions
+                  <textarea rows={3} maxLength={1200} value={form.questionsText} onChange={(event) => updateForm("questionsText", event.target.value)} placeholder={"Why would you like to join?\nWhat are you currently building?"} />
+                  <small>One question per line, up to five. Applicants answer these before moderators review requests.</small>
+                </label>
+              ) : null}
               <div className="scout-group-purpose-note"><Sparkles aria-hidden /><span>Purpose and topics help Scout connect your group with relevant people and opportunities.</span></div>
             </div>
           ) : null}
