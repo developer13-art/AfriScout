@@ -117,6 +117,289 @@
   margin-inline: auto;
 }
 
+.scout-social-shell .scout-community-hero {
+  position: relative;
+  display: flex;
+  min-height: 156px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid #164253;
+  border-radius: 0.9rem;
+  padding: 1.5rem 1.75rem;
+  background:
+    radial-gradient(ellipse at 76% 45%, rgb(0 194 160 / 17%), transparent 34%),
+    linear-gradient(105deg, #0b2132 0%, #0b2935 58%, #06342f 100%);
+}
+
+.scout-social-shell .scout-community-hero::before {
+  position: absolute;
+  inset: 0 0 0 44%;
+  content: "";
+  opacity: 0.55;
+  background-image:
+    radial-gradient(circle at 22% 35%, #18d7bb 0 2px, transparent 3px),
+    radial-gradient(circle at 58% 24%, #18d7bb 0 2px, transparent 3px),
+    radial-gradient(circle at 77% 54%, #18d7bb 0 2px, transparent 3px),
+    radial-gradient(circle at 38% 76%, #18d7bb 0 2px, transparent 3px),
+    linear-gradient(28deg, transparent 48.8%, rgb(21 212 181 / 17%) 49%, transparent 49.3%),
+    linear-gradient(145deg, transparent 49%, rgb(21 212 181 / 14%) 49.2%, transparent 49.5%);
+  pointer-events: none;
+}
+
+.scout-social-shell .scout-community-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 34rem;
+}
+
+.scout-social-shell .scout-community-eyebrow {
+  color: #4be2c7;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.scout-social-shell .scout-community-hero h1 {
+  margin-top: 0.25rem;
+  color: #f1f7fb;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.scout-social-shell .scout-community-hero p {
+  margin-top: 0.4rem;
+  max-width: 29rem;
+  color: #a4bdc9;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.scout-social-shell .scout-community-hero-art {
+  position: absolute;
+  right: 4.5rem;
+  bottom: -1rem;
+  display: flex;
+  height: 8.25rem;
+  align-items: flex-end;
+  gap: 0.55rem;
+  opacity: 0.55;
+}
+
+.scout-social-shell .scout-community-hero-art span {
+  position: relative;
+  width: 1.8rem;
+  height: 3.2rem;
+  border-radius: 1rem 1rem 0.2rem 0.2rem;
+  background: linear-gradient(180deg, #087b70, #082b39);
+}
+
+.scout-social-shell .scout-community-hero-art span::before {
+  position: absolute;
+  top: -1.35rem;
+  left: 0.25rem;
+  width: 1.3rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: #0b655e;
+  content: "";
+}
+
+.scout-social-shell .scout-community-hero-art span:nth-child(2),
+.scout-social-shell .scout-community-hero-art span:nth-child(4) {
+  height: 4.2rem;
+}
+
+.scout-social-shell .scout-community-hero-art span:nth-child(2)::before,
+.scout-social-shell .scout-community-hero-art span:nth-child(4)::before {
+  top: -1.5rem;
+  width: 1.45rem;
+  height: 1.55rem;
+}
+
+.scout-social-shell .scout-community-hero > button {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+}
+
+.scout-social-shell .scout-community-subnav {
+  gap: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+.scout-social-shell .scout-community-subnav-link {
+  padding: 0.65rem 0.15rem;
+  font-size: 0.75rem;
+}
+
+.scout-social-shell .scout-community-actions {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  margin-bottom: 0.85rem;
+}
+
+.scout-social-shell .scout-community-actions button {
+  display: inline-flex;
+  min-height: 2.15rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--scout-border);
+  border-radius: 0.55rem;
+  padding: 0.4rem 0.7rem;
+  color: #b8cbd5;
+  background: #0b1d2c;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.scout-social-shell .scout-community-actions button:first-child {
+  border-color: #127a6f;
+  color: #031a1c;
+  background: #15c8ac;
+}
+
+.scout-social-shell .scout-community-actions button:hover {
+  border-color: #178d7e;
+  color: #effcfb;
+}
+
+.scout-social-shell .scout-community-actions button:first-child:hover {
+  color: #031a1c;
+  background: #39ddc1;
+}
+
+.scout-social-shell .scout-community-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  align-items: start;
+  gap: 1rem;
+}
+
+.scout-social-shell .scout-community-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.scout-social-shell .scout-community-composer {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid var(--scout-border);
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--scout-muted);
+  background: var(--scout-panel);
+  text-align: left;
+  font-size: 0.72rem;
+}
+
+.scout-social-shell .scout-community-composer > span:nth-child(2) {
+  flex: 1;
+}
+
+.scout-social-shell .scout-community-composer-submit {
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  color: #03201d;
+  background: var(--scout-teal);
+  font-weight: 700;
+}
+
+.scout-social-shell .scout-community-main > .scout-community-feed-tabs {
+  border: 1px solid var(--scout-border);
+  border-radius: 0.7rem 0.7rem 0 0;
+  padding: 0 0.5rem;
+  background: var(--scout-panel);
+}
+
+.scout-social-shell .scout-community-main > .scout-community-composer {
+  order: 0;
+}
+
+.scout-social-shell .scout-community-main > .scout-community-feed-tabs {
+  order: -1;
+}
+
+.scout-social-shell .scout-community-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.scout-social-shell .scout-community-stat-grid > div {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  border-right: 1px solid var(--scout-border);
+  padding: 0.1rem 0.25rem;
+}
+
+.scout-social-shell .scout-community-stat-grid > div:last-child {
+  border-right: 0;
+}
+
+.scout-social-shell .scout-community-stat-grid svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--scout-teal);
+}
+
+.scout-social-shell .scout-community-stat-grid strong {
+  color: var(--scout-text);
+  font-size: 0.78rem;
+}
+
+.scout-social-shell .scout-community-stat-grid span {
+  color: var(--scout-muted);
+  font-size: 0.56rem;
+  text-align: center;
+}
+
+.scout-social-shell .scout-community-group-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.scout-social-shell .scout-community-group-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #1c5961;
+  border-radius: 0.55rem;
+  color: #50dfca;
+  background: #10323a;
+}
+
+.scout-social-shell .scout-community-group-row > button {
+  border: 1px solid #16796c;
+  border-radius: 0.45rem;
+  padding: 0.25rem 0.55rem;
+  color: #35ddc0;
+  background: #0a302d;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.scout-social-shell .scout-community-group-row > button:disabled {
+  opacity: 0.6;
+}
+
+.scout-social-shell .scout-community-rail > * {
+  border-radius: 0.7rem;
+}
+
 .scout-social-shell .scout-global-search {
   display: flex;
   align-items: center;
@@ -378,5 +661,38 @@
   .scout-social-shell main {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  .scout-social-shell .scout-community-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scout-social-shell .scout-community-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (max-width: 639px) {
+  .scout-social-shell .scout-community-hero {
+    min-height: 170px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.2rem;
+  }
+
+  .scout-social-shell .scout-community-hero-art {
+    right: 1rem;
+    opacity: 0.3;
+  }
+
+  .scout-social-shell .scout-community-hero > button {
+    min-height: 2.1rem;
+  }
+
+  .scout-social-shell .scout-community-rail {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

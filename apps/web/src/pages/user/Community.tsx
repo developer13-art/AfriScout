@@ -13,9 +13,13 @@ import {
   Share2,
   MoreHorizontal,
   UsersRound,
+  Plus,
+  CircleHelp,
+  Megaphone,
+  ArrowRight,
+  Users2,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { PageHeader } from "../../components/layout/PageHeader";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Avatar } from "../../components/ui/Avatar";
@@ -313,6 +317,11 @@ export function Community() {
     queryFn: communityService.connections,
     staleTime: 60_000,
   });
+  const groups = useQuery({
+    queryKey: ["community-spaces"],
+    queryFn: communityService.spaces,
+    staleTime: 60_000,
+  });
   const create = useMutation({
     mutationFn: () => communityService.createPost(content, kind, selectedOpportunity?.id),
     onSuccess: () => {
@@ -331,6 +340,10 @@ export function Community() {
       queryClient.invalidateQueries({ queryKey: ["community-feed"] });
     },
   });
+  const followGroup = useMutation({
+    mutationFn: communityService.followSpace,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-spaces"] }),
+  });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["community-feed"] });
     void queryClient.invalidateQueries({ queryKey: ["community-connections"] });
@@ -343,22 +356,40 @@ export function Community() {
   return (
     <>
       <SeoHead title="Community" />
-      <PageHeader
-        title="Community"
-        description="Share opportunity intelligence, learn from peers, and find people to build with."
-        actions={
-          <div className="flex items-center gap-2">
-            <Link to="/community/members" className="hidden text-sm font-semibold text-primary-700 hover:underline sm:inline-flex sm:items-center sm:gap-1">
-              <UsersRound className="h-4 w-4" /> Members
-            </Link>
-            <Button onClick={() => setComposeOpen(true)} leftIcon={<Send className="h-4 w-4" />}>Create post</Button>
-          </div>
-        }
-      />
       <div className="scout-community-page">
-      <CommunitySubnav />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="min-w-0 space-y-4">
+        <section className="scout-community-hero">
+          <div className="scout-community-hero-copy">
+            <span className="scout-community-eyebrow">SCOUT NETWORK</span>
+            <h1>Community</h1>
+            <p>Connect with like-minded people, share ideas, find collaborators, and grow together.</p>
+          </div>
+          <div className="scout-community-hero-art" aria-hidden="true">
+            <span /><span /><span /><span /><span />
+          </div>
+          <Button onClick={() => setComposeOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>Create post</Button>
+        </section>
+        <CommunitySubnav />
+        <div className="scout-community-actions">
+          <button type="button" onClick={() => { setKind("GENERAL"); setComposeOpen(true); }}>
+            <Plus aria-hidden className="h-4 w-4" /> Post
+          </button>
+          <button type="button" onClick={() => { setKind("OPPORTUNITY_DISCUSSION"); setComposeOpen(true); }}>
+            <Sparkles aria-hidden className="h-4 w-4" /> Share opportunity
+          </button>
+          <button type="button" onClick={() => { setKind("QUESTION"); setComposeOpen(true); }}>
+            <CircleHelp aria-hidden className="h-4 w-4" /> Ask question
+          </button>
+          <button type="button" onClick={() => { setKind("INDUSTRY_DISCUSSION"); setComposeOpen(true); }}>
+            <Megaphone aria-hidden className="h-4 w-4" /> Start discussion
+          </button>
+        </div>
+        <div className="scout-community-layout">
+        <div className="scout-community-main min-w-0 space-y-4">
+          <button type="button" className="scout-community-composer" onClick={() => setComposeOpen(true)}>
+            <Avatar name={user?.fullName ?? ""} src={user?.avatarUrl ?? null} size="sm" />
+            <span>What’s on your mind?</span>
+            <span className="scout-community-composer-submit">Post</span>
+          </button>
           <div className="scout-community-feed-tabs">
             {tabs.map(([value, label]) => (
               <button
@@ -395,16 +426,18 @@ export function Community() {
           {feed.data?.map((post) => <PostCard key={post.id} post={post} onRefresh={refresh} />)}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="scout-community-rail space-y-4">
           <Card>
             <CardBody className="p-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-neutral-900">Community stats</h2>
                 <Users className="h-4 w-4 text-primary-700" />
               </div>
-              <p className="mt-3 text-2xl font-bold text-neutral-900">{connections.data?.length ?? "—"}</p>
-              <p className="text-xs text-neutral-500">people to connect with</p>
-              <Link to="/community/members" className="mt-3 inline-block text-xs font-semibold text-primary-700 hover:underline">Explore members →</Link>
+              <div className="scout-community-stat-grid">
+                <div><Users2 aria-hidden /><strong>{connections.data?.length ?? "—"}</strong><span>To connect</span></div>
+                <div><MessageCircle aria-hidden /><strong>{feed.data?.length ?? "—"}</strong><span>Feed posts</span></div>
+                <div><UsersRound aria-hidden /><strong>{groups.data?.length ?? "—"}</strong><span>Groups</span></div>
+              </div>
             </CardBody>
           </Card>
           <Card>
@@ -448,6 +481,33 @@ export function Community() {
             </CardBody>
           </Card>
           <Card>
+            <CardBody className="p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-neutral-900">Suggested groups</h2>
+                <Link to="/community/groups" aria-label="View all groups" className="text-primary-700 hover:text-primary-500"><ArrowRight className="h-4 w-4" /></Link>
+              </div>
+              <div className="mt-4 space-y-3">
+                {(groups.data ?? []).slice(0, 3).map((group) => (
+                  <div key={group.id} className="scout-community-group-row">
+                    <span className="scout-community-group-icon"><UsersRound aria-hidden className="h-4 w-4" /></span>
+                    <div className="min-w-0 flex-1">
+                      <Link to={`/community?group=${encodeURIComponent(group.slug)}`} className="block truncate text-xs font-semibold text-neutral-900">{group.name}</Link>
+                      <p className="text-[11px] text-neutral-500">{group.memberCount} members</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={followGroup.isPending}
+                      onClick={() => followGroup.mutate(group.slug)}
+                    >{group.following ? "Joined" : "Join"}</button>
+                  </div>
+                ))}
+                {!groups.isLoading && !groups.isError && groups.data?.length === 0 ? <p className="text-xs text-neutral-500">New groups will appear here.</p> : null}
+                {groups.isError ? <p className="text-xs text-red-500">Groups could not be loaded.</p> : null}
+                {followGroup.isError ? <p role="alert" className="text-xs text-red-500">Could not update group membership.</p> : null}
+              </div>
+            </CardBody>
+          </Card>
+          <Card>
             <CardBody className="p-4 text-xs leading-5 text-neutral-500">
               <div className="flex gap-2"><Flag className="mt-0.5 h-4 w-4 shrink-0" />
                 Community reports are saved for review. Official opportunity details remain separate from community posts.
@@ -456,6 +516,7 @@ export function Community() {
           </Card>
         </aside>
       </div>
+        </div>
       </div>
       <Dialog
         open={composeOpen}

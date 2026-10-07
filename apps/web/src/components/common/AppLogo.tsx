@@ -9,9 +9,9 @@ export interface AppLogoProps {
 }
 
 const sizes = {
-  sm: "h-6 w-6 text-sm",
-  md: "h-8 w-8 text-base",
-  lg: "h-10 w-10 text-lg",
+  sm: "h-7 w-7",
+  md: "h-9 w-9",
+  lg: "h-11 w-11",
 };
 
 export function AppLogo({
@@ -22,22 +22,13 @@ export function AppLogo({
 }: AppLogoProps) {
   const content = (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <span
-        className={cn(
-          "flex items-center justify-center rounded-lg bg-gradient-to-br from-primary-600 to-secondary-500 font-bold text-white",
-          sizes[size],
-        )}
-        aria-hidden
-      >
-        S
-      </span>
+      <img
+        src="/logo.png"
+        alt={withText ? "" : "Scout"}
+        className={cn("shrink-0 rounded-lg object-cover", sizes[size])}
+      />
       {withText ? (
-        <span className="flex flex-col text-sm font-semibold leading-tight text-neutral-900">
-          <span>Scout</span>
-          <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-neutral-500">
-            Opportunity network
-          </span>
-        </span>
+        <span className="text-sm font-semibold leading-tight text-neutral-900">Scout</span>
       ) : null}
     </span>
   );
