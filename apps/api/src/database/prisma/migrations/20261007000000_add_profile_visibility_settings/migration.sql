@@ -1,4 +1,9 @@
-CREATE TYPE "ProfileVisibility" AS ENUM ('PUBLIC', 'FOLLOWERS', 'PRIVATE');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProfileVisibility') THEN
+    CREATE TYPE "ProfileVisibility" AS ENUM ('PUBLIC', 'FOLLOWERS', 'PRIVATE');
+  END IF;
+END $$;
 
 ALTER TABLE "user_profiles"
   ADD COLUMN "visibility" "ProfileVisibility" NOT NULL DEFAULT 'PRIVATE',
