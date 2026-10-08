@@ -77,6 +77,8 @@ model Source {
   url                 String
   adapter             String
   active              Boolean  @default(false)
+  trusted             Boolean  @default(false)
+  officialSource      Boolean  @default(false) @map("official_source")
   crawlFrequency      CrawlFrequency @default(DAILY) @map("crawl_frequency")
   attributionRequired Boolean  @default(true) @map("attribution_required")
   termsUrl            String?  @map("terms_url")
@@ -147,11 +149,32 @@ model SourceRun {
   createdByUser   User?      @relation("SourceRunCreatedBy", fields: [createdBy], references: [id])
   rawOpportunities RawOpportunity[]
   versions        OpportunityVersion[]
+  verificationBatch VerificationBatch?
 
   @@index([sourceId, createdAt(sort: Desc)])
   @@index([status])
   @@index([apifyRunId])
   @@map("source_runs")
+}
+
+model VerificationBatch {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  sourceRunId         String                  @unique @map("source_run_id") @db.Uuid
+  sourceId            String                  @map("source_id") @db.Uuid
+  rootHash            String                  @map("root_hash")
+  recordCount         Int                     @map("record_count")
+  status              VerificationBatchStatus @default(PENDING)
+  solanaSignature     String?                 @unique @map("solana_signature")
+  errorMessage        String?                 @map("error_message")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  verifiedAt          DateTime?              @map("verified_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+
+  sourceRun              SourceRun               @relation(fields: [sourceRunId], references: [id], onDelete: Cascade)
+  opportunityVerifications OpportunityVerification[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("verification_batches")
 }
 
 model SourceSuggestion {

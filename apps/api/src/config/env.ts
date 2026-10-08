@@ -124,6 +124,9 @@ const EnvSchema = z.object({
   SENTRY_DSN: z.string().default(""),
   SENTRY_ENVIRONMENT: z.string().default("development"),
 
+  SOLANA_BATCH_SIGNER_PRIVATE_KEY: z.string().default(""),
+  SOLANA_BATCH_VERIFY_COMMITMENT: z.enum(["confirmed", "finalized"]).default("confirmed"),
+
   FEATURE_ASK_AFRISCOUT: booleanFromEnv.default(true),
   FEATURE_OPPORTUNITY_MAP: booleanFromEnv.default(true),
   FEATURE_API_PORTAL: booleanFromEnv.default(true),

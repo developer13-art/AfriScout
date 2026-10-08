@@ -10,3 +10,4 @@ export * from "./expireOpportunities.job";
 export * from "./recomputeMatches.job";
 export * from "./refreshSourceHealth.job";
 export * from "./deliverWebhook.job";
+export * from "./verifySourceRun.job";

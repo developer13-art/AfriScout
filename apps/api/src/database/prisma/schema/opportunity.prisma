@@ -27,6 +27,20 @@ enum VerificationStatus {
   DISPUTED
 }
 
+enum VerificationBatchStatus {
+  PENDING
+  ROOT_READY
+  ANCHORED
+  FAILED
+}
+
+enum OpportunityVerificationStatus {
+  PENDING
+  VERIFIED
+  PARTIAL
+  DISPUTED
+}
+
 enum RequirementKind {
   DOCUMENT
   EXPERIENCE
@@ -107,6 +121,8 @@ model Opportunity {
   documents           OpportunityDocument[]
   requirementsList    OpportunityRequirement[]
   versions            OpportunityVersion[]
+  provenanceProofs    OpportunityProvenanceProof[]
+  verifications       OpportunityVerification[]
   changes             OpportunityChange[]
   aiAnalyses          AiAnalysis[]
   matches             Match[]
@@ -205,7 +221,28 @@ model OpportunityVersion {
   @@index([opportunityId])
   @@map("opportunity_versions")
 }
+model OpportunityVerification {
+  id                String                      @id @default(uuid()) @db.Uuid
+  opportunityId    String                      @map("opportunity_id") @db.Uuid
+  batchId          String                      @map("batch_id") @db.Uuid
+  hash             String
+  status           OpportunityVerificationStatus @default(PENDING)
+  sourceConfidence Decimal?                    @map("source_confidence") @db.Decimal(5, 3)
+  aiConfidence     Decimal?                    @map("ai_confidence") @db.Decimal(5, 3)
+  dataCompleteness Decimal?                   @map("data_completeness") @db.Decimal(5, 3)
+  merkleProof      Json                        @map("merkle_proof")
+  solanaTx         String?                     @map("solana_tx")
+  verifiedAt        DateTime?                   @map("verified_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
 
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  batch       VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, opportunityId])
+  @@index([opportunityId])
+  @@index([batchId, status])
+  @@map("opportunity_verifications")
+}
 model OpportunityChange {
   id              String         @id @default(uuid()) @db.Uuid
   opportunityId   String         @map("opportunity_id") @db.Uuid

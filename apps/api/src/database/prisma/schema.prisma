@@ -461,6 +461,8 @@ model Source {
   url                 String
   adapter             String
   active              Boolean  @default(false)
+  trusted             Boolean  @default(false)
+  officialSource      Boolean  @default(false) @map("official_source")
   crawlFrequency      CrawlFrequency @default(DAILY) @map("crawl_frequency")
   attributionRequired Boolean  @default(true) @map("attribution_required")
   termsUrl            String?  @map("terms_url")
@@ -531,6 +533,7 @@ model SourceRun {
   createdByUser   User?      @relation("SourceRunCreatedBy", fields: [createdBy], references: [id])
   rawOpportunities RawOpportunity[]
   versions        OpportunityVersion[]
+  verificationBatch VerificationBatch?
 
   @@index([sourceId, createdAt(sort: Desc)])
   @@index([status])
@@ -638,6 +641,20 @@ enum VerificationStatus {
   DISPUTED
 }
 
+enum VerificationBatchStatus {
+  PENDING
+  ROOT_READY
+  ANCHORED
+  FAILED
+}
+
+enum OpportunityVerificationStatus {
+  PENDING
+  VERIFIED
+  PARTIAL
+  DISPUTED
+}
+
 enum RequirementKind {
   DOCUMENT
   EXPERIENCE
@@ -714,6 +731,7 @@ model Opportunity {
   requirementsList    OpportunityRequirement[]
   versions            OpportunityVersion[]
   provenanceProofs    OpportunityProvenanceProof[]
+  verificationRecords OpportunityVerification[]
   changes             OpportunityChange[]
   aiAnalyses          AiAnalysis[]
   matches             Match[]
@@ -832,6 +850,49 @@ model OpportunityProvenanceProof {
   @@unique([opportunityId, contentHash])
   @@index([opportunityId, anchoredAt(sort: Desc)])
   @@map("opportunity_provenance_proofs")
+}
+
+model VerificationBatch {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  sourceRunId         String                  @unique @map("source_run_id") @db.Uuid
+  sourceId            String                  @map("source_id") @db.Uuid
+  rootHash            String                  @map("root_hash")
+  recordCount         Int                     @map("record_count")
+  status              VerificationBatchStatus @default(PENDING)
+  solanaSignature     String?                 @unique @map("solana_signature")
+  errorMessage        String?                 @map("error_message")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  verifiedAt          DateTime?              @map("verified_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+
+  sourceRun              SourceRun               @relation(fields: [sourceRunId], references: [id], onDelete: Cascade)
+  opportunityVerifications OpportunityVerification[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("verification_batches")
+}
+
+model OpportunityVerification {
+  id                String                      @id @default(uuid()) @db.Uuid
+  opportunityId    String                      @map("opportunity_id") @db.Uuid
+  batchId          String                      @map("batch_id") @db.Uuid
+  hash             String
+  status           OpportunityVerificationStatus @default(PENDING)
+  sourceConfidence Decimal?                    @map("source_confidence") @db.Decimal(5, 3)
+  aiConfidence     Decimal?                    @map("ai_confidence") @db.Decimal(5, 3)
+  dataCompleteness Decimal?                   @map("data_completeness") @db.Decimal(5, 3)
+  merkleProof      Json                        @map("merkle_proof")
+  solanaTx         String?                     @map("solana_tx")
+  verifiedAt        DateTime?                   @map("verified_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  batch       VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, opportunityId])
+  @@index([opportunityId])
+  @@index([batchId, status])
+  @@map("opportunity_verifications")
 }
 
 model OpportunityChange {
