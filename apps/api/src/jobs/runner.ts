@@ -98,6 +98,11 @@ async function processClaimedJob(job: ClaimedJob): Promise<void> {
 }
 
 export function startDatabaseJobRunner(): () => Promise<void> {
+  if (!env.DATABASE_JOB_RUNNER_ENABLED) {
+    logger.info({ disabled: true }, "postgres_job_runner_disabled");
+    return async () => undefined;
+  }
+
   let stopping = false;
   let pumping: Promise<void> | null = null;
   const active = new Set<Promise<void>>();

@@ -110,6 +110,7 @@ const EnvSchema = z.object({
   OUTBOUND_WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().positive().default(6),
   OUTBOUND_WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
 
+  DATABASE_JOB_RUNNER_ENABLED: booleanFromEnv.default(true),
   JOB_CONCURRENCY: z.coerce.number().int().positive().default(5),
   JOB_ATTEMPTS_DEFAULT: z.coerce.number().int().positive().default(5),
   JOB_BACKOFF_MS: z.coerce.number().int().positive().default(5000),
