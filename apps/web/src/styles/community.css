@@ -48,13 +48,13 @@
 .scout-social-shell textarea,
 .scout-social-shell select {
   color: var(--scout-text);
-  background-color: #081a28;
+  background-color: var(--scout-panel);
   border-color: var(--scout-border);
 }
 
 .scout-social-shell input::placeholder,
 .scout-social-shell textarea::placeholder {
-  color: #718b9e;
+  color: var(--scout-muted);
 }
 
 .scout-social-sidebar {
