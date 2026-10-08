@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/database";
 import { env } from "../config/env";
+import {
+  backgroundJobsTableError,
+  isBackgroundJobsTableMissingError,
+} from "./databaseQueue.errors";
 
 export interface EnqueueOptions {
   maxAttempts?: number;
@@ -19,14 +23,21 @@ export async function enqueueDatabaseJob<T>(
   payload: T,
   options: EnqueueOptions = {},
 ) {
-  return prisma.backgroundJob.create({
-    data: {
-      name,
-      payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
-      maxAttempts: options.maxAttempts ?? env.JOB_ATTEMPTS_DEFAULT,
-      ...(options.runAt ? { runAt: options.runAt } : {}),
-    },
-  });
+  try {
+    return await prisma.backgroundJob.create({
+      data: {
+        name,
+        payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
+        maxAttempts: options.maxAttempts ?? env.JOB_ATTEMPTS_DEFAULT,
+        ...(options.runAt ? { runAt: options.runAt } : {}),
+      },
+    });
+  } catch (error) {
+    if (isBackgroundJobsTableMissingError(error)) {
+      throw backgroundJobsTableError(error);
+    }
+    throw error;
+  }
 }
 
 export function createDatabaseQueue(defaultAttempts: number) {
