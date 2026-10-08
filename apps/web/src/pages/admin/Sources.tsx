@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
 import { SourceHealthBadge } from "../../components/admin/SourceHealthBadge";
+import { SourceVerificationBadge } from "../../components/admin/SourceVerificationBadge";
 import { Loader } from "../../components/ui/Loader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { useSources } from "../../hooks/useSources";
@@ -47,6 +48,11 @@ export function Sources() {
       key: "health",
       header: "Health",
       cell: (source) => <SourceHealthBadge health={source.health} />,
+    },
+    {
+      key: "verification",
+      header: "Verification",
+      cell: (source) => <SourceVerificationBadge status={source.verifications?.[0]?.status ?? "PENDING"} />,
     },
     {
       key: "lastRun",

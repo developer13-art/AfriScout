@@ -1,6 +1,7 @@
 import { prisma } from "../../config/database";
 import { ConflictError, NotFoundError } from "../../utils/errors";
 import { slugify, ensureUniqueSlug } from "../../utils/slugify";
+import { testSource } from "./sourceTest.service";
 import type {
   SourceCreateInput,
   SourceFilterInput,
@@ -41,8 +42,7 @@ export async function createSource(
   createdBy: string | null,
 ) {
   const slug = await generateSourceSlug(input.name);
-
-  return prisma.source.create({
+  const source = await prisma.source.create({
     data: {
       name: input.name,
       slug,
@@ -59,8 +59,23 @@ export async function createSource(
       termsUrl: input.termsUrl ?? null,
       notes: input.notes ?? null,
       metadata: (input.metadata ?? {}) as never,
-      active: input.active ?? false,
+      active: false,
       createdBy,
+    },
+  });
+
+  const verification = await testSource(source.id);
+  if (verification.success) {
+    await prisma.source.update({
+      where: { id: source.id },
+      data: { active: true },
+    });
+  }
+
+  return prisma.source.findUnique({
+    where: { id: source.id },
+    include: {
+      verifications: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
 }
