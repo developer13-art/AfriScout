@@ -91,11 +91,9 @@ export interface AdminDashboardPayload {
   countryBreakdown: CountryCount[];
   systemStatus: {
     dbOk: boolean;
-    redisOk: boolean;
     apifyConfigured: boolean;
     aiEnabled: boolean;
     queueDepth: number | null;
-    workerCount: number | null;
   };
 }
 

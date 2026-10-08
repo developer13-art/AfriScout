@@ -37,4 +37,3 @@ export async function processDocumentJob(job: { name: string; payload: unknown }
         });
       }
     }
-}

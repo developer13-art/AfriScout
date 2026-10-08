@@ -103,4 +103,3 @@ export async function processPipelineJob(job: { name: string; payload: unknown }
         throw error;
       }
     }
-}

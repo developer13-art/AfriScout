@@ -1,14 +1,12 @@
 # Scout API
 
-Node.js + Express + TypeScript API and background workers for Scout.
+Node.js + Express + TypeScript API. PostgreSQL-backed background jobs run in the API process.
 
 ## Scripts
 
 - `npm run dev` - start the API with live reload (port 4000)
-- `npm run dev:worker` - start the worker process with live reload
 - `npm run build` - compile TypeScript to `dist/`
 - `npm run start` - run the compiled API
-- `npm run start:worker` - run the compiled worker
 - `npm run typecheck` - TypeScript check, no emit
 - `npm run lint` - ESLint
 - `npm run test` - Vitest
@@ -26,7 +24,7 @@ Prisma schema and seed live under `src/database/prisma/`.
 
 ## Architecture
 
-- `src/config/` - env, database, redis, apify, ai, mail, storage, cors, logger
+- `src/config/` - env, database, apify, ai, mail, storage, cors, logger
 - `src/constants/` - roles, permissions, lifecycles, categories, weights, limits
 - `src/types/` - domain types and augmentations
 - `src/utils/` - errors, helpers, slugify, pagination, hashing, crypto, sanitize
@@ -35,8 +33,7 @@ Prisma schema and seed live under `src/database/prisma/`.
 - `src/services/` - domain services (auth, users, dna, opportunities, apify, ai, etc.)
 - `src/controllers/` - HTTP handlers, thin wrappers over services
 - `src/routes/` - Express routers grouped by audience
-- `src/jobs/` - BullMQ queues, workers, schedulers, and job definitions
-- `src/workers/` - worker entry point
+- `src/jobs/` - PostgreSQL-backed job queue, in-process runner, schedulers, handlers, and job definitions
 - `src/openapi/` - OpenAPI specification and serving helpers
 - `src/database/` - Prisma client and schema/seed
 
@@ -44,4 +41,5 @@ Prisma schema and seed live under `src/database/prisma/`.
 
 Every setting is validated on startup with Zod. See `.env.example` at the
 repository root. Missing or invalid values cause the process to exit
-immediately with a clear error.
+immediately with a clear error. Rate limits are stored in API-process memory
+and are not shared between multiple API instances.

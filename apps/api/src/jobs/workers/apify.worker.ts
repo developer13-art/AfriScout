@@ -126,4 +126,3 @@ export async function processApifyJob(job: { name: string; payload: unknown }): 
         throw error;
       }
     }
-}

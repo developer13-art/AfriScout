@@ -1,5 +1,5 @@
-# Scout worker image
-# Builds the shared package + api, then runs the worker entrypoint.
+# Scout API image
+# Builds the shared package + API; the API process starts its own job runner.
 
 FROM node:20.11-alpine
 
@@ -26,5 +26,5 @@ RUN npm run build:shared
 RUN npm run db:generate --workspace=apps/api
 RUN npm run build:api
 
-# Default command: run the worker
-CMD ["npm", "run", "start:worker"]
+# Default command: run the API and its in-process job runner
+CMD ["npm", "run", "start:api"]

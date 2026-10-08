@@ -490,11 +490,6 @@ export function Dashboard() {
                 icon={<Database className="h-4 w-4" />}
               />
               <StatusRow
-                label="Redis"
-                ok={systemStatus.redisOk}
-                icon={<Activity className="h-4 w-4" />}
-              />
-              <StatusRow
                 label="Apify"
                 ok={systemStatus.apifyConfigured}
                 okLabel="Configured"
@@ -515,15 +510,6 @@ export function Dashboard() {
                 </span>
                 <span className="text-xs text-neutral-500">
                   {systemStatus.queueDepth ?? "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â"}
-                </span>
-              </li>
-              <li className="flex items-center justify-between py-3">
-                <span className="flex items-center gap-2 text-sm text-neutral-800">
-                  <Users className="h-4 w-4 text-neutral-500" />
-                  Worker count
-                </span>
-                <span className="text-xs text-neutral-500">
-                  {systemStatus.workerCount ?? "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â"}
                 </span>
               </li>
             </ul>

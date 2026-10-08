@@ -4,6 +4,7 @@ import {
   RECOMPUTE_MATCHES_JOB,
   type RecomputeMatchesPayload,
 } from "../definitions/matchUsers.job";
+import { RECOMPUTE_ALL_MATCHES_JOB } from "../definitions/recomputeMatches.job";
 import {
   recomputeMatchesForOpportunity,
   recomputeMatchesForUser,
@@ -148,10 +149,7 @@ export async function processMatchingJob(job: { name: string; payload: unknown }
           take: 200,
           select: { id: true, userId: true, dnaProfileId: true, opportunityId: true },
         });
-      } else {
-        logger.warn({ jobName: job.name }, "matching_unknown_job");
-        return;
-      } else if (job.name === "recompute-all-matches") {
+      } else if (job.name === RECOMPUTE_ALL_MATCHES_JOB) {
         const users = await prisma.user.findMany({
           where: { status: "ACTIVE" },
           select: { id: true },
@@ -175,4 +173,3 @@ export async function processMatchingJob(job: { name: string; payload: unknown }
       await analyzeMatches(matches);
       await notifyStrongMatches(matches);
     }
-}

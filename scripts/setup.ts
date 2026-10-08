@@ -39,7 +39,7 @@ function main(): void {
   run("npm run build:shared");
   run("npm run db:generate");
   run("npm run docker:up");
-  log("waiting for Postgres and Redis to become healthy");
+  log("waiting for Postgres to become healthy");
   run("sleep 5");
   run("npm run db:migrate");
   run("npm run db:seed");

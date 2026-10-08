@@ -108,7 +108,7 @@ export function Privacy() {
                 <p className="font-semibold text-neutral-900">5. Data sharing</p>
                 <p className="mt-1">
                   We share data only with the infrastructure providers required to run the
-                  platform — hosting, database, Redis, AI providers for the specific AI tasks you
+                  platform — hosting, database, AI providers for the specific AI tasks you
                   invoke, email for the notifications you enable, and payment processors when paid
                   plans are active. We share the minimum required.
                 </p>

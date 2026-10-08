@@ -13,9 +13,7 @@ export function SystemHealth() {
       <SystemHealthPanel
         items={[
           { key: "api", label: "API", status: "ok" },
-          { key: "worker", label: "Worker", status: "ok" },
           { key: "db", label: "Database", status: "ok" },
-          { key: "redis", label: "Redis", status: "ok" },
           { key: "apify", label: "Apify", status: "ok" },
           { key: "ai", label: "AI providers", status: "ok" },
           { key: "web", label: "Web", status: "ok" },

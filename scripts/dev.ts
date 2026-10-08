@@ -21,13 +21,6 @@ const specs: ProcessSpec[] = [
     color: "\u001b[36m",
   },
   {
-    name: "worker",
-    command: "npm",
-    args: ["run", "dev:worker"],
-    cwd: ROOT,
-    color: "\u001b[35m",
-  },
-  {
     name: "web",
     command: "npm",
     args: ["run", "dev:web"],

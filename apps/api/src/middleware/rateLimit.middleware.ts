@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-import { redis } from "../config/redis";
 import { env } from "../config/env";
 import { RateLimitedError } from "../utils/errors";
 
@@ -21,37 +20,63 @@ export function rateLimit(options: RateLimitOptions = {}) {
   const max = options.max ?? env.RATE_LIMIT_MAX;
   const keyPrefix = options.keyPrefix ?? "rate";
   const keyGenerator = options.keyGenerator ?? defaultKeyGenerator;
+  const requestsByKey = new Map<string, number[]>();
+  const cleanupIntervalMs = Math.min(windowMs, 60_000);
+  let lastCleanupAt = 0;
 
   return async function rateLimitMiddleware(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    try {
-      const key = `${keyPrefix}:${keyGenerator(req)}`;
-      const now = Date.now();
-      const windowStart = now - windowMs;
+    const now = Date.now();
+    if (now - lastCleanupAt >= cleanupIntervalMs) {
+      const expiredBefore = now - windowMs;
+      for (const [key, timestamps] of requestsByKey) {
+        let firstActive = 0;
+        while (
+          firstActive < timestamps.length &&
+          timestamps[firstActive] !== undefined &&
+          timestamps[firstActive] <= expiredBefore
+        ) {
+          firstActive += 1;
+        }
 
-      const pipeline = redis.multi();
-      pipeline.zremrangebyscore(key, 0, windowStart);
-      pipeline.zadd(key, now, `${now}-${Math.random()}`);
-      pipeline.zcard(key);
-      pipeline.pexpire(key, windowMs);
-
-      const results = await pipeline.exec();
-      const count = (results?.[2]?.[1] as number | undefined) ?? 0;
-
-      res.setHeader("X-RateLimit-Limit", max);
-      res.setHeader("X-RateLimit-Remaining", Math.max(0, max - count));
-
-      if (count > max) {
-        next(new RateLimitedError("Too many requests"));
-        return;
+        if (firstActive === timestamps.length) {
+          requestsByKey.delete(key);
+        } else if (firstActive > 0) {
+          requestsByKey.set(key, timestamps.slice(firstActive));
+        }
       }
-
-      next();
-    } catch (error) {
-      next(error);
+      lastCleanupAt = now;
     }
+
+    const key = `${keyPrefix}:${keyGenerator(req)}`;
+    const expiredBefore = now - windowMs;
+    const timestamps = requestsByKey.get(key) ?? [];
+    let firstActive = 0;
+    while (
+      firstActive < timestamps.length &&
+      timestamps[firstActive] !== undefined &&
+      timestamps[firstActive] <= expiredBefore
+    ) {
+      firstActive += 1;
+    }
+
+    const activeTimestamps =
+      firstActive > 0 ? timestamps.slice(firstActive) : timestamps;
+    activeTimestamps.push(now);
+    requestsByKey.set(key, activeTimestamps);
+    const count = activeTimestamps.length;
+
+    res.setHeader("X-RateLimit-Limit", max);
+    res.setHeader("X-RateLimit-Remaining", Math.max(0, max - count));
+
+    if (count > max) {
+      next(new RateLimitedError("Too many requests"));
+      return;
+    }
+
+    next();
   };
 }

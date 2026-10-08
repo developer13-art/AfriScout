@@ -91,11 +91,9 @@ export interface AdminDashboardPayload {
   countryBreakdown: CountryCount[];
   systemStatus: {
     dbOk: boolean;
-    redisOk: boolean;
     apifyConfigured: boolean;
     aiEnabled: boolean;
     queueDepth: number | null;
-    workerCount: number | null;
   };
 }
 
@@ -334,11 +332,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
     countryBreakdown,
     systemStatus: {
       dbOk: true,
-      redisOk: true,
       apifyConfigured: false,
       aiEnabled: true,
       queueDepth: null,
-      workerCount: null,
     },
   };
 }

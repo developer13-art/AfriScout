@@ -8,4 +8,3 @@ export async function processWebhookJob(job: { name: string; payload: unknown })
         await deliverWebhook(deliveryId);
       }
     }
-}

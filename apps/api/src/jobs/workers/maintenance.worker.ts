@@ -26,4 +26,3 @@ export async function processMaintenanceJob(job: { name: string; payload: unknow
           logger.warn({ jobName: job.name }, "maintenance_unknown_job");
       }
     }
-}

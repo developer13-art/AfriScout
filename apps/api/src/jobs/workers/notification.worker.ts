@@ -9,4 +9,3 @@ export async function processNotificationJob(job: { name: string; payload: unkno
         logger.warn({ jobName: job.name }, "notification_unknown_job");
       }
     }
-}

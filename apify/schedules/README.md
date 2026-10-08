@@ -27,7 +27,7 @@ single source when invoked.
 Every schedule run posts back to the API endpoint
 `POST /api/webhooks/apify`. The backend verifies the HMAC signature against
 `APIFY_WEBHOOK_SECRET`, records the run in `source_runs`, fetches the dataset,
-and enqueues ingestion through BullMQ.
+and stores an ingestion job in PostgreSQL for the API-process runner.
 
 ## Operating notes
 

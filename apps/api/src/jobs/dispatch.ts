@@ -6,7 +6,8 @@ import {
   PROCESS_OPPORTUNITY_JOB,
 } from "./definitions";
 import { EXPIRE_OPPORTUNITIES_JOB } from "./definitions/expireOpportunities.job";
-import { MATCH_USERS_JOB, RECOMPUTE_MATCHES_JOB, RECOMPUTE_ALL_MATCHES_JOB } from "./definitions/matchUsers.job";
+import { MATCH_USERS_JOB, RECOMPUTE_MATCHES_JOB } from "./definitions/matchUsers.job";
+import { RECOMPUTE_ALL_MATCHES_JOB } from "./definitions/recomputeMatches.job";
 import { PROCESS_DOCUMENT_JOB } from "./definitions/processDocument.job";
 import { REFRESH_SOURCE_HEALTH_JOB } from "./definitions/refreshSourceHealth.job";
 import { RUN_APIFY_ACTOR_JOB } from "./definitions/runApifyActor.job";

@@ -79,7 +79,7 @@ Status: Accepted
 Context:
 The schema contains approximately 26 tables with strong relational
 integrity, enums, and versioned records. We need migrations, seeding,
-and a fully typed client usable from both API and worker processes.
+and a fully typed client usable from the API and its in-process job handlers.
 
 Decision:
 Use Prisma with a domain-split schema.
@@ -112,12 +112,12 @@ Consequences:
 
 ## ADR-004 — Redis + BullMQ for queues, workers, and rate limiting
 
-Status: Accepted
+Status: Superseded by ADR-019
 
 Context:
 The opportunity pipeline (ingestion, normalization, validation,
 deduplication, change detection, AI processing, matching, notifications)
-must run asynchronously. HTTP requests cannot carry these workloads.
+must handle durable background work.
 
 Decision:
 Use Redis (Render Managed Redis) with BullMQ for all queues and workers.
@@ -446,27 +446,24 @@ Consequences:
 Status: Accepted
 
 Context:
-We need managed Postgres, managed Redis, a Node web service, a static
-or web-service frontend, background workers, and cron scheduling
-without maintaining servers.
+We need managed PostgreSQL, a Node API service, and a static frontend
+without maintaining servers. Background jobs should not require a
+separately provisioned service.
 
 Decision:
 Deploy on Render.
 
 Services:
   - Render Web Service: apps/api
-  - Render Background Worker: apps/api workers
   - Render Static Site or Web Service: apps/web
   - Render Managed Postgres
-  - Render Managed Redis
-  - Render Cron Jobs for fallback scheduling
   - Apify Actors run on Apify infra, triggered by API, webhooks back to API
 
 `render.yaml` at the repo root defines all services as code.
 
 Consequences:
   - Secrets live in Render environment groups, never in the repo.
-  - Local development uses docker-compose for Postgres and Redis.
+  - Local development uses docker-compose for Postgres.
 
 ---
 
@@ -479,7 +476,7 @@ Decision:
   - Passwords hashed with Argon2id.
   - RBAC with roles: SUPER_ADMIN, DATA_ADMIN, USER, API_DEVELOPER.
   - API keys hashed at rest; shown once at creation.
-  - Per-route rate limiting backed by Redis.
+  - Per-route rate limiting held in API-process memory.
   - Input validation with Zod on every route.
   - Signed Apify webhooks; signature verified server-side.
   - Signed outbound webhooks with HMAC and retries.
@@ -531,3 +528,22 @@ Decision:
 Architecture, database, API, product, operations, design, and
 contributing docs live in `docs/` and are maintained alongside code.
 No feature is considered complete without matching documentation.
+
+---
+
+## ADR-019 — PostgreSQL jobs run inside the API process
+
+Status: Accepted
+
+Context:
+The platform should run without Redis or a separately deployed worker
+service while retaining durable background jobs.
+
+Decision:
+Persist jobs in PostgreSQL and run the job poller and schedulers within
+the API process. Keep rate-limit counters in that process's memory.
+
+Consequences:
+  - Deployment requires the API and PostgreSQL, not Redis or a worker service.
+  - Rate limits are per API instance and reset when that process restarts.
+  - API instances can process jobs without a separate worker deployment.
