@@ -79,7 +79,7 @@ services:
       - key: OUTBOUND_WEBHOOK_SECRET
         sync: false
       - key: DATABASE_JOB_RUNNER_ENABLED
-        value: false
+        value: true
       - key: SCHEDULER_ENABLED
         value: false
 
