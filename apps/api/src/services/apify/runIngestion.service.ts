@@ -6,11 +6,17 @@ import { createSourceRun, markRunFinished, markRunStarted } from "./run.service"
 import { ingestRawItems } from "../opportunities/ingestion.service";
 import { enqueueProcessOpportunity } from "../../jobs/definitions/processOpportunity.job";
 import type { RunTrigger } from "@prisma/client";
+import { ConflictError } from "../../utils/errors";
 
 export interface TriggerRunInput {
   sourceId: string;
   trigger: RunTrigger;
   createdBy?: string | null;
+}
+
+export interface SourceIngestionEligibility {
+  active: boolean;
+  verifications?: Array<{ status: string }> | null;
 }
 
 export interface SourceMetadata {
@@ -28,8 +34,18 @@ export interface SourceMetadata {
 }
 
 export async function triggerIngestion(input: TriggerRunInput) {
-  const source = await prisma.source.findUnique({ where: { id: input.sourceId } });
+  const source = await prisma.source.findUnique({
+    where: { id: input.sourceId },
+    include: {
+      verifications: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
   if (!source) throw new Error("Source not found");
+  if (!canTriggerIngestion(source)) {
+    throw new ConflictError(
+      "Source ingestion requires a successful source test before the source can be activated.",
+    );
+  }
 
   const run = await createSourceRun({
     sourceId: source.id,
@@ -40,6 +56,10 @@ export async function triggerIngestion(input: TriggerRunInput) {
 
   logger.info({ sourceId: source.id, runId: run.id }, "ingestion_triggered");
   return run;
+}
+
+export function canTriggerIngestion(source: SourceIngestionEligibility): boolean {
+  return source.active || source.verifications?.[0]?.status === "VERIFIED";
 }
 
 export async function buildActorInput(sourceId: string) {

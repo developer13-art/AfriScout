@@ -56,6 +56,11 @@ export interface Source {
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
+  verifications?: Array<{
+    id: string;
+    status: "PENDING" | "VERIFIED" | "FAILED";
+    createdAt: string;
+  }> | null;
 }
 
 export type SuggestionStatus =

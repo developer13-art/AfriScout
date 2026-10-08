@@ -26,12 +26,14 @@ export function SourceDetails() {
   const test = useMutation({
     mutationFn: () =>
       id ? sourceService.test(id) : Promise.resolve({ success: false, itemsFound: 0 }),
-    onSuccess: (result) =>
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["source", id] });
       setMessage(
         `Test completed. ${result.itemsFound} items found. ${
           result.success ? "Extraction succeeded." : "Extraction failed."
         }`,
-      ),
+      );
+    },
   });
 
   const runDiscovery = useMutation({
@@ -39,6 +41,9 @@ export function SourceDetails() {
     onSuccess: () => {
       setMessage("Discovery run enqueued. It will appear in Recent runs shortly.");
       qc.invalidateQueries({ queryKey: ["actor-runs"] });
+    },
+    onError: (error) => {
+      setMessage(error instanceof Error ? error.message : "Unable to start the discovery run.");
     },
   });
 
@@ -48,6 +53,9 @@ export function SourceDetails() {
   }
 
   const s = source.data;
+  const latestVerification = s.verifications?.[0];
+  const canRunDiscovery = s.active || latestVerification?.status === "VERIFIED";
+  const verificationStatus = latestVerification?.status ?? "PENDING";
 
   return (
     <>
@@ -69,6 +77,7 @@ export function SourceDetails() {
               <Button
                 onClick={() => runDiscovery.mutate()}
                 loading={runDiscovery.isPending}
+                disabled={!canRunDiscovery}
               >
                 Run Apify discovery
               </Button>
@@ -83,9 +92,14 @@ export function SourceDetails() {
         </Alert>
       ) : null}
 
-      {!s.active ? (
-        <Alert tone="warning" className="mb-4">
-          This approved source is inactive. Test the actor, then run Apify discovery. A successful ingestion activates the source and records its health.
+      {!s.active || verificationStatus !== "VERIFIED" ? (
+        <Alert tone={verificationStatus === "VERIFIED" ? "success" : "warning"} className="mb-4">
+          {s.active
+            ? "This source is active, but its latest verification did not succeed. Re-run the source test before collecting new opportunities."
+            : verificationStatus === "VERIFIED"
+              ? "This source passed verification and is ready for Apify discovery."
+              : "This approved source is inactive and not verified. Test the actor, then run Apify discovery after a successful result."
+          }
         </Alert>
       ) : null}
 
@@ -101,6 +115,10 @@ export function SourceDetails() {
               <li>
                 <span className="font-medium text-neutral-900">Active:</span>{" "}
                 {s.active ? "Yes" : "No"}
+              </li>
+              <li>
+                <span className="font-medium text-neutral-900">Verification:</span>{" "}
+                {verificationStatus}
               </li>
               <li>
                 <span className="font-medium text-neutral-900">Frequency:</span>{" "}

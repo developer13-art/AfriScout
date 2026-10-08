@@ -26,7 +26,12 @@ export async function listSources(input: SourceFilterInput) {
 }
 
 export async function getSourceById(id: string) {
-  const source = await prisma.source.findUnique({ where: { id } });
+  const source = await prisma.source.findUnique({
+    where: { id },
+    include: {
+      verifications: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
   if (!source) throw new NotFoundError("Source not found");
   return source;
 }
