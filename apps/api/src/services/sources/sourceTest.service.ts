@@ -23,7 +23,18 @@ interface SourceMetadata {
 }
 
 export async function testSource(sourceId: string): Promise<SourceTestResult> {
-  const source = await prisma.source.findUnique({ where: { id: sourceId } });
+  const source = await prisma.source.findUnique({
+    where: { id: sourceId },
+    select: {
+      id: true,
+      url: true,
+      sourceType: true,
+      countryCode: true,
+      category: true,
+      adapter: true,
+      metadata: true,
+    },
+  });
   if (!source) throw new NotFoundError("Source not found");
 
   if (!apifyConfig.isConfigured || !apifyActors.opportunityDiscovery) {
