@@ -8,6 +8,38 @@ import type {
   SourceUpdateInput,
 } from "../../validators/source.validator";
 
+const sourceListSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  countryCode: true,
+  region: true,
+  language: true,
+  currency: true,
+  category: true,
+  sourceType: true,
+  url: true,
+  adapter: true,
+  active: true,
+  crawlFrequency: true,
+  attributionRequired: true,
+  termsUrl: true,
+  notes: true,
+  metadata: true,
+  health: true,
+  lastSuccessAt: true,
+  lastFailureAt: true,
+  lastRunAt: true,
+  consecutiveFailures: true,
+  successCount: true,
+  failureCount: true,
+  itemsTotal: true,
+  createdBy: true,
+  createdAt: true,
+  updatedAt: true,
+  verifications: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, createdAt: true } },
+} as const;
+
 export async function listSources(input: SourceFilterInput) {
   const page = input.page ?? 1;
   const pageSize = Math.min(input.pageSize ?? 20, 100);
@@ -19,9 +51,7 @@ export async function listSources(input: SourceFilterInput) {
       orderBy: { name: "asc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: {
-        verifications: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
+      select: sourceListSelect,
     }),
     prisma.source.count({ where }),
   ]);
