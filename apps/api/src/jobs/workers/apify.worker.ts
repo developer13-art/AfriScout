@@ -1,5 +1,3 @@
-import { Worker } from "bullmq";
-import { createBullConnection } from "../../config/redis";
 import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { RUN_APIFY_ACTOR_JOB } from "../definitions/runApifyActor.job";
@@ -12,16 +10,13 @@ import { prisma } from "../../config/database";
 const POLL_INTERVAL_MS = 5000;
 const MAX_CONSECUTIVE_POLL_FAILURES = 6;
 
-export function startApifyWorker(): Worker {
-  const worker = new Worker(
-    "apify",
-    async (job) => {
+export async function processApifyJob(job: { name: string; payload: unknown }): Promise<void> {
       if (job.name !== RUN_APIFY_ACTOR_JOB) {
         logger.warn({ jobName: job.name }, "apify_unknown_job");
         return;
       }
 
-      const { sourceId, runId, actorId } = job.data as {
+      const { sourceId, runId, actorId } = job.payload as {
         sourceId: string;
         runId: string;
         actorId: string;
@@ -130,17 +125,5 @@ export function startApifyWorker(): Worker {
         await recordRunOutcome({ sourceId, success: false, itemsFound: 0 });
         throw error;
       }
-    },
-    {
-      connection: createBullConnection(),
-      prefix: env.QUEUE_PREFIX,
-      concurrency: 2,
-    },
-  );
-
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, err }, "apify_job_failed");
-  });
-
-  return worker;
+    }
 }

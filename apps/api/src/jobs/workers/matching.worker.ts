@@ -1,6 +1,3 @@
-import { Worker } from "bullmq";
-import { createBullConnection } from "../../config/redis";
-import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import {
   MATCH_USERS_JOB,
@@ -122,13 +119,10 @@ async function notifyStrongMatches(matches: MatchToAnalyze[]): Promise<void> {
   }
 }
 
-export function startMatchingWorker(): Worker {
-  const worker = new Worker(
-    "matching",
-    async (job) => {
+export async function processMatchingJob(job: { name: string; payload: unknown }): Promise<void> {
       let matches: MatchToAnalyze[];
       if (job.name === MATCH_USERS_JOB) {
-        const { opportunityId } = job.data as { opportunityId: string };
+        const { opportunityId } = job.payload as { opportunityId: string };
         const count = await recomputeMatchesForOpportunity(opportunityId);
         logger.info({ opportunityId, count }, "matches_recomputed");
         matches = await prisma.match.findMany({
@@ -140,7 +134,7 @@ export function startMatchingWorker(): Worker {
           select: { id: true, userId: true, dnaProfileId: true, opportunityId: true },
         });
       } else if (job.name === RECOMPUTE_MATCHES_JOB) {
-        const { userId } = job.data as RecomputeMatchesPayload;
+        const { userId } = job.payload as RecomputeMatchesPayload;
         const count = await recomputeMatchesForUser(userId);
         logger.info({ userId, count }, "matches_recomputed");
         matches = await prisma.match.findMany({
@@ -157,21 +151,28 @@ export function startMatchingWorker(): Worker {
       } else {
         logger.warn({ jobName: job.name }, "matching_unknown_job");
         return;
+      } else if (job.name === "recompute-all-matches") {
+        const users = await prisma.user.findMany({
+          where: { status: "ACTIVE" },
+          select: { id: true },
+        });
+        for (const user of users) await recomputeMatchesForUser(user.id);
+        matches = await prisma.match.findMany({
+          where: {
+            aiMatchAnalyzedAt: null,
+            dnaProfile: { is: { isActive: true } },
+            opportunity: { is: { status: "PUBLISHED" } },
+          },
+          orderBy: { computedAt: "desc" },
+          take: 200,
+          select: { id: true, userId: true, dnaProfileId: true, opportunityId: true },
+        });
+      } else {
+        logger.warn({ jobName: job.name }, "matching_unknown_job");
+        return;
       }
 
       await analyzeMatches(matches);
       await notifyStrongMatches(matches);
-    },
-    {
-      connection: createBullConnection(),
-      prefix: env.QUEUE_PREFIX,
-      concurrency: env.WORKER_CONCURRENCY,
-    },
-  );
-
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, err }, "matching_job_failed");
-  });
-
-  return worker;
+    }
 }

@@ -1,6 +1,3 @@
-import { Worker } from "bullmq";
-import { createBullConnection } from "../../config/redis";
-import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { EXPIRE_OPPORTUNITIES_JOB } from "../definitions/expireOpportunities.job";
 import { REFRESH_SOURCE_HEALTH_JOB } from "../definitions/refreshSourceHealth.job";
@@ -8,10 +5,7 @@ import { expireOpportunities } from "../../services/opportunities/expiry.service
 import { recomputeSourceHealth } from "../../services/sources/sourceHealth.service";
 import { prisma } from "../../config/database";
 
-export function startMaintenanceWorker(): Worker {
-  const worker = new Worker(
-    "maintenance",
-    async (job) => {
+export async function processMaintenanceJob(job: { name: string; payload: unknown }): Promise<void> {
       switch (job.name) {
         case EXPIRE_OPPORTUNITIES_JOB: {
           const count = await expireOpportunities();
@@ -19,7 +13,7 @@ export function startMaintenanceWorker(): Worker {
           break;
         }
         case REFRESH_SOURCE_HEALTH_JOB: {
-          const { sourceId } = job.data as { sourceId?: string };
+          const { sourceId } = job.payload as { sourceId?: string };
           if (sourceId) {
             await recomputeSourceHealth(sourceId);
           } else {
@@ -31,17 +25,5 @@ export function startMaintenanceWorker(): Worker {
         default:
           logger.warn({ jobName: job.name }, "maintenance_unknown_job");
       }
-    },
-    {
-      connection: createBullConnection(),
-      prefix: env.QUEUE_PREFIX,
-      concurrency: 2,
-    },
-  );
-
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, err }, "maintenance_job_failed");
-  });
-
-  return worker;
+    }
 }

@@ -1,6 +1,3 @@
-import { Worker } from "bullmq";
-import { createBullConnection } from "../../config/redis";
-import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { PROCESS_OPPORTUNITY_JOB } from "../definitions/processOpportunity.job";
 import { prisma } from "../../config/database";
@@ -14,16 +11,13 @@ import { upsertCanonicalOpportunity } from "../../services/opportunities/canonic
 import { enqueueMatchUsers } from "../definitions/matchUsers.job";
 import { analyzeOpportunity } from "../../services/ai/opportunityAnalyst.service";
 
-export function startPipelineWorker(): Worker {
-  const worker = new Worker(
-    "pipeline",
-    async (job) => {
+export async function processPipelineJob(job: { name: string; payload: unknown }): Promise<void> {
       if (job.name !== PROCESS_OPPORTUNITY_JOB) {
         logger.warn({ jobName: job.name }, "pipeline_unknown_job");
         return;
       }
 
-      const { rawOpportunityId, sourceId } = job.data as {
+      const { rawOpportunityId, sourceId } = job.payload as {
         rawOpportunityId: string;
         sourceId: string;
       };
@@ -108,17 +102,5 @@ export function startPipelineWorker(): Worker {
         });
         throw error;
       }
-    },
-    {
-      connection: createBullConnection(),
-      prefix: env.QUEUE_PREFIX,
-      concurrency: env.WORKER_CONCURRENCY,
-    },
-  );
-
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, err }, "pipeline_job_failed");
-  });
-
-  return worker;
+    }
 }

@@ -10,9 +10,9 @@ export type DiscoveryScope =
 
 export interface DiscoveryInput {
   scope: DiscoveryScope;
-  countries: string[];
-  categories: string[];
-  sourceTypes: string[];
+  countries?: string[];
+  categories?: string[];
+  sourceTypes?: string[];
   minimumScore: number;
 }
 

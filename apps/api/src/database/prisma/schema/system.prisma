@@ -59,3 +59,24 @@ model SystemHealthSnapshot {
   @@index([capturedAt(sort: Desc)])
   @@map("system_health_snapshots")
 }
+
+model BackgroundJob {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(120)
+  payload     Json
+  status      String    @default("PENDING") @db.VarChar(20)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5) @map("max_attempts")
+  runAt       DateTime  @default(now()) @map("run_at")
+  lockedAt    DateTime? @map("locked_at")
+  lockedUntil DateTime? @map("locked_until")
+  lockToken   String?   @map("lock_token") @db.Uuid
+  lastError   String?   @map("last_error")
+  finishedAt  DateTime? @map("finished_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, runAt, createdAt])
+  @@index([lockedUntil])
+  @@map("background_jobs")
+}

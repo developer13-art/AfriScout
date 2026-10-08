@@ -1,6 +1,3 @@
-import { Worker } from "bullmq";
-import { createBullConnection } from "../../config/redis";
-import { env } from "../../config/env";
 import { logger } from "../../config/logger";
 import { PROCESS_DOCUMENT_JOB } from "../definitions/processDocument.job";
 import { fetchDocument } from "../../services/documents/documentFetch.service";
@@ -9,12 +6,9 @@ import { extractDocumentFields } from "../../services/documents/documentExtract.
 import { markExtractionResult, getDocument } from "../../services/documents/document.service";
 import { storage } from "../../config/storage";
 
-export function startDocumentWorker(): Worker {
-  const worker = new Worker(
-    "document",
-    async (job) => {
+export async function processDocumentJob(job: { name: string; payload: unknown }): Promise<void> {
       if (job.name !== PROCESS_DOCUMENT_JOB) return;
-      const { documentId } = job.data as { documentId: string };
+      const { documentId } = job.payload as { documentId: string };
       const doc = await getDocument(documentId);
 
       await markExtractionResult(doc.id, "FETCHING");
@@ -42,17 +36,5 @@ export function startDocumentWorker(): Worker {
           errorMessage: error instanceof Error ? error.message : "Unknown error",
         });
       }
-    },
-    {
-      connection: createBullConnection(),
-      prefix: env.QUEUE_PREFIX,
-      concurrency: env.WORKER_CONCURRENCY,
-    },
-  );
-
-  worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, err }, "document_job_failed");
-  });
-
-  return worker;
+    }
 }

@@ -49,7 +49,6 @@ const scopes: { value: DiscoveryScope; label: string }[] = [
   { value: "ASIA", label: "Asia" },
   { value: "SOUTH_AMERICA", label: "South America" },
   { value: "OCEANIA", label: "Oceania" },
-  { value: "CUSTOM", label: "Custom" },
 ];
 
 const scoreLabels: {
@@ -106,13 +105,6 @@ function isPendingCandidate(candidate: SourceCandidate): boolean {
   ].includes(normalizedStatus(candidate.status));
 }
 
-function splitList(value: string): string[] {
-  return value
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date unavailable";
@@ -161,9 +153,6 @@ export function SourceDiscovery() {
   const activeJobsRef = useRef(false);
   const selectedRunActiveRef = useRef(false);
   const [scope, setScope] = useState<DiscoveryScope>("AFRICA");
-  const [countries, setCountries] = useState("");
-  const [categories, setCategories] = useState("");
-  const [sourceTypes, setSourceTypes] = useState("");
   const [minimumScore, setMinimumScore] = useState(45);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -253,9 +242,6 @@ export function SourceDiscovery() {
     setNotice(null);
     createRun.mutate({
       scope,
-      countries: splitList(countries),
-      categories: splitList(categories),
-      sourceTypes: splitList(sourceTypes),
       minimumScore: Number(minimumScore),
     });
   }
@@ -403,25 +389,17 @@ export function SourceDiscovery() {
                       {scopes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                     </select>
                   </label>
-                  <TokenField
-                    label="Countries"
-                    value={countries}
-                    onChange={setCountries}
-                    placeholder="GH, KE, NG"
-                    helper="Comma-separated country codes. Leave blank to use the selected scope."
-                  />
-                  <TokenField
-                    label="Opportunity categories"
-                    value={categories}
-                    onChange={setCategories}
-                    placeholder="grants, fellowships, accelerators"
-                  />
-                  <TokenField
-                    label="Source types"
-                    value={sourceTypes}
-                    onChange={setSourceTypes}
-                    placeholder="government, foundation, university"
-                  />
+                  <div className="rounded-xl border border-[#dce8df] bg-[#f3f8f4] p-3.5">
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#39785f]" />
+                      <div>
+                        <p className="text-xs font-semibold text-[#304a3c]">AI selects what to look for</p>
+                        <p className="mt-1 text-xs leading-5 text-[#65786b]">
+                          Scout identifies countries, opportunity categories, and publisher types from each result. You only choose a search region.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   <label className="block">
                     <span className="mb-1.5 flex items-center justify-between text-xs font-medium text-[#45594f]">
                       Minimum assessment score
@@ -682,33 +660,6 @@ export function SourceDiscovery() {
         />
       ) : null}
     </>
-  );
-}
-
-function TokenField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  helper,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  helper?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-[#45594f]">{label}</span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="h-10 w-full rounded-lg border border-[#cdd9d0] bg-white px-3 text-sm text-[#294238] outline-none placeholder:text-[#a5afa8] focus:border-[#658b79] focus:ring-2 focus:ring-[#8db19f]/20"
-      />
-      {helper ? <span className="mt-1 block text-[10px] leading-4 text-[#8a968e]">{helper}</span> : null}
-    </label>
   );
 }
 

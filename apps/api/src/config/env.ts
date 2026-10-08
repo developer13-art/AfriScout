@@ -28,10 +28,6 @@ const EnvSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
   DATABASE_SSL: booleanFromEnv.default(false),
 
-  REDIS_URL: z.string().min(1),
-  REDIS_PREFIX: z.string().default("afriscout"),
-  REDIS_TLS: booleanFromEnv.default(false),
-
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
@@ -114,8 +110,7 @@ const EnvSchema = z.object({
   OUTBOUND_WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().positive().default(6),
   OUTBOUND_WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
 
-  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
-  QUEUE_PREFIX: z.string().default("afriscout"),
+  JOB_CONCURRENCY: z.coerce.number().int().positive().default(5),
   JOB_ATTEMPTS_DEFAULT: z.coerce.number().int().positive().default(5),
   JOB_BACKOFF_MS: z.coerce.number().int().positive().default(5000),
 

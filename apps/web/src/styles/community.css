@@ -1,11 +1,11 @@
 .scout-social-shell {
-  --scout-bg: #071522;
-  --scout-panel: #0b1d2c;
-  --scout-panel-raised: #102538;
-  --scout-border: #1b3549;
-  --scout-text: #edf5f8;
-  --scout-muted: #8da5b6;
-  --scout-teal: #15d4b5;
+  --scout-bg: #f7f9f7;
+  --scout-panel: #ffffff;
+  --scout-panel-raised: #f0f4f1;
+  --scout-border: #dfe6e1;
+  --scout-text: #1b2921;
+  --scout-muted: #68766d;
+  --scout-teal: #168468;
   background: var(--scout-bg) !important;
   color: var(--scout-text);
 }
