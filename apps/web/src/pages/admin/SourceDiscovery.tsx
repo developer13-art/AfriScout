@@ -896,7 +896,7 @@ function CandidateDetail({
       <div className="mt-4 border-t border-[#e2e9e1] pt-4">
         {isPending ? (
           <>
-            <p className="mb-2 text-[10px] text-[#88958c]">Human review actions. Approval creates an inactive source only.</p>
+            <p className="mb-2 text-[10px] text-[#88958c]">Human review actions. Approval creates a registry source that remains inactive until source testing succeeds.</p>
             <div className="grid grid-cols-2 gap-2">
               <Button size="sm" disabled={reviewPending} onClick={() => onReview(candidate, "APPROVE")} leftIcon={<ShieldCheck className="h-3.5 w-3.5" />} className="!bg-[#35654e] hover:!bg-[#284f3d]">
                 Approve
@@ -962,7 +962,7 @@ function ReviewDialog({
   const actionCopy: Record<CandidateReviewAction, { title: string; description: string; button: string }> = {
     APPROVE: {
       title: "Approve this candidate?",
-      description: "This creates a registry source in an inactive state. It will still need source testing and activation before Scout uses it.",
+      description: "This creates a registry source in an inactive state. Source testing must succeed before the source can be activated and Apify can collect opportunities.",
       button: "Confirm approval",
     },
     REJECT: {

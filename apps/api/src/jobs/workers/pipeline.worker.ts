@@ -12,6 +12,7 @@ import {
 } from "../../services/opportunities/deduplication.service";
 import { upsertCanonicalOpportunity } from "../../services/opportunities/canonical.service";
 import { enqueueMatchUsers } from "../definitions/matchUsers.job";
+import { analyzeOpportunity } from "../../services/ai/opportunityAnalyst.service";
 
 export function startPipelineWorker(): Worker {
   const worker = new Worker(
@@ -80,14 +81,22 @@ export function startPipelineWorker(): Worker {
           });
         }
 
+        if (created) {
+          try {
+            await analyzeOpportunity(created.id, normalized);
+          } catch (analysisError) {
+            logger.warn(
+              { opportunityId: created.id, err: analysisError },
+              "opportunity_intelligence_failed_non_blocking",
+            );
+          }
+          await enqueueMatchUsers({ opportunityId: created.id });
+        }
+
         await prisma.rawOpportunity.update({
           where: { id: rawOpportunityId },
           data: { processingStatus: "PROCESSED", processedAt: new Date() },
         });
-
-        if (created) {
-          await enqueueMatchUsers({ opportunityId: created.id });
-        }
       } catch (error) {
         logger.error({ err: error, rawOpportunityId }, "pipeline_processing_failed");
         await prisma.rawOpportunity.update({

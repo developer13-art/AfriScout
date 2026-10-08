@@ -70,7 +70,7 @@ export function SourceDetails() {
                 onClick={() => runDiscovery.mutate()}
                 loading={runDiscovery.isPending}
               >
-                Run discovery
+                Run Apify discovery
               </Button>
             </>
           }
@@ -80,6 +80,12 @@ export function SourceDetails() {
       {message ? (
         <Alert tone="info" className="mb-4">
           {message}
+        </Alert>
+      ) : null}
+
+      {!s.active ? (
+        <Alert tone="warning" className="mb-4">
+          This approved source is inactive. Test the actor, then run Apify discovery. A successful ingestion activates the source and records its health.
         </Alert>
       ) : null}
 

@@ -113,6 +113,19 @@ export async function finalizeIngestion(input: {
     });
   }
 
+  await prisma.source.update({
+    where: { id: input.sourceId },
+    data: {
+      active: true,
+      health: "HEALTHY",
+      lastSuccessAt: new Date(),
+      lastRunAt: new Date(),
+      consecutiveFailures: 0,
+      successCount: { increment: 1 },
+      itemsTotal: { increment: result.imported },
+    },
+  });
+
   await markRunFinished({
     runId: input.runId,
     status: "SUCCEEDED",

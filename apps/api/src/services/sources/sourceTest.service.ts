@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { prisma } from "../../config/database";
 import { apifyActors, startActorRun } from "../apify/actor.service";
 import { fetchDatasetItems } from "../apify/dataset.service";
@@ -11,6 +12,7 @@ export interface SourceTestResult {
   datasetId: string | null;
   runId: string | null;
   errorMessage: string | null;
+  verificationId?: string;
 }
 
 interface SourceMetadata {
@@ -65,12 +67,40 @@ export async function testSource(sourceId: string): Promise<SourceTestResult> {
       if (items.length > 0) break;
     }
 
+    const verification = await prisma.sourceVerification.upsert({
+      where: { sourceId_version: { sourceId: source.id, version: 1 } },
+      update: {
+        status: items.length > 0 ? "VERIFIED" : "FAILED",
+        snapshot: {
+          sourceId: source.id,
+          testedAt: new Date().toISOString(),
+          itemsFound: items.length,
+          datasetId: run.defaultDatasetId,
+        },
+      },
+      create: {
+        sourceId: source.id,
+        version: 1,
+        status: items.length > 0 ? "VERIFIED" : "FAILED",
+        snapshot: {
+          sourceId: source.id,
+          testedAt: new Date().toISOString(),
+          itemsFound: items.length,
+          datasetId: run.defaultDatasetId,
+        },
+        fingerprint: createHash("sha256")
+          .update(JSON.stringify({ sourceId: source.id, testedAt: new Date().toISOString(), itemsFound: items.length }))
+          .digest("hex"),
+      },
+    });
+
     return {
-      success: true,
+      success: items.length > 0,
       itemsFound: items.length,
       datasetId: run.defaultDatasetId,
       runId: run.id,
-      errorMessage: null,
+      errorMessage: items.length > 0 ? null : "The source returned no extractable opportunities",
+      verificationId: verification.id,
     };
   } catch (error) {
     logger.error({ err: error, sourceId }, "source_test_failed");

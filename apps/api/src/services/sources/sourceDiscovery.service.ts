@@ -404,7 +404,21 @@ export async function reviewCandidate(
         data: { candidateId: id, sourceId: source.id, fingerprint } as Prisma.InputJsonValue,
       },
     });
-    return { candidate: serializeCandidate(updatedCandidate), source };
+    return {
+      candidate: serializeCandidate(updatedCandidate),
+      source: {
+        ...source,
+        sourceVerification: await tx.sourceVerification.findFirst({
+          where: { sourceId: source.id },
+          orderBy: { version: "desc" },
+        }),
+        runs: await tx.sourceRun.findMany({
+          where: { sourceId: source.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+      },
+    };
   });
 
   return result;

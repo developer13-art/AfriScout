@@ -123,7 +123,36 @@ export interface CandidateReviewInput {
   notes?: string;
 }
 
+export interface SourceVerificationState {
+  id: string;
+  status: string;
+  version: number;
+  fingerprint: string;
+  snapshot: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface SourceRunSummary {
+  id: string;
+  status: string;
+  trigger: string;
+  itemsFound: number;
+  itemsImported: number;
+  itemsUpdated: number;
+  itemsInvalid: number;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 export interface CandidateReviewResult {
   candidate: SourceCandidate;
-  source?: unknown;
+  source?: {
+    id: string;
+    name: string;
+    url: string;
+    active: boolean;
+    health: string;
+    sourceVerification?: SourceVerificationState | null;
+    runs?: SourceRunSummary[];
+  };
 }
