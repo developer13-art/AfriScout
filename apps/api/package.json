@@ -14,12 +14,12 @@
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "sh scripts/prisma-with-neon.sh generate",
-    "db:migrate": "sh scripts/prisma-with-neon.sh migrate dev",
-    "db:migrate:deploy": "sh scripts/prisma-with-neon.sh migrate deploy",
-    "db:reset": "sh scripts/prisma-with-neon.sh migrate reset",
+    "db:generate": "node scripts/prisma-with-neon.js generate",
+    "db:migrate": "node scripts/prisma-with-neon.js migrate dev",
+    "db:migrate:deploy": "node scripts/prisma-with-neon.js migrate deploy",
+    "db:reset": "node scripts/prisma-with-neon.js migrate reset",
     "db:seed": "tsx src/database/prisma/seed/index.ts",
-    "db:studio": "sh scripts/prisma-with-neon.sh studio"
+    "db:studio": "node scripts/prisma-with-neon.js studio"
   },
   "dependencies": {
     "@afriscout/shared": "*",
