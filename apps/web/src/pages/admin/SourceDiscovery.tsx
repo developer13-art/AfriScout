@@ -195,7 +195,10 @@ export function SourceDiscovery() {
   const createRun = useMutation({
     mutationFn: (input: DiscoveryInput) => sourceDiscoveryService.createRun(input),
     onSuccess: async (run) => {
-      setNotice({ tone: "success", text: "Discovery search queued. Its saved status will update as the job progresses." });
+      setNotice({
+        tone: "success",
+        text: `Native AI web search completed with ${run.resultCount} candidate${run.resultCount === 1 ? "" : "s"}.`,
+      });
       setSelectedRunId(run.id);
       await queryClient.invalidateQueries({ queryKey: ["source-discovery", "overview"] });
       await queryClient.invalidateQueries({ queryKey: ["source-discovery", "runs"] });
@@ -629,7 +632,6 @@ export function SourceDiscovery() {
                             <div className="grid gap-3 text-xs sm:grid-cols-3">
                               <RunDetail label="Last updated" value={formatDate(run.updatedAt)} />
                               <RunDetail label="Queries" value={run.queries?.length ? run.queries.join(" · ") : "No query details returned"} />
-                              <RunDetail label="External run ID" value={run.apifyRunId || "Not assigned"} />
                             </div>
                             {runDetailQuery.isFetching && runDetailQuery.data?.id === run.id ? (
                               <p className="mt-3 text-[11px] text-[#819087]">Refreshing persisted run details…</p>

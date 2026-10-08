@@ -1,27 +1,21 @@
 import { createHash } from "node:crypto";
 import { Prisma, type SourceType, type SuggestionStatus } from "@prisma/client";
 import { prisma } from "../../config/database";
-import { apifyConfig } from "../../config/apify";
 import { logger } from "../../config/logger";
 import { ConflictError, InternalError, NotFoundError, ValidationError } from "../../utils/errors";
 import { ensureUniqueSlug, slugify } from "../../utils/slugify";
-import { fetchAllDatasetItems } from "../apify/dataset.service";
-import { getActorRun, startActorRun } from "../apify/actor.service";
 import type { SourceCandidateReviewInput } from "../../validators/sourceDiscovery.validator";
+import { discoverWebSearchResults } from "./sourceDiscoverySearch.service";
 import {
   assessSearchResults,
   buildDiscoveryQueries,
   canonicalCategory,
-  extractSearchResults,
   getHost,
   nameSimilarity,
   normalizedCandidateUrl,
   type CandidateAssessment,
   type DiscoverySearchResult,
 } from "./sourceDiscoveryAnalysis.service";
-
-const SEARCH_ACTOR_ID = "apify~google-search-scraper";
-const TERMINAL_RUN_STATUSES = new Set(["COMPLETED", "SUCCEEDED", "FAILED", "ERROR", "ABORTED", "TIMED-OUT", "TIMED_OUT"]);
 
 type SuggestionMetadata = Record<string, unknown>;
 type CreateSourceDiscoveryRunInput = {
@@ -33,17 +27,13 @@ type CreateSourceDiscoveryRunInput = {
 };
 
 export async function createRun(input: CreateSourceDiscoveryRunInput, requestedBy: string) {
-  if (!apifyConfig.isConfigured) {
-    throw new InternalError("Source discovery needs APIFY_TOKEN. Add it in Replit Secrets, then retry.");
-  }
-
   const queries = buildDiscoveryQueries(input);
   if (queries.length === 0) throw new ValidationError("At least one search strategy is required");
 
   const run = await prisma.sourceDiscoveryRun.create({
     data: {
       requestedBy,
-      actorId: SEARCH_ACTOR_ID,
+      actorId: "native-web-search",
       status: "QUEUED",
       scope: input.scope,
       countries: input.countries,
@@ -55,42 +45,36 @@ export async function createRun(input: CreateSourceDiscoveryRunInput, requestedB
   });
 
   try {
-    const started = await startActorRun(
-      SEARCH_ACTOR_ID,
-      {
-        searchStringsArray: queries,
-        maxPagesPerQuery: 1,
-        resultsPerPage: 10,
-        includeUnfilteredResults: false,
-        saveHtml: false,
-        saveHtmlToKeyValueStore: false,
-        languageCode: "en",
-        ...(input.countries.length === 1 && /^[A-Za-z]{2}$/.test(input.countries[0])
-          ? { countryCode: input.countries[0].toLowerCase() }
-          : {}),
-      } as never,
-      { memoryMb: 1024, timeoutSeconds: 600 },
-    );
-
-    return prisma.sourceDiscoveryRun.update({
+    await prisma.sourceDiscoveryRun.update({ where: { id: run.id }, data: { status: "RUNNING" } });
+    const searchResults = (await discoverWebSearchResults(queries)).map((result, index) => ({
+      ...result,
+      id: `candidate-${index + 1}`,
+    }));
+    await prisma.sourceDiscoveryRun.update({ where: { id: run.id }, data: { status: "ANALYZING" } });
+    const assessments = await assessSearchResults(searchResults);
+    const stored = await persistCandidates(run, searchResults, assessments);
+    return await prisma.sourceDiscoveryRun.update({
       where: { id: run.id },
       data: {
-        apifyRunId: started.id,
-        status: started.status === "READY" ? "RUNNING" : started.status,
+        status: "COMPLETED",
+        resultCount: stored,
+        processedAt: new Date(),
+        errorMessage: null,
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not start the search actor";
+    const message = error instanceof Error ? error.message : "Native source discovery failed";
     await prisma.sourceDiscoveryRun.update({
       where: { id: run.id },
-      data: { status: "FAILED", errorMessage: message },
+      data: { status: "FAILED", errorMessage: message, processedAt: new Date() },
     });
+    logger.error({ err: error, discoveryRunId: run.id }, "source_discovery_failed");
     throw error;
   }
 }
 
 export async function getOverview() {
-  await refreshActiveRuns();
+  await failLegacyApifyRuns();
   const [sourcesDiscovered, pendingReview, approved, runs, candidates] = await Promise.all([
     prisma.sourceSuggestion.count({ where: { sourceDiscoveryRunId: { not: null } } }),
     prisma.sourceSuggestion.count({
@@ -140,12 +124,12 @@ export async function getOverview() {
 }
 
 export async function listRuns() {
-  await refreshActiveRuns();
+  await failLegacyApifyRuns();
   return prisma.sourceDiscoveryRun.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
 }
 
 export async function getRun(id: string) {
-  await refreshRun(id);
+  await failLegacyApifyRuns();
   const run = await prisma.sourceDiscoveryRun.findUnique({ where: { id } });
   if (!run) throw new NotFoundError("Discovery job not found");
   const candidates = await prisma.sourceSuggestion.findMany({
@@ -412,84 +396,18 @@ export async function reviewCandidate(
   return result;
 }
 
-async function refreshActiveRuns(): Promise<void> {
-  const activeRuns = await prisma.sourceDiscoveryRun.findMany({
-    where: { status: { in: ["QUEUED", "RUNNING", "ANALYZING"] } },
-    orderBy: { createdAt: "desc" },
-    take: 10,
+async function failLegacyApifyRuns(): Promise<void> {
+  await prisma.sourceDiscoveryRun.updateMany({
+    where: {
+      apifyRunId: { not: null },
+      status: { in: ["QUEUED", "RUNNING", "ANALYZING"] },
+    },
+    data: {
+      status: "FAILED",
+      errorMessage: "This run used the retired Apify discovery flow. Start a new run to use native AI web search.",
+      processedAt: new Date(),
+    },
   });
-  const now = Date.now();
-  await Promise.all(activeRuns.map(async (run) => {
-    const staleAfterMs = run.status === "ANALYZING" ? 600_000 : 4_000;
-    if (now - run.updatedAt.getTime() < staleAfterMs) return;
-    try {
-      await refreshRun(run.id);
-    } catch (error) {
-      logger.warn({ err: error, discoveryRunId: run.id }, "source_discovery_refresh_failed");
-    }
-  }));
-}
-
-async function refreshRun(id: string): Promise<void> {
-  const run = await prisma.sourceDiscoveryRun.findUnique({ where: { id } });
-  if (!run) throw new NotFoundError("Discovery job not found");
-  if (TERMINAL_RUN_STATUSES.has(run.status.toUpperCase())) return;
-  if (!run.apifyRunId) return;
-  if (run.status === "ANALYZING" && Date.now() - run.updatedAt.getTime() >= 600_000) {
-    await prisma.sourceDiscoveryRun.update({ where: { id }, data: { status: "RUNNING" } });
-  } else if (run.status === "ANALYZING") {
-    return;
-  }
-
-  const apifyRun = await getActorRun(run.apifyRunId);
-  if (["READY", "RUNNING"].includes(apifyRun.status)) {
-    if (run.status !== "RUNNING") {
-      await prisma.sourceDiscoveryRun.update({ where: { id }, data: { status: "RUNNING" } });
-    }
-    return;
-  }
-  if (apifyRun.status !== "SUCCEEDED") {
-    await prisma.sourceDiscoveryRun.update({
-      where: { id },
-      data: {
-        status: apifyRun.status === "ABORTED" ? "ABORTED" : "FAILED",
-        errorMessage: `Apify source search ended with status ${apifyRun.status}`,
-        processedAt: new Date(),
-      },
-    });
-    return;
-  }
-
-  const claimed = await prisma.sourceDiscoveryRun.updateMany({
-    where: { id, status: { in: ["RUNNING", "QUEUED", "READY"] } },
-    data: { status: "ANALYZING" },
-  });
-  if (claimed.count === 0) return;
-
-  try {
-    const datasetId = apifyRun.defaultDatasetId;
-    if (!datasetId) throw new InternalError("Apify search did not produce a result dataset");
-    const rawItems = await fetchAllDatasetItems(datasetId, { maxItems: 2000 });
-    const searchResults = extractSearchResults(rawItems);
-    const assessments = await assessSearchResults(searchResults);
-    const stored = await persistCandidates(run, searchResults, assessments);
-    await prisma.sourceDiscoveryRun.update({
-      where: { id },
-      data: {
-        status: "COMPLETED",
-        resultCount: stored,
-        processedAt: new Date(),
-        errorMessage: null,
-      },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not analyze source-search results";
-    await prisma.sourceDiscoveryRun.update({
-      where: { id },
-      data: { status: "FAILED", errorMessage: message, processedAt: new Date() },
-    });
-    logger.error({ err: error, discoveryRunId: id }, "source_discovery_analysis_failed");
-  }
 }
 
 async function persistCandidates(
@@ -686,4 +604,3 @@ function adapterLabel(adapter: string): string {
   };
   return labels[adapter] ?? adapter;
 }
-

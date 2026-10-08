@@ -5,4 +5,12 @@ export interface AiProvider {
   readonly name: AiProviderName;
   isConfigured(): boolean;
   complete(input: AiRequestInput): Promise<AiResponse>;
+  searchWeb?(queries: string[]): Promise<AiWebSearchResult[]>;
+}
+
+export interface AiWebSearchResult {
+  title: string;
+  url: string;
+  description: string;
+  query: string;
 }

@@ -190,7 +190,7 @@ Consequences:
 
 ---
 
-## ADR-006 — Apify as the discovery and monitoring layer
+## ADR-006 — Apify as the source monitoring layer
 
 Status: Accepted
 
@@ -200,10 +200,14 @@ public sources across Africa. Sources vary in structure, language, and
 update cadence. A monolithic scraper is unmaintainable.
 
 Decision:
-Use Apify Actors as the web discovery and extraction layer, with a
-source-adapter architecture.
+Use configured AI providers' native live web-search/grounding tools for
+admin source discovery. Candidate URLs must come from provider-returned
+search results or citations; plain model-generated URLs are not accepted.
+Use Apify Actors for source crawling, document extraction, and monitoring
+with a source-adapter architecture.
 
-Primary Actors (independent packages under apify/actors):
+Source candidate discovery is separate from these crawling Actors. Once a
+source is selected, Actors (independent packages under apify/actors) handle:
   opportunity-discovery
   document-extractor
   opportunity-monitor
@@ -216,6 +220,9 @@ enqueues ingestion.
 
 Rules:
   - Apify API token is server-side only. Never sent to the frontend.
+  - Source discovery uses a configured grounded-search provider (currently
+    OpenAI Responses web search or Gemini Google Search); it does not require
+    an Apify token.
   - Every run is recorded in `source_runs` with status, counts, timing,
     and error details.
   - Every opportunity stores source id, source url, discovery timestamp,
