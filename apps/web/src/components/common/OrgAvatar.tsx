@@ -30,7 +30,7 @@ export function OrgAvatar({
       aria-label={name}
     >
       {logoUrl ? (
-        <img src={logoUrl} alt={name} className="h-full w-full object-cover" />
+        <img src={logoUrl} alt={name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
       ) : (
         <Building2 aria-hidden className="h-5 w-5" />
       )}

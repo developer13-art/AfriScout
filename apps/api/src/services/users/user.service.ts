@@ -2,6 +2,7 @@ import { prisma } from "../../config/database";
 import { ConflictError, NotFoundError } from "../../utils/errors";
 import type { RoleKey } from "../../constants/roles";
 import type { SaveCompleteProfileInput, UpdateMeInput, UpdateProfileInput } from "../../validators/user.validator";
+import { ensureMatchesForUser } from "../matching/batchMatch.service";
 
 export async function findUserById(id: string) {
   const user = await prisma.user.findUnique({
@@ -100,7 +101,7 @@ export async function updateUser(
   patch: UpdateMeInput,
 ) {
   await requireUserById(userId);
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: {
       fullName: patch.fullName,
@@ -123,6 +124,8 @@ export async function updateUser(
       updatedAt: true,
     },
   });
+  await ensureMatchesForUser(userId);
+  return updated;
 }
 
 export async function findUserProfile(userId: string) {
@@ -131,7 +134,7 @@ export async function findUserProfile(userId: string) {
 
 export async function updateUserProfile(userId: string, patch: UpdateProfileInput) {
   try {
-    return await prisma.userProfile.upsert({
+    const profile = await prisma.userProfile.upsert({
       where: { userId },
       create: {
         userId,
@@ -144,6 +147,8 @@ export async function updateUserProfile(userId: string, patch: UpdateProfileInpu
         username: patch.username?.toLowerCase(),
       },
     });
+    await ensureMatchesForUser(userId);
+    return profile;
   } catch (error) {
     if (
       error &&
@@ -173,7 +178,7 @@ export async function getCompleteProfile(userId: string) {
 
 export async function saveCompleteProfile(userId: string, patch: SaveCompleteProfileInput) {
   try {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id: userId },
         data: {
@@ -270,6 +275,8 @@ export async function saveCompleteProfile(userId: string, patch: SaveCompletePro
 
       return { user, profile, professionalProfile, studentProfile };
     });
+    await ensureMatchesForUser(userId);
+    return result;
   } catch (error) {
     if (
       error &&

@@ -138,10 +138,17 @@ export async function processMatchingJob(job: { name: string; payload: unknown }
         const { userId } = job.payload as RecomputeMatchesPayload;
         const count = await recomputeMatchesForUser(userId);
         logger.info({ userId, count }, "matches_recomputed");
+        const latestDna = await prisma.dnaProfile.findFirst({
+          where: { userId, isActive: true },
+          select: { updatedAt: true },
+        });
         matches = await prisma.match.findMany({
           where: {
             userId,
-            aiMatchAnalyzedAt: null,
+            OR: [
+              { aiMatchAnalyzedAt: null },
+              ...(latestDna ? [{ computedAt: { lt: latestDna.updatedAt } }] : []),
+            ],
             dnaProfile: { is: { isActive: true } },
             opportunity: { is: { status: "PUBLISHED" } },
           },

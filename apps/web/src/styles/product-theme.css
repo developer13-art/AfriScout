@@ -1,25 +1,26 @@
-/* Scout's shared dark product theme. */
+/* Scout light product theme. */
 :root {
-  color-scheme: dark;
-  --scout-bg: #020617;
-  --scout-surface: #0f172a;
-  --scout-panel: #111827;
-  --scout-panel-raised: #172033;
-  --scout-panel-hover: #1e293b;
-  --scout-border: #1e293b;
-  --scout-border-strong: #334155;
-  --scout-text: #f8fafc;
-  --scout-text-secondary: #cbd5e1;
-  --scout-muted: #94a3b8;
-  --scout-disabled: #64748b;
-  --scout-primary: #10b981;
-  --scout-primary-hover: #059669;
-  --scout-primary-strong: #047857;
-  --scout-teal: #0f766e;
-  --scout-ai: #8b5cf6;
-  --scout-ink: #020617;
+  color-scheme: light;
+  --scout-bg: var(--color-surface);
+  --scout-surface: var(--color-surface-muted);
+  --scout-panel: var(--color-surface);
+  --scout-panel-raised: var(--color-neutral-50);
+  --scout-panel-hover: var(--color-neutral-100);
+  --scout-border: var(--color-border);
+  --scout-border-strong: var(--color-border-strong);
+  --scout-text: var(--color-text);
+  --scout-text-secondary: var(--color-text-muted);
+  --scout-muted: var(--color-text-subtle);
+  --scout-disabled: var(--color-neutral-500);
+  --scout-primary: var(--color-primary-600);
+  --scout-primary-hover: var(--color-primary-700);
+  --scout-primary-strong: var(--color-primary-700);
+  --scout-teal: var(--color-secondary-600);
+  --scout-ai: #7c3aed;
+  --scout-ink: var(--color-text);
 }
 
+html { color-scheme: light; }
 body {
   color: var(--scout-text);
   background: var(--scout-bg);
@@ -33,7 +34,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 a { color: var(--scout-primary); }
-a:hover { color: #6ee7b7; }
+a:hover { color: var(--scout-primary-hover); }
 
 .scout-product-shell,
 .scout-public-shell,
@@ -46,13 +47,11 @@ a:hover { color: #6ee7b7; }
   --theme-muted: var(--scout-muted);
   color: var(--theme-text);
   background:
-    radial-gradient(ellipse at 72% -25%, rgb(16 119 105 / 11%), transparent 44%),
+    radial-gradient(ellipse at 78% -25%, rgb(16 185 129 / 8%), transparent 46%),
     var(--theme-bg) !important;
 }
 
-.scout-product-shell {
-  min-height: 100dvh;
-}
+.scout-product-shell { min-height: 100dvh; }
 
 /* Bring existing utility-based pages into the shared palette without changing their structure. */
 .scout-product-shell .bg-white,
@@ -186,7 +185,7 @@ a:hover { color: #6ee7b7; }
   position: sticky;
   top: 0;
   height: 100dvh !important;
-  background: #020617 !important;
+  background: var(--color-neutral-50) !important;
   border-color: var(--scout-border) !important;
 }
 .scout-product-sidebar > div:first-child {
@@ -201,8 +200,8 @@ a:hover { color: #6ee7b7; }
 }
 .scout-product-shell aside nav a[aria-current="page"],
 .scout-product-shell aside nav a.active {
-  color: #6ee7b7 !important;
-  background: #052e1b !important;
+  color: var(--scout-primary) !important;
+  background: var(--color-primary-100) !important;
 }
 .scout-product-shell aside nav a:hover {
   color: var(--scout-text) !important;
@@ -213,31 +212,31 @@ a:hover { color: #6ee7b7; }
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgb(15 23 42 / 94%) !important;
+  background: rgb(255 255 255 / 94%) !important;
   border-color: var(--scout-border) !important;
   backdrop-filter: blur(16px);
 }
 .scout-product-shell main {
   background:
-    radial-gradient(ellipse at 72% -25%, rgb(16 119 105 / 10%), transparent 44%),
+    radial-gradient(ellipse at 72% -25%, rgb(16 185 129 / 10%), transparent 44%),
     var(--scout-bg);
 }
 
 .scout-public-shell > header {
-  background: rgb(15 23 42 / 94%) !important;
+  background: rgb(255 255 255 / 94%) !important;
   border-color: var(--scout-border) !important;
   backdrop-filter: blur(16px);
 }
 .scout-public-shell > footer {
-  background: #06121e !important;
-  border-color: #142b3c !important;
+  background: var(--color-neutral-50) !important;
+  border-color: var(--scout-border) !important;
 }
 .scout-public-shell nav a { transition: color 160ms ease; }
 .scout-public-shell nav a:hover { text-decoration: none; }
 .scout-public-shell .scout-public-hero {
   background:
     radial-gradient(ellipse at 75% 0%, rgb(16 185 129 / 12%), transparent 54%),
-    linear-gradient(180deg, #0f172a 0%, #020617 100%) !important;
+    linear-gradient(180deg, var(--color-neutral-50), var(--color-primary-100)) !important;
   border-color: var(--scout-border) !important;
 }
 .scout-public-shell .scout-public-hero .ring-teal-200 {
@@ -245,19 +244,19 @@ a:hover { color: #6ee7b7; }
 }
 .scout-auth-shell {
   background:
-    radial-gradient(ellipse at 15% 10%, rgb(16 185 129 / 10%), transparent 33%),
-    radial-gradient(ellipse at 85% 78%, rgb(15 118 110 / 16%), transparent 40%),
-    #020617 !important;
+    radial-gradient(ellipse at 15% 10%, rgb(16 185 129 / 8%), transparent 33%),
+    radial-gradient(ellipse at 85% 78%, rgb(15 118 110 / 9%), transparent 40%),
+    var(--color-neutral-50) !important;
 }
 .scout-auth-shell > header,
 .scout-auth-shell > footer {
-  background: rgb(15 23 42 / 88%) !important;
+  background: rgb(255 255 255 / 88%) !important;
   border-color: var(--scout-border) !important;
 }
 .scout-product-shell .shadow-sm,
-.scout-public-shell .shadow-sm { box-shadow: 0 10px 30px rgb(0 0 0 / 16%); }
+.scout-public-shell .shadow-sm { box-shadow: 0 10px 30px rgb(15 23 42 / 10%); }
 .scout-product-shell .shadow-md,
-.scout-public-shell .shadow-md { box-shadow: 0 14px 40px rgb(0 0 0 / 22%); }
+.scout-public-shell .shadow-md { box-shadow: 0 14px 40px rgb(15 23 42 / 14%); }
 .scout-product-shell button,
 .scout-public-shell button,
 .scout-auth-shell button { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease; }
@@ -269,24 +268,24 @@ a:hover { color: #6ee7b7; }
 .scout-auth-shell :focus-visible { box-shadow: 0 0 0 3px rgb(16 185 129 / 28%); }
 
 .scout-mobile-panel {
-  background: #020617 !important;
+  background: var(--color-neutral-50) !important;
   border-right: 1px solid var(--scout-border);
 }
 .scout-mobile-panel > div:first-child { border-color: var(--scout-border) !important; }
 .scout-mobile-panel nav a,
 .scout-mobile-panel nav button { color: var(--scout-muted); }
 .scout-mobile-panel nav a[aria-current="page"],
-.scout-mobile-panel nav a.active { color: #6ee7b7 !important; background: #052e1b !important; }
+.scout-mobile-panel nav a.active { color: var(--scout-primary) !important; background: var(--color-primary-100) !important; }
 .scout-mobile-panel nav a:hover,
 .scout-mobile-panel nav button:hover { color: var(--scout-text); background: var(--scout-panel-hover); }
 
 .scout-theme-dialog { color: var(--scout-text); }
-.scout-theme-dialog > div:first-child { background: rgb(2 6 23 / 76%) !important; }
+.scout-theme-dialog > div:first-child { background: rgb(255 255 255 / 82%) !important; }
 .scout-theme-dialog-panel {
   color: var(--scout-text);
   border: 1px solid var(--scout-border-strong);
   background: var(--scout-surface) !important;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 18%);
 }
 .scout-theme-dialog-panel .border-neutral-100,
 .scout-theme-dialog-panel .border-neutral-200 { border-color: var(--scout-border) !important; }
@@ -399,12 +398,12 @@ a:hover { color: #6ee7b7; }
   .scout-auth-shell * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
 
-/* Shared dark surfaces override legacy page-level light utility classes. */
-html { color-scheme: dark; }
+/* Shared light surfaces override legacy page-level utility classes. */
+html { color-scheme: light; }
 body { color: var(--scout-text); background-color: var(--scout-bg); }
 h1, h2, h3, h4, h5, h6 { color: var(--scout-text); }
 a { color: var(--scout-primary); }
-a:hover { color: #6ee7b7; }
+a:hover { color: var(--scout-primary-hover); }
 
 .scout-product-shell,
 .scout-public-shell,
@@ -417,7 +416,7 @@ a:hover { color: #6ee7b7; }
   --theme-muted: var(--scout-muted);
   color: var(--scout-text);
   background:
-    radial-gradient(ellipse at 78% -25%, rgb(16 185 129 / 9%), transparent 46%),
+    radial-gradient(ellipse at 78% -25%, rgb(16 185 129 / 8%), transparent 46%),
     var(--scout-bg) !important;
 }
 
@@ -426,10 +425,10 @@ a:hover { color: #6ee7b7; }
 .scout-auth-shell .bg-white { background-color: var(--scout-panel) !important; }
 .scout-product-shell .bg-neutral-50,
 .scout-public-shell .bg-neutral-50,
-.scout-auth-shell .bg-neutral-50 { background-color: var(--scout-bg) !important; }
+.scout-auth-shell .bg-neutral-50 { background-color: var(--scout-panel-raised) !important; }
 .scout-product-shell .bg-neutral-100,
 .scout-public-shell .bg-neutral-100,
-.scout-auth-shell .bg-neutral-100 { background-color: var(--scout-surface) !important; }
+.scout-auth-shell .bg-neutral-100 { background-color: var(--scout-panel-hover) !important; }
 .scout-product-shell .bg-neutral-200,
 .scout-public-shell .bg-neutral-200,
 .scout-auth-shell .bg-neutral-200 { background-color: var(--scout-panel-raised) !important; }
@@ -460,13 +459,13 @@ a:hover { color: #6ee7b7; }
 .scout-social-sidebar,
 .scout-mobile-panel {
   color: var(--scout-text-secondary);
-  background: #020617 !important;
+  background: var(--color-neutral-50) !important;
   border-color: var(--scout-border) !important;
 }
 .scout-product-topbar,
 .scout-social-topbar {
   color: var(--scout-text-secondary);
-  background: rgb(15 23 42 / 94%) !important;
+  background: rgb(255 255 255 / 94%) !important;
   border-color: var(--scout-border) !important;
   backdrop-filter: blur(16px);
 }
@@ -474,7 +473,7 @@ a:hover { color: #6ee7b7; }
 .scout-mobile-panel nav button,
 .scout-mobile-panel nav a { color: var(--scout-muted); }
 .scout-mobile-panel nav a[aria-current="page"],
-.scout-mobile-panel nav a.active { color: #6ee7b7 !important; background: #052e1b !important; }
+.scout-mobile-panel nav a.active { color: var(--scout-primary) !important; background: var(--color-primary-100) !important; }
 .scout-mobile-panel nav a:hover,
 .scout-mobile-panel nav button:hover { color: var(--scout-text) !important; background: var(--scout-panel-hover); }
 
@@ -496,21 +495,15 @@ a:hover { color: #6ee7b7; }
 .scout-public-shell input::placeholder,
 .scout-public-shell textarea::placeholder,
 .scout-auth-shell input::placeholder,
-.scout-auth-shell textarea::placeholder { color: #86948b; }
-.scout-product-shell input::placeholder,
-.scout-product-shell textarea::placeholder,
-.scout-public-shell input::placeholder,
-.scout-public-shell textarea::placeholder,
-.scout-auth-shell input::placeholder,
 .scout-auth-shell textarea::placeholder { color: var(--scout-muted); }
 
 .scout-theme-dialog,
 .scout-theme-dialog-panel { color: var(--scout-text); }
-.scout-theme-dialog > div:first-child { background: rgb(2 6 23 / 76%) !important; }
+.scout-theme-dialog > div:first-child { background: rgb(255 255 255 / 82%) !important; }
 .scout-theme-dialog-panel {
   border-color: var(--scout-border-strong);
   background: var(--scout-surface) !important;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 18%);
 }
 .scout-theme-dialog-panel input,
 .scout-theme-dialog-panel textarea,

@@ -66,9 +66,10 @@ export async function upsertCanonicalOpportunity(
       },
     });
 
-    return prisma.opportunity.findUnique({
+    const opportunity = await prisma.opportunity.findUnique({
       where: { id: existingLink.opportunityId },
     });
+    return { opportunity, created: false };
   }
 
   // Otherwise, create a new canonical opportunity.
@@ -131,5 +132,5 @@ export async function upsertCanonicalOpportunity(
     createdByRunId: sourceRunId,
   });
 
-  return created;
+  return { opportunity: created, created: true };
 }

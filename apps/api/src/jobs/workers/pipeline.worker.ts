@@ -59,7 +59,7 @@ export async function processPipelineJob(job: { name: string; payload: unknown }
           sourceUrl: normalized.sourceUrl,
         });
 
-        const created = await upsertCanonicalOpportunity(
+        const { opportunity, created } = await upsertCanonicalOpportunity(
           normalized,
           sourceId,
           rawOpportunityId,
@@ -69,7 +69,7 @@ export async function processPipelineJob(job: { name: string; payload: unknown }
         if (duplicate.duplicate && duplicate.canonicalId && created) {
           await recordDuplicateCandidate({
             canonicalId: duplicate.canonicalId,
-            candidateId: created.id,
+            candidateId: opportunity.id,
             similarity: duplicate.similarity,
             signals: duplicate.signals,
           });
@@ -77,15 +77,16 @@ export async function processPipelineJob(job: { name: string; payload: unknown }
 
         if (created) {
           try {
-            await analyzeOpportunity(created.id, normalized);
+            await analyzeOpportunity(opportunity.id, normalized);
           } catch (analysisError) {
             logger.warn(
-              { opportunityId: created.id, err: analysisError },
+              { opportunityId: opportunity.id, err: analysisError },
               "opportunity_intelligence_failed_non_blocking",
             );
           }
-          await enqueueMatchUsers({ opportunityId: created.id });
         }
+
+        await enqueueMatchUsers({ opportunityId: opportunity.id });
 
         await prisma.rawOpportunity.update({
           where: { id: rawOpportunityId },

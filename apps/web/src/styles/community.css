@@ -610,12 +610,12 @@
   height: 200px;
   min-height: 190px;
   overflow: hidden;
-  border: 1px solid #1b3549;
+  border: 1px solid var(--scout-border);
   border-radius: 1rem;
   background:
-    radial-gradient(circle at 83% 30%, rgb(21 212 181 / 30%) 0 1px, transparent 3px),
-    radial-gradient(ellipse at 78% 72%, rgb(20 120 88 / 40%), transparent 37%),
-    linear-gradient(160deg, #122f40 0%, #0c2836 35%, #071522 75%);
+    radial-gradient(circle at 83% 30%, rgb(16 185 129 / 20%) 0 1px, transparent 3px),
+    radial-gradient(ellipse at 78% 72%, rgb(15 118 110 / 28%), transparent 37%),
+    linear-gradient(160deg, #e8f6f2 0%, #d7eee9 35%, #f8fafc 75%);
 }
 
 .scout-social-shell .scout-profile-cover::before,
@@ -628,7 +628,7 @@
   width: 80%;
   height: 105%;
   content: "";
-  background: linear-gradient(155deg, transparent 0 27%, #103b42 27.5% 39%, #0b302f 39.5% 55%, #081e2b 55.5%);
+  background: linear-gradient(155deg, transparent 0 27%, #c7e9e2 27.5% 39%, #9fd5ca 39.5% 55%, #d7eee9 55.5%);
   clip-path: polygon(0 100%, 24% 18%, 39% 54%, 60% 0, 75% 48%, 100% 22%, 100% 100%);
 }
 
@@ -861,17 +861,19 @@
 .scout-social-shell .scout-group-header {
   position: relative;
   margin-bottom: 0.8rem;
-  border: 1px solid #194154;
+  border: 1px solid var(--scout-border);
   border-radius: 0.85rem;
   background: var(--scout-panel);
 }
 
 .scout-social-shell .scout-group-cover {
+  position: relative;
   height: 110px;
+  overflow: hidden;
   border-radius: 0.85rem 0.85rem 0 0;
   background:
-    radial-gradient(ellipse at 75% 20%, rgb(20 215 182 / 22%), transparent 30%),
-    linear-gradient(130deg, #0b1c2d, #0b4f4d 70%, #0b2634);
+    radial-gradient(ellipse at 75% 20%, rgb(16 185 129 / 22%), transparent 30%),
+    linear-gradient(130deg, #d7eee9, #9fd5ca 70%, #e8f6f2);
   background-position: center;
   background-size: cover;
 }
@@ -893,8 +895,8 @@
   margin-top: -1.8rem;
   border: 3px solid var(--scout-panel);
   border-radius: 0.75rem;
-  color: #43e1c3;
-  background: #092431;
+  color: var(--scout-primary);
+  background: var(--color-primary-100);
   font-size: 1.6rem;
 }
 

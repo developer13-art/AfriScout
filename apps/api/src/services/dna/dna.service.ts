@@ -1,6 +1,7 @@
 import { prisma } from "../../config/database";
 import { NotFoundError } from "../../utils/errors";
 import type { DnaCreateInput, DnaPatchInput } from "../../validators/dna.validator";
+import { ensureMatchesForUser } from "../matching/batchMatch.service";
 
 export async function getActiveDna(userId: string) {
   return prisma.dnaProfile.findFirst({
@@ -36,7 +37,7 @@ export async function createDna(userId: string, input: DnaCreateInput) {
     data: { isActive: false },
   });
 
-  return prisma.dnaProfile.create({
+  const dna = await prisma.dnaProfile.create({
     data: {
       userId,
       version: nextVersion,
@@ -57,13 +58,15 @@ export async function createDna(userId: string, input: DnaCreateInput) {
       keywords: input.keywords,
     },
   });
+  await ensureMatchesForUser(userId);
+  return dna;
 }
 
 export async function updateActiveDna(userId: string, patch: DnaPatchInput) {
   const active = await getActiveDna(userId);
   if (!active) throw new NotFoundError("No active DNA profile");
 
-  return prisma.dnaProfile.update({
+  const dna = await prisma.dnaProfile.update({
     where: { id: active.id },
     data: {
       industries: patch.industries ?? active.industries,
@@ -83,6 +86,8 @@ export async function updateActiveDna(userId: string, patch: DnaPatchInput) {
       keywords: patch.keywords ?? active.keywords,
     },
   });
+  await ensureMatchesForUser(userId);
+  return dna;
 }
 
 export async function archiveActiveDna(userId: string) {

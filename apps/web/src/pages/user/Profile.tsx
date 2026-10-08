@@ -1,6 +1,7 @@
 import { useAuthStore } from "../../stores/authStore";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Image as ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/layout/PageHeader";
@@ -205,8 +206,14 @@ export function Profile() {
       ) : null}
 
       <div className={`scout-profile-cover${coverImageUrl ? " has-image" : ""}`}>
-        {coverImageUrl ? <SafeImage src={coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}
-        {coverImageUrl ? <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/20 to-transparent" /> : null}
+        <SafeImage
+          src={coverImageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          fallback={<ImageIcon aria-hidden className="h-8 w-8 text-white/70" />}
+          fallbackClassName="grid h-full w-full place-items-center"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/20 to-transparent" />
         <div className="relative z-10 flex h-full items-start justify-end p-5 sm:p-7">
           {!coverImageUrl ? (
             <p className="max-w-xs text-right text-lg font-semibold leading-tight text-white sm:text-xl">

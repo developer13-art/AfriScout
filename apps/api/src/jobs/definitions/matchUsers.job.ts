@@ -7,7 +7,11 @@ export interface MatchUsersPayload {
 export const MATCH_USERS_JOB = "match-users";
 
 export async function enqueueMatchUsers(payload: MatchUsersPayload) {
-  return matchingQueue.add(MATCH_USERS_JOB, payload);
+  return matchingQueue.add(MATCH_USERS_JOB, payload, {
+    jobId: `match-users-${payload.opportunityId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  });
 }
 
 export interface RecomputeMatchesPayload {

@@ -12,7 +12,7 @@
   --color-accent-500: #f59e0b;
   --color-accent-100: #fef3c7;
 
-  --color-neutral-50:  #f8fafc;
+  --color-neutral-50: #f8fafc;
   --color-neutral-100: #f1f5f9;
   --color-neutral-200: #e2e8f0;
   --color-neutral-300: #cbd5e1;
@@ -28,15 +28,15 @@
   --color-danger-500: #ef4444;
   --color-info-500: #3b82f6;
 
-  --color-surface: #020617;
-  --color-surface-muted: #0f172a;
-  --color-border: #1e293b;
-  --color-border-strong: #334155;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-border: #dbe3e9;
+  --color-border-strong: #c5d0d8;
 
-  --color-text: #f8fafc;
-  --color-text-muted: #cbd5e1;
-  --color-text-subtle: #94a3b8;
-  --color-text-inverse: #022c22;
+  --color-text: #102a35;
+  --color-text-muted: #526875;
+  --color-text-subtle: #75858d;
+  --color-text-inverse: #ffffff;
 
   /* Typography */
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;

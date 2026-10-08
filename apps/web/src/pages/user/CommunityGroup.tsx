@@ -341,7 +341,16 @@ export function CommunityGroup() {
       <SeoHead title={space.name} description={space.description ?? undefined} />
       <CommunitySubnav />
       <section className="scout-group-header">
-        <div className="scout-group-cover" style={space.coverImageUrl ? { backgroundImage: `linear-gradient(90deg, rgb(4 17 30 / 25%), rgb(4 17 30 / 5%)), url("${space.coverImageUrl}")` } : undefined} />
+        <div className="scout-group-cover">
+          <SafeImage
+            src={space.coverImageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            fallback={<UsersRound aria-hidden className="h-8 w-8 text-white/70" />}
+            fallbackClassName="grid h-full w-full place-items-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/30 to-transparent" aria-hidden="true" />
+        </div>
         <div className="scout-group-identity">
           <span className="scout-group-avatar">
             <SafeImage
