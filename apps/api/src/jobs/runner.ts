@@ -19,8 +19,8 @@ const LOCK_LEASE_MS = 3 * 60 * 1000;
 const LOCK_HEARTBEAT_MS = 45 * 1000;
 
 async function isBackgroundJobsTableAvailable(): Promise<boolean> {
-  const rows = await prisma.$queryRaw<{ oid: bigint | null }[]>`
-    SELECT to_regclass('public."background_jobs"') AS oid
+  const rows = await prisma.$queryRaw<{ oid: string | null }[]>`
+    SELECT to_regclass('public."background_jobs"')::text AS oid
   `;
   return rows[0]?.oid !== null && rows[0]?.oid !== undefined;
 }
