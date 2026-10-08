@@ -197,7 +197,7 @@ export function SourceDiscovery() {
     onSuccess: async (run) => {
       setNotice({
         tone: "success",
-        text: `Native AI web search completed with ${run.resultCount} candidate${run.resultCount === 1 ? "" : "s"}.`,
+        text: "Native AI web search queued. Its saved status will update as the search and assessment progress.",
       });
       setSelectedRunId(run.id);
       await queryClient.invalidateQueries({ queryKey: ["source-discovery", "overview"] });

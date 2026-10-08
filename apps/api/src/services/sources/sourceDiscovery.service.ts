@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Prisma, type SourceType, type SuggestionStatus } from "@prisma/client";
+import { Prisma, type SourceDiscoveryRun, type SourceType, type SuggestionStatus } from "@prisma/client";
 import { prisma } from "../../config/database";
 import { logger } from "../../config/logger";
 import { ConflictError, InternalError, NotFoundError, ValidationError } from "../../utils/errors";
@@ -44,8 +44,16 @@ export async function createRun(input: CreateSourceDiscoveryRunInput, requestedB
     },
   });
 
+  void processRun(run, queries);
+  return run;
+}
+
+async function processRun(run: SourceDiscoveryRun, queries: string[]): Promise<void> {
   try {
-    await prisma.sourceDiscoveryRun.update({ where: { id: run.id }, data: { status: "RUNNING" } });
+    await prisma.sourceDiscoveryRun.update({
+      where: { id: run.id },
+      data: { status: "RUNNING" },
+    });
     const searchResults = (await discoverWebSearchResults(queries)).map((result, index) => ({
       ...result,
       id: `candidate-${index + 1}`,
@@ -53,7 +61,7 @@ export async function createRun(input: CreateSourceDiscoveryRunInput, requestedB
     await prisma.sourceDiscoveryRun.update({ where: { id: run.id }, data: { status: "ANALYZING" } });
     const assessments = await assessSearchResults(searchResults);
     const stored = await persistCandidates(run, searchResults, assessments);
-    return await prisma.sourceDiscoveryRun.update({
+    await prisma.sourceDiscoveryRun.update({
       where: { id: run.id },
       data: {
         status: "COMPLETED",
@@ -64,12 +72,18 @@ export async function createRun(input: CreateSourceDiscoveryRunInput, requestedB
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Native source discovery failed";
-    await prisma.sourceDiscoveryRun.update({
-      where: { id: run.id },
-      data: { status: "FAILED", errorMessage: message, processedAt: new Date() },
-    });
+    try {
+      await prisma.sourceDiscoveryRun.update({
+        where: { id: run.id },
+        data: { status: "FAILED", errorMessage: message, processedAt: new Date() },
+      });
+    } catch (statusError) {
+      logger.error(
+        { err: statusError, discoveryRunId: run.id },
+        "source_discovery_failure_status_update_failed",
+      );
+    }
     logger.error({ err: error, discoveryRunId: run.id }, "source_discovery_failed");
-    throw error;
   }
 }
 
