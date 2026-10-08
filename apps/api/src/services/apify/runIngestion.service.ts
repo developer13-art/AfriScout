@@ -36,8 +36,10 @@ export interface SourceMetadata {
 export async function triggerIngestion(input: TriggerRunInput) {
   const source = await prisma.source.findUnique({
     where: { id: input.sourceId },
-    include: {
-      verifications: { orderBy: { createdAt: "desc" }, take: 1 },
+    select: {
+      id: true,
+      active: true,
+      verifications: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true } },
     },
   });
   if (!source) throw new Error("Source not found");
@@ -63,7 +65,18 @@ export function canTriggerIngestion(source: SourceIngestionEligibility): boolean
 }
 
 export async function buildActorInput(sourceId: string) {
-  const source = await prisma.source.findUnique({ where: { id: sourceId } });
+  const source = await prisma.source.findUnique({
+    where: { id: sourceId },
+    select: {
+      id: true,
+      url: true,
+      sourceType: true,
+      countryCode: true,
+      category: true,
+      adapter: true,
+      metadata: true,
+    },
+  });
   if (!source) throw new Error("Source not found");
 
   const metadata = (source.metadata as SourceMetadata | null) ?? {};
