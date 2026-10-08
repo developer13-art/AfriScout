@@ -19,6 +19,9 @@ export async function listSources(input: SourceFilterInput) {
       orderBy: { name: "asc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: {
+        verifications: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
     }),
     prisma.source.count({ where }),
   ]);
@@ -64,13 +67,7 @@ export async function createSource(
     },
   });
 
-  const verification = await testSource(source.id);
-  if (verification.success) {
-    await prisma.source.update({
-      where: { id: source.id },
-      data: { active: true },
-    });
-  }
+  await testSource(source.id);
 
   return prisma.source.findUnique({
     where: { id: source.id },

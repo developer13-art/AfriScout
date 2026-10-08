@@ -23,24 +23,22 @@ describe("createSource", () => {
     prismaMock.source.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "source-1" } as never);
-    prismaMock.source.update.mockResolvedValue({ id: "source-1" } as never);
   });
 
-  it("activates a source after its initial test succeeds", async () => {
+  it("runs an initial test for every new source", async () => {
     testSourceMock.mockResolvedValue({ success: true, itemsFound: 1, datasetId: "dataset-1", runId: "run-1", errorMessage: null });
 
     await createSource(input, null);
 
     expect(prismaMock.source.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ active: false }) }));
     expect(testSourceMock).toHaveBeenCalledWith("source-1");
-    expect(prismaMock.source.update).toHaveBeenCalledWith({ where: { id: "source-1" }, data: { active: true } });
   });
 
-  it("keeps a source inactive when its initial test fails", async () => {
-    testSourceMock.mockResolvedValue({ success: false, itemsFound: 0, datasetId: null, runId: null, errorMessage: "No items found" });
+  it("propagates an initial test failure after creating the source", async () => {
+    testSourceMock.mockRejectedValue(new Error("Apify is unavailable"));
 
-    await createSource(input, null);
+    await expect(createSource(input, null)).rejects.toThrow("Apify is unavailable");
 
-    expect(prismaMock.source.update).not.toHaveBeenCalled();
+    expect(testSourceMock).toHaveBeenCalledWith("source-1");
   });
 });

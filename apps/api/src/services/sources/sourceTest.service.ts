@@ -67,10 +67,11 @@ export async function testSource(sourceId: string): Promise<SourceTestResult> {
       if (items.length > 0) break;
     }
 
+    const verified = items.length > 0;
     const verification = await prisma.sourceVerification.upsert({
       where: { sourceId_version: { sourceId: source.id, version: 1 } },
       update: {
-        status: items.length > 0 ? "VERIFIED" : "FAILED",
+        status: verified ? "VERIFIED" : "FAILED",
         snapshot: {
           sourceId: source.id,
           testedAt: new Date().toISOString(),
@@ -81,7 +82,7 @@ export async function testSource(sourceId: string): Promise<SourceTestResult> {
       create: {
         sourceId: source.id,
         version: 1,
-        status: items.length > 0 ? "VERIFIED" : "FAILED",
+        status: verified ? "VERIFIED" : "FAILED",
         snapshot: {
           sourceId: source.id,
           testedAt: new Date().toISOString(),
@@ -94,12 +95,19 @@ export async function testSource(sourceId: string): Promise<SourceTestResult> {
       },
     });
 
+    if (verified) {
+      await prisma.source.update({
+        where: { id: source.id },
+        data: { active: true },
+      });
+    }
+
     return {
-      success: items.length > 0,
+      success: verified,
       itemsFound: items.length,
       datasetId: run.defaultDatasetId,
       runId: run.id,
-      errorMessage: items.length > 0 ? null : "The source returned no extractable opportunities",
+      errorMessage: verified ? null : "The source returned no extractable opportunities",
       verificationId: verification.id,
     };
   } catch (error) {
