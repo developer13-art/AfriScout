@@ -8,7 +8,7 @@ import { startSchedulers } from "./jobs/startSchedulers";
 
 async function bootstrap(): Promise<void> {
   await connectDatabase();
-  const stopDatabaseJobRunner = startDatabaseJobRunner();
+  const stopDatabaseJobRunner = await startDatabaseJobRunner();
   const stopSchedulers = startSchedulers();
 
   const app = createApp();

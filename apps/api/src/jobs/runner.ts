@@ -18,6 +18,13 @@ const POLL_INTERVAL_MS = 750;
 const LOCK_LEASE_MS = 3 * 60 * 1000;
 const LOCK_HEARTBEAT_MS = 45 * 1000;
 
+async function isBackgroundJobsTableAvailable(): Promise<boolean> {
+  const rows = await prisma.$queryRaw<{ oid: bigint | null }[]>`
+    SELECT to_regclass('public."background_jobs"') AS oid
+  `;
+  return rows[0]?.oid !== null && rows[0]?.oid !== undefined;
+}
+
 async function claimNextJob(): Promise<ClaimedJob | null> {
   const lockToken = randomUUID();
   const rows = await prisma.$queryRaw<ClaimedJob[]>`
@@ -97,9 +104,14 @@ async function processClaimedJob(job: ClaimedJob): Promise<void> {
   }
 }
 
-export function startDatabaseJobRunner(): () => Promise<void> {
+export async function startDatabaseJobRunner(): Promise<() => Promise<void>> {
   if (!env.DATABASE_JOB_RUNNER_ENABLED) {
     logger.info({ disabled: true }, "postgres_job_runner_disabled");
+    return async () => undefined;
+  }
+
+  if (!(await isBackgroundJobsTableAvailable())) {
+    logger.warn({ table: "background_jobs" }, "postgres_job_runner_skipped_missing_table");
     return async () => undefined;
   }
 
