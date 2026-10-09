@@ -63,10 +63,10 @@ export function OrganizationOpportunities() {
     });
   };
   const organizationsQuery = useQuery({
-    queryKey: ["organizations", "mine"],
-    queryFn: organizationService.mine,
+    queryKey: ["organization", "active"],
+    queryFn: organizationService.active,
   });
-  const organization = organizationsQuery.data?.[0];
+  const organization = organizationsQuery.data;
   const query = useQuery({
     queryKey: ["organization-opportunities", organization?.id],
     queryFn: () =>

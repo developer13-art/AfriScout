@@ -22,6 +22,7 @@ import { pipelineStageLabel } from "../../components/pipeline/PipelineStatusBadg
 import { communityService } from "../../services/community.service";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { Avatar } from "../../components/ui/Avatar";
+import { CommunityAttachments } from "../../components/community/CommunityAttachments";
 
 export function Dashboard() {
   const { user } = useUser();
@@ -230,7 +231,7 @@ export function Dashboard() {
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-neutral-700">
                     {post.content || (post.attachments?.length ? "Shared an attachment" : "")}
                   </p>
-                  {post.attachments?.length ? <span className="mt-1 inline-block text-xs text-primary-700">{post.attachments.length} attachment{post.attachments.length === 1 ? "" : "s"}</span> : null}
+                  <CommunityAttachments attachments={post.attachments} />
                   {post.opportunity ? <Link to={`/opportunities/${post.opportunity.slug}`} className="mt-1 block truncate text-xs font-medium text-primary-700 hover:underline">{post.opportunity.title}</Link> : null}
                 </div>
                 <span className="shrink-0 text-xs text-neutral-500">{post._count.reactions} likes</span>

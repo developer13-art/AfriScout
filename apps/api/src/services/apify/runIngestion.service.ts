@@ -20,6 +20,7 @@ export interface SourceIngestionEligibility {
 }
 
 export interface SourceMetadata {
+  maxItems?: number;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   waitForSelector?: string;
   waitExtraMs?: number;
@@ -88,6 +89,9 @@ export async function buildActorInput(sourceId: string) {
     country: source.countryCode ?? undefined,
     category: source.category ?? undefined,
     adapter: source.adapter,
+    maxItems: Number.isInteger(metadata.maxItems) && metadata.maxItems! > 0
+      ? metadata.maxItems
+      : undefined,
     waitUntil: metadata.waitUntil,
     waitForSelector: metadata.waitForSelector,
     waitExtraMs: metadata.waitExtraMs,

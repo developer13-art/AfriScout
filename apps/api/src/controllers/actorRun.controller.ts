@@ -3,6 +3,7 @@ import * as RunService from "../services/apify/run.service";
 import * as IngestionService from "../services/apify/runIngestion.service";
 import { enqueueRunApifyActor } from "../jobs/definitions/runApifyActor.job";
 import { apifyActors, abortActorRun } from "../services/apify/actor.service";
+import { apifyConfig } from "../config/apify";
 import { asyncHandler } from "../utils/asyncHandler";
 import { logger } from "../config/logger";
 
@@ -30,11 +31,11 @@ export const trigger = asyncHandler(async (req: Request, res: Response) => {
     });
     return;
   }
-  if (!apifyActors.opportunityDiscovery) {
+  if (!apifyActors.opportunityDiscovery || !apifyConfig.isConfigured) {
     res.status(503).json({
       error: {
         code: "APIFY_NOT_CONFIGURED",
-        message: "Apify actor ID is not configured",
+        message: "Configure the Apify actor ID and APIFY_TOKEN secret before running discovery.",
       },
     });
     return;
@@ -46,11 +47,37 @@ export const trigger = asyncHandler(async (req: Request, res: Response) => {
     createdBy: req.user?.id ?? null,
   });
 
-  await enqueueRunApifyActor({
-    sourceId,
-    runId: run.id,
-    actorId: apifyActors.opportunityDiscovery,
-  });
+  try {
+    await enqueueRunApifyActor({
+      sourceId,
+      runId: run.id,
+      actorId: apifyActors.opportunityDiscovery,
+    });
+  } catch (error) {
+    try {
+      await RunService.markRunFinished({
+        runId: run.id,
+        status: "FAILED",
+        itemsFound: 0,
+        itemsImported: 0,
+        itemsUpdated: 0,
+        itemsDuplicate: 0,
+        itemsUnchanged: 0,
+        itemsInvalid: 0,
+        errorMessage: "The discovery job could not be queued.",
+        errorDetails: {
+          reason: error instanceof Error ? error.message : "Unknown queue error",
+        },
+      });
+    } catch (statusError) {
+      logger.error(
+        { err: statusError, sourceId, runId: run.id },
+        "actor_run_queue_failure_status_update_failed",
+      );
+    }
+    logger.error({ err: error, sourceId, runId: run.id }, "actor_run_queue_failed");
+    throw error;
+  }
 
   logger.info({ sourceId, runId: run.id }, "actor_run_enqueued");
   res.status(202).json({ data: run });

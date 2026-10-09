@@ -23,6 +23,18 @@ export const mine = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data });
 });
 
+export const membership = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new Error("Authenticated user missing");
+  const data = await OrgService.getOrganizationMembership(req.params.id, req.user.id);
+  res.json({ data });
+});
+
+export const join = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new Error("Authenticated user missing");
+  const data = await OrgService.joinOrganization(req.params.id, req.user.id);
+  res.status(200).json({ data });
+});
+
 export const create = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new Error("Authenticated user missing");
   const data = await OrgService.createOrganization({ ...req.body, userId: req.user.id });

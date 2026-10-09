@@ -15,8 +15,8 @@ import { SeoHead } from "../../components/common/SeoHead";
 
 export function OrganizationTeam() {
   const orgQuery = useQuery({
-    queryKey: ["organization", "me"],
-    queryFn: () => organizationService.list(1, 1).then((items) => items[0] ?? null),
+    queryKey: ["organization", "active"],
+    queryFn: organizationService.active,
   });
 
   const membersQuery = useQuery({

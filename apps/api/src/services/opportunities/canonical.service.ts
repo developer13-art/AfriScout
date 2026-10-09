@@ -46,30 +46,106 @@ export async function upsertCanonicalOpportunity(
   });
 
   if (existingLink) {
-    await prisma.opportunitySource.upsert({
-      where: {
-        opportunityId_sourceId_sourceUrl: {
-          opportunityId: existingLink.opportunityId,
-          sourceId,
-          sourceUrl: normalized.sourceUrl,
-        },
-      },
-      update: { lastSeenAt: new Date() },
-      create: {
-        opportunityId: existingLink.opportunityId,
-        sourceId,
-        rawOpportunityId,
-        sourceUrl: normalized.sourceUrl,
-        sourceTitle: normalized.title,
-        publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
-        deadline: normalized.deadline ? new Date(normalized.deadline) : null,
-      },
-    });
-
     const opportunity = await prisma.opportunity.findUnique({
       where: { id: existingLink.opportunityId },
     });
-    return { opportunity, created: false };
+    if (opportunity) {
+      const existingExtra =
+        opportunity.extra && typeof opportunity.extra === "object" && !Array.isArray(opportunity.extra)
+          ? (opportunity.extra as Record<string, unknown>)
+          : {};
+      const incomingExtra = (normalized.extra ?? {}) as Record<string, unknown>;
+      const updateData = {
+        title: normalized.title || opportunity.title,
+        organizationId: normalized.organizationId ?? opportunity.organizationId,
+        organizationName: normalized.organizationName ?? opportunity.organizationName,
+        category:
+          normalized.category === "OTHER" ? opportunity.category : normalized.category,
+        subcategory: normalized.subcategory ?? opportunity.subcategory,
+        opportunityType: normalized.opportunityType,
+        countryCode: normalized.countryCode ?? opportunity.countryCode,
+        region: normalized.region ?? opportunity.region,
+        city: normalized.city ?? opportunity.city,
+        locationText: normalized.locationText ?? opportunity.locationText,
+        isRemote: normalized.isRemote || opportunity.isRemote,
+        description: normalized.description ?? opportunity.description,
+        summaryShort: normalized.summaryShort ?? opportunity.summaryShort,
+        valueMin: normalized.valueMin ?? opportunity.valueMin,
+        valueMax: normalized.valueMax ?? opportunity.valueMax,
+        currency: normalized.currency ?? opportunity.currency,
+        publishedAt: normalized.publishedAt
+          ? new Date(normalized.publishedAt)
+          : opportunity.publishedAt,
+        deadline: normalized.deadline ? new Date(normalized.deadline) : opportunity.deadline,
+        eligibility: normalized.eligibility ?? opportunity.eligibility,
+        requirements: normalized.requirements ?? opportunity.requirements,
+        applicationMethod: normalized.applicationMethod ?? opportunity.applicationMethod,
+        applicationUrl: normalized.applicationUrl ?? opportunity.applicationUrl,
+        referenceNumber: normalized.referenceNumber ?? opportunity.referenceNumber,
+        extra: {
+          ...existingExtra,
+          ...incomingExtra,
+          raw: incomingExtra.raw ?? existingExtra.raw ?? {},
+        } as never,
+      };
+      const comparable = (value: unknown): string => {
+        if (value instanceof Date) return value.toISOString();
+        if (value && typeof value === "object" && "toNumber" in value) {
+          return String((value as { toNumber(): number }).toNumber());
+        }
+        return JSON.stringify(value);
+      };
+      const hasChanges = Object.entries(updateData).some(
+        ([key, value]) =>
+          comparable(value) !== comparable(opportunity[key as keyof typeof opportunity]),
+      );
+      const updatedOpportunity = hasChanges
+        ? await prisma.opportunity.update({
+            where: { id: opportunity.id },
+            data: updateData,
+          })
+        : opportunity;
+
+      await prisma.opportunitySource.upsert({
+        where: {
+          opportunityId_sourceId_sourceUrl: {
+            opportunityId: existingLink.opportunityId,
+            sourceId,
+            sourceUrl: normalized.sourceUrl,
+          },
+        },
+        update: {
+          rawOpportunityId: rawOpportunityId ?? undefined,
+          sourceTitle: normalized.title,
+          publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
+          deadline: normalized.deadline ? new Date(normalized.deadline) : null,
+          lastSeenAt: new Date(),
+        },
+        create: {
+          opportunityId: existingLink.opportunityId,
+          sourceId,
+          rawOpportunityId,
+          sourceUrl: normalized.sourceUrl,
+          sourceTitle: normalized.title,
+          publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
+          deadline: normalized.deadline ? new Date(normalized.deadline) : null,
+        },
+      });
+
+      if (hasChanges) {
+        await createVersion({
+          opportunityId: updatedOpportunity.id,
+          snapshot: {
+            ...normalized,
+            ...updateData,
+            sourceUrl: normalized.sourceUrl,
+          } as unknown as Record<string, unknown>,
+          createdByRunId: sourceRunId,
+        });
+      }
+
+      return { opportunity: updatedOpportunity, created: false };
+    }
   }
 
   // Otherwise, create a new canonical opportunity.

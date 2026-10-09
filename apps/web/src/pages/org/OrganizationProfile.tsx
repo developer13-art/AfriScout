@@ -16,8 +16,8 @@ import { HttpError } from "../../services/http";
 
 export function OrganizationProfile() {
   const query = useQuery({
-    queryKey: ["organization", "me"],
-    queryFn: () => organizationService.mine().then((items) => items[0] ?? null),
+    queryKey: ["organization", "active"],
+    queryFn: organizationService.active,
   });
 
   const [name, setName] = useState("");

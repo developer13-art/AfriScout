@@ -117,6 +117,35 @@ export async function listOrganizationsForUser(userId: string) {
   }));
 }
 
+export async function getOrganizationMembership(organizationId: string, userId: string) {
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true },
+  });
+  if (!organization) throw new NotFoundError("Organization not found");
+
+  const membership = await prisma.organizationMember.findUnique({
+    where: { organizationId_userId: { organizationId, userId } },
+    select: { role: true },
+  });
+  return { isMember: Boolean(membership), role: membership?.role ?? null };
+}
+
+export async function joinOrganization(organizationId: string, userId: string) {
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true },
+  });
+  if (!organization) throw new NotFoundError("Organization not found");
+
+  const membership = await prisma.organizationMember.upsert({
+    where: { organizationId_userId: { organizationId, userId } },
+    update: {},
+    create: { organizationId, userId, role: "MEMBER" },
+  });
+  return { ...membership, isMember: true };
+}
+
 export async function createOrganization(input: {
   name: string;
   userId: string;

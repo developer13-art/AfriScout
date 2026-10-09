@@ -1,4 +1,4 @@
-import { ReplitConnectors } from "@replit/connectors-sdk";
+import { env } from "../../config/env";
 import { apifyConfig } from "../../config/apify";
 import { logger } from "../../config/logger";
 import { InternalError } from "../../utils/errors";
@@ -6,7 +6,6 @@ import { sleep } from "../../utils/sleep";
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 2_147_483_647; // Node's setTimeout max (2^31 - 1)
-const connectors = new ReplitConnectors();
 
 export interface ApifyRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -20,10 +19,13 @@ export interface ApifyResponse<T> {
 }
 
 export function assertApifyConfigured(): void {
-  if (!apifyConfig.isConfigured) {
+  if (!apifyConfig.actors.opportunityDiscovery) {
     throw new InternalError(
       "Apify is not configured. Set the opportunity discovery actor ID.",
     );
+  }
+  if (!env.APIFY_TOKEN) {
+    throw new InternalError("Apify is not configured. Add APIFY_TOKEN to Replit Secrets.");
   }
 }
 
@@ -31,15 +33,13 @@ export async function apifyRequest<T>(
   path: string,
   options: ApifyRequestOptions = {},
 ): Promise<T> {
-  assertApifyConfigured();
-
   const { method = "GET", query, body, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS } = options;
 
   assertApifyConfigured();
   const apiPath = path.startsWith("/v2/")
     ? path
     : `/v2${path.startsWith("/") ? path : `/${path}`}`;
-  const url = new URL(apiPath, "https://api.apify.com");
+  const url = new URL(apiPath, env.APIFY_BASE_URL);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined) continue;
@@ -48,23 +48,20 @@ export async function apifyRequest<T>(
   }
 
   const effectiveTimeout = Math.min(timeoutMs, MAX_TIMEOUT_MS);
-  let timer: ReturnType<typeof setTimeout>;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), effectiveTimeout);
 
   try {
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error(`Apify request timed out after ${effectiveTimeout}ms`)),
-        effectiveTimeout,
-      );
-    });
-    const response = await Promise.race([
-      connectors.proxy("apify", `${url.pathname}${url.search}`, {
+    const response = await fetch(url, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-      }),
-      timeout,
-    ]);
+      headers: {
+        Authorization: `Bearer ${env.APIFY_TOKEN}`,
+        Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal,
+    });
 
     const text = await response.text();
     let json: unknown = {};
@@ -90,6 +87,9 @@ export async function apifyRequest<T>(
     return json as T;
   } catch (error) {
     if (error instanceof InternalError) throw error;
+    if (controller.signal.aborted) {
+      throw new InternalError(`Apify request timed out after ${effectiveTimeout}ms`);
+    }
     logger.error({ err: error, path }, "apify_request_error");
     throw new InternalError("Apify request failed", {
       path,

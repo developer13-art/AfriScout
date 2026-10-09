@@ -17,6 +17,7 @@ import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { TagInput } from "../../components/ui/TagInput";
+import { ImageUploadField } from "../../components/community/ImageUploadField";
 import { SeoHead } from "../../components/common/SeoHead";
 import { allCountries } from "../../config/countries";
 import { opportunityCategories } from "../../config/categories";
@@ -80,6 +81,7 @@ export function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
 
   const [name, setName] = useState(account?.fullName ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(account?.avatarUrl ?? null);
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [city, setCity] = useState(account?.city ?? "");
@@ -107,6 +109,7 @@ export function Onboarding() {
     setUser({
       ...account,
       fullName: name.trim() || account.fullName,
+      avatarUrl,
       phone: phone.trim() || account.phone,
       city: city.trim() || account.city,
       countryCode: workspaceIntent === "PERSONAL"
@@ -144,6 +147,7 @@ export function Onboarding() {
 
     await userService.updateMe({
       fullName: name.trim(),
+      avatarUrl,
       phone: phone.trim() || undefined,
       city: city.trim() || undefined,
       countryCode,
@@ -181,6 +185,7 @@ export function Onboarding() {
     if (!organizationName.trim()) throw new Error("Enter your organization name.");
     if (!organizationCountry) throw new Error("Choose the organization’s country.");
 
+    await userService.updateMe({ avatarUrl });
     await userService.updateProfile({
       workspaceIntent: "ORGANIZATION",
       onboardingCompleted: false,
@@ -201,6 +206,7 @@ export function Onboarding() {
     if (!projectName.trim()) throw new Error("Give your project a name.");
     if (!projectUseCase.trim()) throw new Error("Tell us what you plan to build.");
 
+    await userService.updateMe({ avatarUrl });
     await userService.updateProfile({
       workspaceIntent: "DEVELOPER",
       onboardingCompleted: false,
@@ -312,6 +318,12 @@ export function Onboarding() {
           </div>
         ) : (
           <form onSubmit={onSubmit} noValidate className="space-y-6">
+            <ImageUploadField
+              label="Profile photo"
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              hint="Add a photo so people can recognize you across Scout."
+            />
             {choice === "PERSONAL" ? (
               <>
                 <div className="flex items-start gap-3 border-b border-neutral-100 pb-4">

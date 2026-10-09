@@ -21,5 +21,5 @@ export const apifyConfig: ApifyConfig = {
   webhookSecret: env.APIFY_WEBHOOK_SECRET,
   defaultTimeoutSeconds: env.APIFY_DEFAULT_TIMEOUT_SECONDS,
   defaultMemoryMb: env.APIFY_DEFAULT_MEMORY_MB,
-  isConfigured: Boolean(env.APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID),
+  isConfigured: Boolean(env.APIFY_OPPORTUNITY_DISCOVERY_ACTOR_ID && env.APIFY_TOKEN),
 };

@@ -28,4 +28,32 @@ describe("normalizeOpportunity", () => {
     expect(result.deadline).toBe("2026-10-15T00:00:00.000Z");
     expect(result.description).toContain("Commonwealth Scholarship Commission");
   });
+
+  it("maps common actor field names and preserves the complete actor payload", () => {
+    const actorItem = {
+      title: "Product Design Fellowship",
+      company: "Design Lab",
+      locationText: "Lagos, Nigeria",
+      fullDescription: "A twelve-month paid product design fellowship.",
+      url: "https://opportunity.example/fellowship",
+      applyUrl: "https://opportunity.example/fellowship/apply",
+      applicationDeadline: "2026-12-31",
+      requiredDocuments: ["Portfolio", "CV"],
+      customActorField: { source: "listing-page" },
+      sourceId: "source-2",
+    } as unknown as Parameters<typeof normalizeOpportunity>[0];
+
+    const result = normalizeOpportunity(actorItem);
+
+    expect(result.organizationName).toBe("Design Lab");
+    expect(result.locationText).toBe("Lagos, Nigeria");
+    expect(result.description).toContain("twelve-month paid");
+    expect(result.sourceUrl).toBe("https://opportunity.example/fellowship");
+    expect(result.applicationUrl).toBe("https://opportunity.example/fellowship/apply");
+    expect(result.deadline).toBe("2026-12-31T00:00:00.000Z");
+    expect(result.extra).toMatchObject({
+      raw: { customActorField: { source: "listing-page" } },
+      documents: ["Portfolio", "CV"],
+    });
+  });
 });

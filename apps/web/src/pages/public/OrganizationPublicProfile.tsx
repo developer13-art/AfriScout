@@ -1,21 +1,43 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, BadgeCheck, Building2, ExternalLink } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { SeoHead } from "../../components/common/SeoHead";
 import { Container } from "../../components/layout/Container";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import { Alert } from "../../components/ui/Alert";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Loader } from "../../components/ui/Loader";
 import { organizationService } from "../../services/organization.service";
+import { useAuthStore } from "../../stores/authStore";
 
 export function OrganizationPublicProfile() {
   const { slug = "" } = useParams();
+  const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const profile = useQuery({
     queryKey: ["public-organization", slug],
     queryFn: () => organizationService.publicProfile(slug),
     enabled: Boolean(slug),
+  });
+  const membership = useQuery({
+    queryKey: ["organization-membership", profile.data?.id, user?.id],
+    queryFn: () => organizationService.membership(profile.data!.id),
+    enabled: Boolean(user?.id && profile.data?.id),
+  });
+  const join = useMutation({
+    mutationFn: (organizationId: string) => organizationService.join(organizationId),
+    onSuccess: async (_membership, organizationId) => {
+      organizationService.setActive(organizationId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["organization"] }),
+        queryClient.invalidateQueries({ queryKey: ["organizations"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization-membership", organizationId] }),
+      ]);
+      navigate("/org/profile");
+    },
   });
 
   if (profile.isLoading) {
@@ -35,6 +57,10 @@ export function OrganizationPublicProfile() {
 
   const organization = profile.data;
   const websiteUrl = safeWebsiteUrl(organization.website);
+  const openWorkspace = () => {
+    organizationService.setActive(organization.id);
+    navigate("/org/profile");
+  };
   return (
     <>
       <SeoHead
@@ -46,15 +72,39 @@ export function OrganizationPublicProfile() {
           title={organization.name}
           description={organization.description || "Public organization profile and published opportunities."}
           actions={
-            websiteUrl ? (
-              <a href={websiteUrl} target="_blank" rel="noreferrer">
-                <Button variant="outline" rightIcon={<ExternalLink className="h-4 w-4" />}>
-                  Organization website
-                </Button>
-              </a>
-            ) : undefined
+            <div className="flex flex-wrap items-center gap-2">
+              {websiteUrl ? (
+                <a href={websiteUrl} target="_blank" rel="noreferrer">
+                  <Button variant="outline" rightIcon={<ExternalLink className="h-4 w-4" />}>
+                    Organization website
+                  </Button>
+                </a>
+              ) : null}
+              {user ? (
+                membership.data?.isMember ? (
+                  <Button onClick={openWorkspace}>Open workspace</Button>
+                ) : (
+                  <Button
+                    onClick={() => join.mutate(organization.id)}
+                    loading={join.isPending}
+                    disabled={membership.isLoading}
+                  >
+                    Join workspace
+                  </Button>
+                )
+              ) : (
+                <Link to="/login">
+                  <Button variant="outline">Sign in to join</Button>
+                </Link>
+              )}
+            </div>
           }
         />
+        {join.isError ? (
+          <Alert tone="danger" className="mb-5">
+            {join.error instanceof Error ? join.error.message : "Could not join this organization workspace."}
+          </Alert>
+        ) : null}
 
         <Card className="mb-6">
           <div className="flex flex-wrap items-center gap-3">

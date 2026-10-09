@@ -35,11 +35,23 @@ export async function addMember(input: {
   });
   if (!organization) throw new NotFoundError("Organization not found");
 
+  const identifier = input.userId.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+  const invitedUser = await prisma.user.findFirst({
+    where: isUuid
+      ? { id: identifier }
+      : { email: { equals: identifier.toLowerCase(), mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!invitedUser) {
+    throw new NotFoundError("No Scout account was found for that email or user ID");
+  }
+
   const existing = await prisma.organizationMember.findUnique({
     where: {
       organizationId_userId: {
         organizationId: input.organizationId,
-        userId: input.userId,
+        userId: invitedUser.id,
       },
     },
   });
@@ -48,7 +60,7 @@ export async function addMember(input: {
   return prisma.organizationMember.create({
     data: {
       organizationId: input.organizationId,
-      userId: input.userId,
+      userId: invitedUser.id,
       role: input.role as never,
     },
   });

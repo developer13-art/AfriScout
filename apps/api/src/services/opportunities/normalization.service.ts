@@ -8,19 +8,67 @@ import { normalizeUrl } from "../../utils/url";
 export function normalizeOpportunity(
   raw: ApifyActorOutputItem,
 ): NormalizedOpportunity {
-  const listingText = typeof raw.raw?.listingText === "string" ? raw.raw.listingText : "";
-  const text = [raw.title, raw.description, raw.location, listingText].filter(Boolean).join(" ");
-  const category = inferCategory(text) ?? raw.category;
+  const item = raw as unknown as Record<string, unknown>;
+  const firstText = (...values: unknown[]): string | null =>
+    values.find((value): value is string => typeof value === "string" && value.trim().length > 0)
+      ?.trim() ?? null;
+  const listingText = firstText(
+    raw.raw?.listingText,
+    item.fullText,
+    item.pageText,
+    item.body,
+    item.content,
+    item.text,
+  ) ?? "";
+  const title = firstText(item.title, item.name, item.opportunityTitle, item.position) ?? "";
+  const description = firstText(
+    item.description,
+    item.fullDescription,
+    item.details,
+    item.summary,
+    listingText,
+  );
+  const location = firstText(item.location, item.locationText, item.city, item.place);
+  const text = [title, description, location, listingText].filter(Boolean).join(" ");
+  const category = inferCategory(text) ?? firstText(item.category, item.opportunityType, item.type);
   const inferredCountryCode = inferCountryCode(text);
-  const countryCode = inferredCountryCode ?? raw.country;
-  const deadline = raw.deadline ?? inferDeadline(text);
-  const organizationName = raw.organization ?? inferOrganization(raw.title, listingText);
-  const description = (raw.description ?? listingText) || null;
-  const requirements = raw.requirements ?? inferLabeledText(text, /\b(?:requirements?|what you need)\b\s*[:\-–]\s*/i);
-  const eligibility = raw.eligibility ?? inferLabeledText(text, /\b(?:eligibility|who can apply|eligible applicants?)\b\s*[:\-–]\s*/i);
+  const countryCode = inferredCountryCode ?? firstText(item.country, item.countryCode);
+  const deadline = firstText(item.deadline, item.applicationDeadline, item.closingDate, item.dueDate)
+    ?? inferDeadline(text);
+  const organization = firstText(
+    item.organization,
+    item.organizationName,
+    item.company,
+    item.provider,
+  );
+  const organizationName = organization ?? inferOrganization(title, listingText);
+  const requirements = firstText(item.requirements, item.qualification, item.qualifications)
+    ?? inferLabeledText(text, /\b(?:requirements?|what you need)\b\s*[:\-–]\s*/i);
+  const eligibility = firstText(item.eligibility, item.eligibleApplicants)
+    ?? inferLabeledText(text, /\b(?:eligibility|who can apply|eligible applicants?)\b\s*[:\-–]\s*/i);
+  const sourceUrl = firstText(
+    item.sourceUrl,
+    item.url,
+    item.detailUrl,
+    item.opportunityUrl,
+    item.link,
+    item.href,
+  );
+  const applicationUrl = firstText(
+    item.applicationUrl,
+    item.applyUrl,
+    item.applicationLink,
+    item.applyLink,
+  ) ?? sourceUrl;
+  const publishedAt = firstText(item.publishedAt, item.publicationDate, item.postedAt, item.datePosted);
+  const documents = Array.isArray(item.documents)
+    ? item.documents.filter((document): document is string => typeof document === "string")
+    : Array.isArray(item.requiredDocuments)
+      ? item.requiredDocuments.filter((document): document is string => typeof document === "string")
+      : [];
 
   return {
-    title: normalizeWhitespace(stripHtml(raw.title ?? "")) || "Untitled opportunity",
+    title: normalizeWhitespace(stripHtml(title)) || "Untitled opportunity",
     organizationName: organizationName ? normalizeWhitespace(organizationName) : null,
     organizationId: null,
     category: mapCategory(category),
@@ -28,27 +76,27 @@ export function normalizeOpportunity(
     opportunityType: mapOpportunityType(category),
     countryCode: countryCode ? normalizeCountryCode(countryCode) : null,
     region: null,
-    city: raw.location ? normalizeWhitespace(raw.location) : null,
-    locationText: raw.location
-      ? normalizeWhitespace(raw.location)
+    city: location ? normalizeWhitespace(location) : null,
+    locationText: location
+      ? normalizeWhitespace(location)
       : inferredCountryCode
         ? countryName(inferredCountryCode)
         : null,
     isRemote: /\b(remote|work from anywhere|anywhere in the world)\b/i.test(text),
     description: description ? truncate(stripHtml(description), 20000) : null,
     summaryShort: description ? truncate(stripHtml(description), 220) : null,
-    valueMin: raw.valueMin ?? null,
-    valueMax: raw.valueMax ?? null,
-    currency: normalizeCurrencyCode(raw.currency ?? null),
-    publishedAt: toIsoOrNull(raw.publishedAt),
+    valueMin: typeof item.valueMin === "number" ? item.valueMin : null,
+    valueMax: typeof item.valueMax === "number" ? item.valueMax : null,
+    currency: normalizeCurrencyCode(firstText(item.currency, item.currencyCode)),
+    publishedAt: toIsoOrNull(publishedAt),
     deadline: toIsoOrNull(deadline),
     eligibility: eligibility ? normalizeWhitespace(stripHtml(eligibility)) : null,
     requirements: requirements ? normalizeWhitespace(stripHtml(requirements)) : null,
-    applicationMethod: null,
-    applicationUrl: raw.sourceUrl ? normalizeUrl(raw.sourceUrl) : null,
-    referenceNumber: raw.referenceNumber ?? null,
-    extra: { raw: raw.raw ?? {} },
-    sourceUrl: normalizeUrl(raw.sourceUrl),
+    applicationMethod: firstText(item.applicationMethod, item.howToApply),
+    applicationUrl: applicationUrl ? normalizeUrl(applicationUrl) : null,
+    referenceNumber: firstText(item.referenceNumber, item.reference, item.id),
+    extra: { raw: item, documents },
+    sourceUrl: normalizeUrl(sourceUrl!),
     sourceId: raw.sourceId,
   };
 }
