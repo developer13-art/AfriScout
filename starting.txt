@@ -1,9 +1,0 @@
-npm run dev:api
-
-npm run dev:web
-
-Terminal 1 — API (npm run dev:api)
-
-Terminal 2 — Web (npm run dev:web)
-
-Open http://localhost:5173
