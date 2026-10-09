@@ -72,7 +72,6 @@
     "tinypool": "^2.1.2"
   },
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.3",
     "@solana/web3.js": "^1.99.0"
   }
 }
