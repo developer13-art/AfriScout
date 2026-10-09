@@ -1,0 +1,47 @@
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, path.resolve(__dirname, "../.."), "");
+  const apiProxyUrl =
+    env.VITE_API_PROXY_TARGET ??
+    env.VITE_API_URL ??
+    env.API_URL ??
+    "http://localhost:4000/api/v1";
+
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "src"),
+        "@afriscout/shared": path.resolve(__dirname, "../../packages/shared/src"),
+      },
+    },
+    server: {
+      host: "0.0.0.0",
+      port: 5000,
+      strictPort: true,
+      allowedHosts: true,
+      proxy: {
+        "/api": {
+          target: new URL(apiProxyUrl, "http://localhost:4000").origin,
+          changeOrigin: true,
+        },
+        "/actions": {
+          target: new URL(apiProxyUrl, "http://localhost:4000").origin,
+          changeOrigin: true,
+        },
+      },
+    },
+    build: {
+      outDir: "dist",
+      sourcemap: mode !== "production",
+      target: "es2022",
+      chunkSizeWarningLimit: 1200,
+    },
+    preview: {
+      port: 4173,
+    },
+  };
+});
