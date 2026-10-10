@@ -1,7 +1,12 @@
 import { prisma } from "../../config/database";
-import { NotFoundError } from "../../utils/errors";
-import type { OpportunityFilterInput } from "../../validators/opportunity.validator";
+import { ForbiddenError, NotFoundError } from "../../utils/errors";
+import type {
+  OpportunityFilterInput,
+  OrganizationOpportunityCreateInput,
+} from "../../validators/opportunity.validator";
 import { slugify, ensureUniqueSlug } from "../../utils/slugify";
+import { hashObject } from "../../utils/hash";
+import { enqueueMatchUsers } from "../../jobs/definitions/matchUsers.job";
 
 export async function listOpportunities(input: OpportunityFilterInput) {
   const page = input.page ?? 1;
@@ -46,6 +51,71 @@ export async function getOpportunityById(id: string) {
     },
   });
   if (!opportunity) throw new NotFoundError("Opportunity not found");
+  return opportunity;
+}
+
+export async function createOrganizationOpportunity(
+  organizationId: string,
+  userId: string,
+  input: OrganizationOpportunityCreateInput,
+) {
+  const membership = await prisma.organizationMember.findUnique({
+    where: { organizationId_userId: { organizationId, userId } },
+    select: { role: true },
+  });
+  if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+    throw new ForbiddenError("Only organization owners and admins can publish opportunities");
+  }
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, name: true },
+  });
+  if (!organization) throw new NotFoundError("Organization not found");
+
+  const slug = await generateOpportunitySlug(input.title);
+  const opportunity = await prisma.$transaction(async (tx) => {
+    const created = await tx.opportunity.create({
+      data: {
+        title: input.title,
+        slug,
+        organizationId: organization.id,
+        organizationName: organization.name,
+        category: input.category,
+        opportunityType: input.opportunityType,
+        description: input.description,
+        summaryShort: input.summaryShort ?? input.description.slice(0, 240),
+        countryCode: input.countryCode ?? null,
+        region: input.region ?? null,
+        city: input.city ?? null,
+        isRemote: input.isRemote,
+        valueMin: input.valueMin ?? null,
+        valueMax: input.valueMax ?? null,
+        currency: input.currency ?? null,
+        publishedAt: new Date(),
+        deadline: input.deadline ? new Date(input.deadline) : null,
+        deadlineConfirmed: Boolean(input.deadline),
+        eligibility: input.eligibility ?? null,
+        requirements: input.requirements ?? null,
+        applicationMethod: input.applicationUrl ? "ONLINE" : null,
+        applicationUrl: input.applicationUrl ?? null,
+        status: "PUBLISHED",
+        systemState: "PUBLISHED",
+        verificationStatus: "UNVERIFIED",
+      },
+    });
+    await tx.opportunityVersion.create({
+      data: {
+        opportunityId: created.id,
+        version: 1,
+        snapshot: JSON.parse(JSON.stringify(created)),
+        snapshotHash: hashObject(created),
+      },
+    });
+    return created;
+  });
+
+  await enqueueMatchUsers({ opportunityId: opportunity.id });
   return opportunity;
 }
 

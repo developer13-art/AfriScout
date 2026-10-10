@@ -13,6 +13,7 @@ import { organizationService } from "../../services/organization.service";
 import { allCountries } from "../../config/countries";
 import { SeoHead } from "../../components/common/SeoHead";
 import { HttpError } from "../../services/http";
+import { Link } from "react-router-dom";
 
 export function OrganizationProfile() {
   const query = useQuery({
@@ -73,6 +74,7 @@ export function OrganizationProfile() {
   };
 
   if (query.isLoading) return <Loader fullPage label="Loading organization" />;
+  const canManage = query.data?.membershipRole !== "MEMBER";
 
   if (!query.data) {
     return (
@@ -139,17 +141,24 @@ export function OrganizationProfile() {
           <CardHeader title="Details" />
           <CardBody>
             <div className="space-y-4">
-              <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
+              {!canManage ? (
+                <Alert tone="info">
+                  You joined this organization. Only owners and admins can edit its profile.
+                </Alert>
+              ) : null}
+              <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} disabled={!canManage} />
               <Input
                 label="Website"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
+                disabled={!canManage}
               />
               <Select
                 label="Country"
                 placeholder="Select a country"
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
+                disabled={!canManage}
                 options={allCountries.map((c) => ({
                   value: c.code,
                   label: c.name,
@@ -160,12 +169,19 @@ export function OrganizationProfile() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
+                disabled={!canManage}
               />
-              <div className="flex justify-end">
-                <Button onClick={save} loading={saving}>
-                  Save
-                </Button>
-              </div>
+              {canManage ? (
+                <div className="flex justify-end">
+                  <Button onClick={save} loading={saving}>
+                    Save
+                  </Button>
+                </div>
+              ) : (
+                <Link to={`/organizations/${query.data.slug}`} className="text-sm font-medium text-primary-700 underline">
+                  View public organization profile
+                </Link>
+              )}
             </div>
           </CardBody>
         </Card>

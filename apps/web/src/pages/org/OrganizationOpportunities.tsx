@@ -14,6 +14,7 @@ import { SeoHead } from "../../components/common/SeoHead";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
+import { Select } from "../../components/ui/Select";
 import { Button } from "../../components/ui/Button";
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
@@ -38,6 +39,15 @@ export function OrganizationOpportunities() {
   const user = useAuthStore((state) => state.user);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [opportunityTitle, setOpportunityTitle] = useState("");
+  const [opportunityDescription, setOpportunityDescription] = useState("");
+  const [opportunityCategory, setOpportunityCategory] = useState("GRANTS");
+  const [opportunityType, setOpportunityType] = useState("GRANT");
+  const [opportunityCountryCode, setOpportunityCountryCode] = useState("");
+  const [opportunityDeadline, setOpportunityDeadline] = useState("");
+  const [opportunityApplicationUrl, setOpportunityApplicationUrl] = useState("");
+  const [opportunityIsRemote, setOpportunityIsRemote] = useState("false");
+  const [publishingOpportunity, setPublishingOpportunity] = useState(false);
   const [rewardAmount, setRewardAmount] = useState("");
   const [skills, setSkills] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -76,8 +86,42 @@ export function OrganizationOpportunities() {
   const bountiesQuery = useQuery({
     queryKey: ["organization-bounties"],
     queryFn: bountyService.managed,
-    enabled: Boolean(organization?.id),
+    enabled: Boolean(organization?.id && organization.membershipRole !== "MEMBER"),
   });
+
+  const publishOpportunity = async () => {
+    if (!organization?.id) return;
+    setPublishingOpportunity(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await opportunityService.createForOrganization(organization.id, {
+        title: opportunityTitle.trim(),
+        category: opportunityCategory,
+        opportunityType,
+        description: opportunityDescription.trim(),
+        countryCode: opportunityCountryCode.trim() || undefined,
+        isRemote: opportunityIsRemote === "true",
+        deadline: opportunityDeadline ? new Date(opportunityDeadline).toISOString() : undefined,
+        applicationUrl: opportunityApplicationUrl.trim() || undefined,
+      });
+      setOpportunityTitle("");
+      setOpportunityDescription("");
+      setOpportunityCountryCode("");
+      setOpportunityDeadline("");
+      setOpportunityApplicationUrl("");
+      setMessage("Opportunity published and queued for matching.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["organization-opportunities", organization.id] }),
+        queryClient.invalidateQueries({ queryKey: ["opportunities"] }),
+        queryClient.invalidateQueries({ queryKey: ["public-organization"] }),
+      ]);
+    } catch (cause) {
+      setError(cause instanceof HttpError || cause instanceof Error ? cause.message : "Could not publish the opportunity.");
+    } finally {
+      setPublishingOpportunity(false);
+    }
+  };
 
   const createBounty = async () => {
     if (!organization?.id) return;
@@ -203,6 +247,102 @@ export function OrganizationOpportunities() {
             <Alert tone="info">
               Create an organization workspace in <Link to="/org/profile" className="font-medium underline">Organization profile</Link> before publishing.
             </Alert>
+          ) : null}
+
+          {organization && (organization.membershipRole === "OWNER" || organization.membershipRole === "ADMIN") ? (
+            <Card>
+              <CardHeader
+                title="Publish an opportunity"
+                subtitle="Publish a listing under this organization. New listings are queued for user matching."
+              />
+              <CardBody>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Input
+                    label="Opportunity title"
+                    value={opportunityTitle}
+                    onChange={(event) => setOpportunityTitle(event.target.value)}
+                    maxLength={240}
+                  />
+                  <Select
+                    label="Category"
+                    value={opportunityCategory}
+                    onChange={(event) => setOpportunityCategory(event.target.value)}
+                    options={[
+                      { value: "GRANTS", label: "Grants" },
+                      { value: "FUNDING", label: "Funding" },
+                      { value: "EMPLOYMENT", label: "Employment" },
+                      { value: "INTERNSHIPS", label: "Internships" },
+                      { value: "SCHOLARSHIPS", label: "Scholarships" },
+                      { value: "CONTRACTS", label: "Contracts" },
+                      { value: "TRAINING", label: "Training" },
+                      { value: "OTHER", label: "Other" },
+                    ]}
+                  />
+                  <Select
+                    label="Opportunity type"
+                    value={opportunityType}
+                    onChange={(event) => setOpportunityType(event.target.value)}
+                    options={[
+                      { value: "GRANT", label: "Grant" },
+                      { value: "FUNDING", label: "Funding" },
+                      { value: "JOB", label: "Job" },
+                      { value: "INTERNSHIP", label: "Internship" },
+                      { value: "SCHOLARSHIP", label: "Scholarship" },
+                      { value: "CONTRACT", label: "Contract" },
+                      { value: "TRAINING", label: "Training" },
+                      { value: "OTHER", label: "Other" },
+                    ]}
+                  />
+                  <Input
+                    label="Country code (optional)"
+                    value={opportunityCountryCode}
+                    onChange={(event) => setOpportunityCountryCode(event.target.value.toUpperCase())}
+                    placeholder="NG"
+                    maxLength={2}
+                  />
+                  <Input
+                    label="Application deadline (optional)"
+                    type="datetime-local"
+                    value={opportunityDeadline}
+                    onChange={(event) => setOpportunityDeadline(event.target.value)}
+                  />
+                  <Input
+                    label="Application link (optional)"
+                    type="url"
+                    value={opportunityApplicationUrl}
+                    onChange={(event) => setOpportunityApplicationUrl(event.target.value)}
+                    placeholder="https://example.org/apply"
+                  />
+                  <Select
+                    label="Location"
+                    value={opportunityIsRemote}
+                    onChange={(event) => setOpportunityIsRemote(event.target.value)}
+                    options={[
+                      { value: "false", label: "In-person or location-based" },
+                      { value: "true", label: "Remote" },
+                    ]}
+                  />
+                  <div className="lg:col-span-2">
+                    <Textarea
+                      label="Full description"
+                      value={opportunityDescription}
+                      onChange={(event) => setOpportunityDescription(event.target.value)}
+                      rows={5}
+                      maxLength={30000}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    onClick={publishOpportunity}
+                    loading={publishingOpportunity}
+                    disabled={opportunityTitle.trim().length < 5 || opportunityDescription.trim().length < 30}
+                  >
+                    Publish opportunity
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
           ) : null}
 
           {organization && (organization.membershipRole === "OWNER" || organization.membershipRole === "ADMIN") ? (

@@ -9,6 +9,17 @@ import type {
   OpportunitySourceLink,
 } from "../types/opportunity";
 
+export interface OrganizationOpportunityInput {
+  title: string;
+  category: string;
+  opportunityType: string;
+  description: string;
+  countryCode?: string;
+  isRemote: boolean;
+  deadline?: string;
+  applicationUrl?: string;
+}
+
 export const opportunityService = {
   list: (filters?: OpportunityFilters, page = 1, pageSize = 20) =>
     http<OpportunitySearchResult>("/opportunities", {
@@ -18,6 +29,12 @@ export const opportunityService = {
   get: (slug: string) => http<Opportunity>(`/opportunities/${slug}`),
 
   getById: (id: string) => http<Opportunity>(`/opportunities/by-id/${id}`),
+
+  createForOrganization: (organizationId: string, input: OrganizationOpportunityInput) =>
+    http<Opportunity>(`/organizations/${organizationId}/opportunities`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 
   requirements: (id: string) =>
     http<OpportunityRequirement[]>(`/opportunities/${id}/requirements`),

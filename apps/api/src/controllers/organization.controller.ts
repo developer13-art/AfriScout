@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as OrgService from "../services/users/organization.service";
 import * as TeamService from "../services/users/team.service";
+import * as OpportunityService from "../services/opportunities/opportunity.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
@@ -68,4 +69,14 @@ export const removeMember = asyncHandler(async (req: Request, res: Response) => 
   if (!req.user) throw new Error("Authenticated user missing");
   await TeamService.removeMember(req.params.id, req.params.memberId, req.user.id);
   res.status(204).send();
+});
+
+export const createOpportunity = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new Error("Authenticated user missing");
+  const data = await OpportunityService.createOrganizationOpportunity(
+    req.params.id,
+    req.user.id,
+    req.body,
+  );
+  res.status(201).json({ data });
 });

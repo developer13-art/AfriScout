@@ -9,6 +9,7 @@ async function requireManager(organizationId: string, userId: string) {
   if (!member || (member.role !== "OWNER" && member.role !== "ADMIN")) {
     throw new ForbiddenError("Only organization owners and admins can manage this team");
   }
+  return member;
 }
 
 export async function listMembers(organizationId: string, requesterId: string) {
@@ -28,7 +29,10 @@ export async function addMember(input: {
   role: string;
   actorUserId: string;
 }) {
-  await requireManager(input.organizationId, input.actorUserId);
+  const actor = await requireManager(input.organizationId, input.actorUserId);
+  if (input.role === "OWNER" && actor.role !== "OWNER") {
+    throw new ForbiddenError("Only an organization owner can assign the owner role");
+  }
   const organization = await prisma.organization.findUnique({
     where: { id: input.organizationId },
     select: { id: true },

@@ -28,6 +28,7 @@ export function OrganizationTeam() {
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
+  const canManage = orgQuery.data?.membershipRole === "OWNER" || orgQuery.data?.membershipRole === "ADMIN";
 
   const invite = useMutation({
     mutationFn: async () => {
@@ -79,36 +80,47 @@ export function OrganizationTeam() {
           )}
         </Card>
 
-        <Card>
-          <CardHeader title="Invite" />
-          <CardBody>
-            <div className="space-y-4">
-              <Input
-                label="Email or user ID"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <Select
-                label="Role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                options={[
-                  { value: "MEMBER", label: "Member" },
-                  { value: "ADMIN", label: "Admin" },
-                  { value: "OWNER", label: "Owner" },
-                ]}
-              />
-              <Button
-                fullWidth
-                onClick={() => invite.mutate()}
-                loading={invite.isPending}
-                disabled={!email}
-              >
-                Invite
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
+        {canManage ? (
+          <Card>
+            <CardHeader title="Invite" />
+            <CardBody>
+              <div className="space-y-4">
+                <Input
+                  label="Email or user ID"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Select
+                  label="Role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  options={[
+                    { value: "MEMBER", label: "Member" },
+                    { value: "ADMIN", label: "Admin" },
+                    ...(orgQuery.data?.membershipRole === "OWNER" ? [{ value: "OWNER", label: "Owner" }] : []),
+                  ]}
+                />
+                <Button
+                  fullWidth
+                  onClick={() => invite.mutate()}
+                  loading={invite.isPending}
+                  disabled={!email}
+                >
+                  Invite
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader title="Workspace access" />
+            <CardBody>
+              <p className="text-sm leading-6 text-neutral-600">
+                You are a member of this organization. Only owners and admins can invite teammates or change roles.
+              </p>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </>
   );

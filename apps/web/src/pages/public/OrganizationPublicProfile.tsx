@@ -74,10 +74,13 @@ export function OrganizationPublicProfile() {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               {websiteUrl ? (
-                <a href={websiteUrl} target="_blank" rel="noreferrer">
-                  <Button variant="outline" rightIcon={<ExternalLink className="h-4 w-4" />}>
-                    Organization website
-                  </Button>
+                <a
+                  href={websiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Organization website <ExternalLink className="h-4 w-4" aria-hidden />
                 </a>
               ) : null}
               {user ? (
@@ -93,8 +96,11 @@ export function OrganizationPublicProfile() {
                   </Button>
                 )
               ) : (
-                <Link to="/login">
-                  <Button variant="outline">Sign in to join</Button>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Sign in to join
                 </Link>
               )}
             </div>
